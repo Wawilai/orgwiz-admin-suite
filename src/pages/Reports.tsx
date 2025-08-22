@@ -484,10 +484,10 @@ export default function Reports() {
         {mockKPIData.map((kpi, index) => {
           const Icon = kpi.icon;
           const gradients = [
-            'bg-gradient-to-br from-blue-500 to-blue-600',
-            'bg-gradient-to-br from-green-500 to-emerald-600', 
-            'bg-gradient-to-br from-purple-500 to-violet-600',
-            'bg-gradient-to-br from-orange-500 to-amber-600'
+            'bg-gradient-to-br from-[hsl(214,84%,56%)] to-[hsl(214,84%,46%)]', // Blue - DAU
+            'bg-gradient-to-br from-[hsl(142,76%,36%)] to-[hsl(142,76%,26%)]', // Green - Total Services
+            'bg-gradient-to-br from-[hsl(262,83%,58%)] to-[hsl(262,83%,48%)]', // Purple - License Usage
+            'bg-gradient-to-br from-[hsl(31,81%,56%)] to-[hsl(31,81%,46%)]'    // Orange - Growth Trend
           ];
           return (
             <Card key={index} className="overflow-hidden hover:shadow-lg transition-all duration-300 cursor-pointer group" onClick={() => handleCardClick('executive', 'Executive Overview')}>
@@ -633,30 +633,32 @@ export default function Reports() {
           {/* License Overview Cards */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
             <Card className="overflow-hidden hover:shadow-lg transition-all duration-300 cursor-pointer group" onClick={() => handleCardClick('license', 'License Overview')}>
-              <div className="bg-gradient-to-br from-indigo-500 to-indigo-600 p-4 text-white">
-                <CardTitle className="text-sm text-white/90">โควตารวม</CardTitle>
-                <div className="text-2xl font-bold mt-2">4,500</div>
+              <div className="bg-gradient-to-br from-[hsl(262,83%,58%)] to-[hsl(262,83%,48%)] p-3 md:p-4 text-white">
+                <CardTitle className="text-xs md:text-sm text-white/90">โควตารวม</CardTitle>
+                <div className="text-lg md:text-2xl font-bold mt-1 md:mt-2">4,500</div>
                 <p className="text-xs text-white/80">ใบอนุญาต</p>
               </div>
             </Card>
             <Card className="overflow-hidden hover:shadow-lg transition-all duration-300 cursor-pointer group" onClick={() => handleCardClick('license', 'License Usage')}>
-              <div className="bg-gradient-to-br from-blue-500 to-blue-600 p-4 text-white">
-                <CardTitle className="text-sm text-white/90">โควตาที่ใช้</CardTitle>
-                <div className="text-2xl font-bold mt-2">3,380</div>
+              <div className="bg-gradient-to-br from-[hsl(214,84%,56%)] to-[hsl(214,84%,46%)] p-3 md:p-4 text-white">
+                <CardTitle className="text-xs md:text-sm text-white/90">โควตาที่ใช้</CardTitle>
+                <div className="text-lg md:text-2xl font-bold mt-1 md:mt-2">3,380</div>
                 <p className="text-xs text-white/80">ใบอนุญาต</p>
               </div>
             </Card>
             <Card className="overflow-hidden hover:shadow-lg transition-all duration-300 cursor-pointer group" onClick={() => handleCardClick('license', 'Utilization Rate')}>
-              <div className="bg-gradient-to-br from-orange-500 to-amber-600 p-4 text-white">
-                <CardTitle className="text-sm text-white/90">อัตราการใช้งาน</CardTitle>
-                <div className="text-2xl font-bold mt-2">75.1%</div>
-                <Progress value={75.1} className="mt-2 bg-white/20" />
+              <div className="bg-gradient-to-br from-[hsl(31,81%,56%)] to-[hsl(31,81%,46%)] p-3 md:p-4 text-white">
+                <CardTitle className="text-xs md:text-sm text-white/90">อัตราการใช้งาน</CardTitle>
+                <div className="text-lg md:text-2xl font-bold mt-1 md:mt-2">75.1%</div>
+                <div className="w-full bg-white/20 rounded-full h-2 mt-2">
+                  <div className="bg-white h-2 rounded-full" style={{ width: '75.1%' }}></div>
+                </div>
               </div>
             </Card>
             <Card className="overflow-hidden hover:shadow-lg transition-all duration-300 cursor-pointer group" onClick={() => handleCardClick('license', 'Organizations')}>
-              <div className="bg-gradient-to-br from-green-500 to-emerald-600 p-4 text-white">
-                <CardTitle className="text-sm text-white/90">จำนวนองค์กร</CardTitle>
-                <div className="text-2xl font-bold mt-2">45</div>
+              <div className="bg-gradient-to-br from-[hsl(142,76%,36%)] to-[hsl(142,76%,26%)] p-3 md:p-4 text-white">
+                <CardTitle className="text-xs md:text-sm text-white/90">จำนวนองค์กร</CardTitle>
+                <div className="text-lg md:text-2xl font-bold mt-1 md:mt-2">45</div>
                 <p className="text-xs text-white/80">องค์กร</p>
               </div>
             </Card>
