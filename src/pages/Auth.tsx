@@ -53,6 +53,21 @@ const Auth = () => {
     }
   }, [isAuthenticated, navigate, location.hash]);
 
+  // Add helpful instructions
+  const renderInstructions = () => (
+    <Alert className="mt-4">
+      <AlertCircle className="h-4 w-4" />
+      <AlertDescription>
+        <strong>การใช้งาน 2FA (MFA):</strong>
+        <ol className="mt-2 text-sm space-y-1">
+          <li>1. เข้าสู่ระบบด้วยอีเมลและรหัสผ่าน</li>
+          <li>2. ไปที่เมนู "ตั้งค่าระบบ" → "ความปลอดภัย MFA"</li>
+          <li>3. คลิก "เปิดใช้งาน MFA" และทำตามขั้นตอน</li>
+        </ol>
+      </AlertDescription>
+    </Alert>
+  );
+
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
@@ -188,6 +203,8 @@ const Auth = () => {
                   <AlertDescription>{error}</AlertDescription>
                 </Alert>
               )}
+
+              {renderInstructions()}
 
               <TabsContent value="signin" className="space-y-4 mt-4">
                 <form onSubmit={handleSignIn} className="space-y-4">
