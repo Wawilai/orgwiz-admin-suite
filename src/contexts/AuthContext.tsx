@@ -10,6 +10,9 @@ interface AuthContextType {
   signUp: (email: string, password: string) => Promise<{ error: any }>;
   signOut: () => Promise<void>;
   isAuthenticated: boolean;
+  userProfile: any;
+  userRoles: string[];
+  refreshProfile: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -30,6 +33,8 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
+  const [userProfile, setUserProfile] = useState<any>(null);
+  const [userRoles, setUserRoles] = useState<string[]>([]);
 
   useEffect(() => {
     let mounted = true;
@@ -45,11 +50,21 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         setUser(session?.user ?? null);
         setLoading(false);
 
+        // Fetch user profile and roles when signed in
+        if (session?.user) {
+          fetchUserProfile(session.user.id);
+        } else {
+          setUserProfile(null);
+          setUserRoles([]);
+        }
+
         // Handle different auth events
         if (event === 'SIGNED_IN') {
           console.log('User signed in successfully');
         } else if (event === 'SIGNED_OUT') {
           console.log('User signed out');
+          setUserProfile(null);
+          setUserRoles([]);
         } else if (event === 'TOKEN_REFRESHED') {
           console.log('Token refreshed');
         }
@@ -108,6 +123,42 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     };
   }, []);
 
+  const fetchUserProfile = async (userId: string) => {
+    try {
+      const [profileResult, rolesResult] = await Promise.all([
+        supabase
+          .from('profiles')
+          .select('*')
+          .eq('user_id', userId)
+          .single(),
+        supabase
+          .from('user_roles')
+          .select(`
+            roles (name, role_type)
+          `)
+          .eq('user_id', userId)
+          .eq('is_active', true)
+      ]);
+
+      if (profileResult.data) {
+        setUserProfile(profileResult.data);
+      }
+
+      if (rolesResult.data) {
+        const roles = rolesResult.data.map(ur => ur.roles?.name).filter(Boolean);
+        setUserRoles(roles);
+      }
+    } catch (error) {
+      console.error('Error fetching user profile:', error);
+    }
+  };
+
+  const refreshProfile = async () => {
+    if (user?.id) {
+      await fetchUserProfile(user.id);
+    }
+  };
+
   const signIn = async (email: string, password: string) => {
     const { error } = await supabase.auth.signInWithPassword({
       email,
@@ -140,7 +191,10 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     signIn,
     signUp,
     signOut,
-    isAuthenticated: !!user
+    isAuthenticated: !!user,
+    userProfile,
+    userRoles,
+    refreshProfile
   };
 
   return (

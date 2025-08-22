@@ -16,6 +16,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
+import { usePermissions } from "@/hooks/usePermissions";
 import { toast } from "sonner";
 
 interface LayoutProps {
@@ -25,6 +26,7 @@ interface LayoutProps {
 export function Layout({ children }: LayoutProps) {
   const navigate = useNavigate();
   const { user, signOut, isAuthenticated } = useAuth();
+  const { permissions, loading: permLoading } = usePermissions();
 
   // Handle authentication redirect with useEffect to prevent race conditions
   useEffect(() => {
