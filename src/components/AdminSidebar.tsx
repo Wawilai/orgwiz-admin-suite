@@ -40,11 +40,9 @@ import { cn } from "@/lib/utils";
 const menuItems = [
   {
     title: "แดชบอร์ด",
+    url: "/",
     icon: LayoutDashboard,
-    items: [
-      { title: "หน้าหลัก", url: "/", icon: LayoutDashboard },
-      { title: "รายงาน", url: "/reports", icon: BarChart3 }
-    ]
+    standalone: true
   },
   {
     title: "การจัดการระบบ",
@@ -78,6 +76,13 @@ const menuItems = [
       { title: "จัดการแพ็กเกจ", url: "/packages", icon: Package },
       { title: "การเรียกเก็บเงิน", url: "/billing", icon: CreditCard },
       { title: "จัดการไลเซ้นส์", url: "/licenses", icon: FileKey }
+    ]
+  },
+  {
+    title: "รายงานและวิเคราะห์",
+    icon: BarChart3,
+    items: [
+      { title: "รายงาน", url: "/reports", icon: BarChart3 }
     ]
   },
   {
@@ -159,6 +164,27 @@ export function AdminSidebar() {
         collapsed ? "px-1 py-2" : "px-2 md:px-3 py-2"
       )}>
         {menuItems.map((group) => {
+          // Handle standalone items (like Dashboard)
+          if (group.standalone) {
+            return (
+              <div key={group.title} className="mb-0.5">
+                <SidebarMenuButton asChild>
+                  <NavLink
+                    to={group.url!}
+                    className={getNavClass(group.url!)}
+                    title={collapsed ? group.title : undefined}
+                  >
+                    <group.icon className={cn(
+                      "h-5 w-5",
+                      collapsed ? "mx-auto" : "mr-3"
+                    )} />
+                    {!collapsed && <span className="text-sm">{group.title}</span>}
+                  </NavLink>
+                </SidebarMenuButton>
+              </div>
+            );
+          }
+
           // Handle grouped items
           const isExpanded = expandedGroups.includes(group.title);
           const hasActiveItem = group.items?.some(item => isActive(item.url));
