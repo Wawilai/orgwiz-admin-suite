@@ -261,11 +261,12 @@ const UserManagement = () => {
   };
 
   const openEditDialog = (user: any) => {
+    console.log('Opening edit dialog for user:', user);
     setEditingUser(user);
     editUserValidation.setValues({
       username: user.username || "",
       firstName: user.firstName || user.name?.split(' ')[0] || "",
-      lastName: user.lastName || user.name?.split(' ')[1] || "",
+      lastName: user.lastName || user.name?.split(' ').slice(1).join(' ') || "",
       firstNameEn: user.firstNameEn || "",
       lastNameEn: user.lastNameEn || "",
       email: user.email,
@@ -306,17 +307,38 @@ const UserManagement = () => {
 
   const handleEditUser = async () => {
     await editUserValidation.handleSubmit(async (values) => {
-      setUsersData(usersData.map(user => 
-        user.id === editingUser.id 
-          ? { ...user, name: `${values.firstName} ${values.lastName}`, email: values.email, phone: values.phoneMobile, organization: values.organization, role: values.role }
-          : user
-      ));
-      
-      setIsEditUserOpen(false);
-      setEditingUser(null);
-      editUserValidation.reset();
-      
-      toastSuccess("แก้ไขผู้ใช้งานสำเร็จ", `แก้ไขข้อมูลผู้ใช้งาน "${values.firstName} ${values.lastName}" เรียบร้อยแล้ว`);
+      try {
+        console.log('Updating user:', editingUser.id, values);
+        
+        // อัปเดตข้อมูลใน Supabase
+        const { error } = await supabase
+          .from('profiles')
+          .update({
+            first_name: values.firstName,
+            last_name: values.lastName,
+            phone_mobile: values.phoneMobile,
+            // Note: organization และ role ต้องหา ID ที่ถูกต้องก่อน
+          })
+          .eq('id', editingUser.id);
+
+        if (error) {
+          console.error('Supabase error:', error);
+          toastError("เกิดข้อผิดพลาด", error.message || "ไม่สามารถบันทึกข้อมูลได้");
+          return;
+        }
+
+        // รีเฟรชข้อมูลจากฐานข้อมูล
+        await fetchUsers();
+        
+        setIsEditUserOpen(false);
+        setEditingUser(null);
+        editUserValidation.reset();
+        
+        toastSuccess("แก้ไขผู้ใช้งานสำเร็จ", `แก้ไขข้อมูลผู้ใช้งาน "${values.firstName} ${values.lastName}" เรียบร้อยแล้ว`);
+      } catch (error) {
+        console.error('Error updating user:', error);
+        toastError("เกิดข้อผิดพลาด", "ไม่สามารถบันทึกข้อมูลได้ กรุณาตรวจสอบข้อมูลและลองใหม่อีกครั้ง");
+      }
     });
   };
 
