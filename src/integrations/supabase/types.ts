@@ -596,6 +596,7 @@ export type Database = {
           id: string
           is_active: boolean
           name: string
+          name_en: string | null
           organization_id: string | null
           sort_order: number | null
           type_id: string
@@ -608,6 +609,7 @@ export type Database = {
           id?: string
           is_active?: boolean
           name: string
+          name_en?: string | null
           organization_id?: string | null
           sort_order?: number | null
           type_id: string
@@ -620,6 +622,7 @@ export type Database = {
           id?: string
           is_active?: boolean
           name?: string
+          name_en?: string | null
           organization_id?: string | null
           sort_order?: number | null
           type_id?: string
@@ -648,6 +651,7 @@ export type Database = {
           description: string | null
           id: string
           is_system_type: boolean
+          name_en: string | null
           type_name: string
         }
         Insert: {
@@ -655,6 +659,7 @@ export type Database = {
           description?: string | null
           id?: string
           is_system_type?: boolean
+          name_en?: string | null
           type_name: string
         }
         Update: {
@@ -662,6 +667,7 @@ export type Database = {
           description?: string | null
           id?: string
           is_system_type?: boolean
+          name_en?: string | null
           type_name?: string
         }
         Relationships: []
