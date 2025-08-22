@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import {
   Table,
   TableBody,
@@ -129,7 +129,8 @@ const mockCountries: MasterDataItem[] = [
   { id: 3, code: "JP", name: "ญี่ปุ่น", description: "Japan", isActive: true, order: 3, createdAt: "2024-01-01", updatedAt: "2024-01-01" },
 ];
 
-const masterDataTypes = [
+// Organization data types
+const organizationDataTypes = [
   { 
     key: "organization-types", 
     name: "ประเภทองค์กร", 
@@ -165,6 +166,10 @@ const masterDataTypes = [
     icon: Globe,
     data: mockCountries 
   },
+];
+
+// Server data types
+const serverDataTypes = [
   { 
     key: "server-locations", 
     name: "สถานที่เซิร์ฟเวอร์", 
@@ -195,12 +200,16 @@ const masterDataTypes = [
   },
 ];
 
+// All master data types combined
+const masterDataTypes = [...organizationDataTypes, ...serverDataTypes];
+
 const MasterDataManagement = () => {
   const [selectedType, setSelectedType] = useState(masterDataTypes[0].key);
   const [searchTerm, setSearchTerm] = useState("");
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState<MasterDataItem | null>(null);
+  const [accordionValue, setAccordionValue] = useState("organization-group");
   const [formData, setFormData] = useState({
     code: "",
     name: "",
@@ -275,6 +284,13 @@ const MasterDataManagement = () => {
     const typeData = masterDataTypes.find(type => type.key === newType);
     setCurrentData(typeData?.data || []);
     setSearchTerm("");
+    
+    // Set accordion value based on the selected type
+    if (organizationDataTypes.find(type => type.key === newType)) {
+      setAccordionValue("organization-group");
+    } else if (serverDataTypes.find(type => type.key === newType)) {
+      setAccordionValue("server-group");
+    }
   };
 
   return (
@@ -407,112 +423,165 @@ const MasterDataManagement = () => {
         </Card>
       </div>
 
-      {/* Tabs for different master data types */}
+      {/* Accordion for different master data types */}
       <Card>
         <CardHeader>
           <CardTitle>ข้อมูลหลัก</CardTitle>
           <CardDescription>เลือกประเภทข้อมูลหลักที่ต้องการจัดการ</CardDescription>
         </CardHeader>
         <CardContent>
-          <Tabs value={selectedType} onValueChange={handleTypeChange} className="space-y-4">
-            <TabsList className="grid w-full grid-cols-3 lg:grid-cols-4 xl:grid-cols-9">
-              {masterDataTypes.map((type) => (
-                <TabsTrigger key={type.key} value={type.key} className="text-xs">
-                  {type.name}
-                </TabsTrigger>
-              ))}
-            </TabsList>
+          <Accordion type="single" value={accordionValue} onValueChange={setAccordionValue} collapsible className="space-y-2">
+            {/* Organization Data Group */}
+            <AccordionItem value="organization-group" className="border rounded-lg">
+              <AccordionTrigger className="px-4 py-3 hover:no-underline">
+                <div className="flex items-center space-x-2">
+                  <Building className="h-5 w-5 text-primary" />
+                  <span className="font-semibold">ข้อมูลองค์กร</span>
+                </div>
+              </AccordionTrigger>
+              <AccordionContent className="px-4 pb-4">
+                <div className="space-y-2">
+                  {organizationDataTypes.map((type) => (
+                    <Button
+                      key={type.key}
+                      variant={selectedType === type.key ? "default" : "ghost"}
+                      className="w-full justify-start h-auto py-3"
+                      onClick={() => handleTypeChange(type.key)}
+                    >
+                      <div className="flex items-center space-x-3 w-full">
+                        <type.icon className="h-4 w-4" />
+                        <div className="text-left">
+                          <div className="font-medium">{type.name}</div>
+                          <div className="text-xs text-muted-foreground line-clamp-1">{type.description}</div>
+                        </div>
+                      </div>
+                    </Button>
+                  ))}
+                </div>
+              </AccordionContent>
+            </AccordionItem>
 
-            {masterDataTypes.map((type) => (
-              <TabsContent key={type.key} value={type.key} className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-2">
-                    <type.icon className="h-5 w-5 text-primary" />
-                    <div>
-                      <h3 className="font-semibold">{type.name}</h3>
-                      <p className="text-sm text-muted-foreground">{type.description}</p>
-                    </div>
-                  </div>
-                  <div className="relative w-64">
-                    <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      placeholder="ค้นหา..."
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                      className="pl-8"
-                    />
+            {/* Server Data Group */}
+            <AccordionItem value="server-group" className="border rounded-lg">
+              <AccordionTrigger className="px-4 py-3 hover:no-underline">
+                <div className="flex items-center space-x-2">
+                  <Database className="h-5 w-5 text-primary" />
+                  <span className="font-semibold">ข้อมูลเซิร์ฟเวอร์</span>
+                </div>
+              </AccordionTrigger>
+              <AccordionContent className="px-4 pb-4">
+                <div className="space-y-2">
+                  {serverDataTypes.map((type) => (
+                    <Button
+                      key={type.key}
+                      variant={selectedType === type.key ? "default" : "ghost"}
+                      className="w-full justify-start h-auto py-3"
+                      onClick={() => handleTypeChange(type.key)}
+                    >
+                      <div className="flex items-center space-x-3 w-full">
+                        <type.icon className="h-4 w-4" />
+                        <div className="text-left">
+                          <div className="font-medium">{type.name}</div>
+                          <div className="text-xs text-muted-foreground line-clamp-1">{type.description}</div>
+                        </div>
+                      </div>
+                    </Button>
+                  ))}
+                </div>
+              </AccordionContent>
+            </AccordionItem>
+          </Accordion>
+
+          {/* Data Display Section */}
+          {currentType && (
+            <div className="mt-6 space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-2">
+                  <currentType.icon className="h-5 w-5 text-primary" />
+                  <div>
+                    <h3 className="font-semibold">{currentType.name}</h3>
+                    <p className="text-sm text-muted-foreground">{currentType.description}</p>
                   </div>
                 </div>
+                <div className="relative w-64">
+                  <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="ค้นหา..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="pl-8"
+                  />
+                </div>
+              </div>
 
-                <div className="rounded-md border">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>รหัส</TableHead>
-                        <TableHead>ชื่อ</TableHead>
-                        <TableHead>คำอธิบาย</TableHead>
-                        <TableHead className="text-center">ลำดับ</TableHead>
-                        <TableHead className="text-center">สถานะ</TableHead>
-                        <TableHead>วันที่อัปเดต</TableHead>
-                        <TableHead className="text-right">การดำเนินการ</TableHead>
+              <div className="rounded-md border">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>รหัส</TableHead>
+                      <TableHead>ชื่อ</TableHead>
+                      <TableHead>คำอธิบาย</TableHead>
+                      <TableHead className="text-center">ลำดับ</TableHead>
+                      <TableHead className="text-center">สถานะ</TableHead>
+                      <TableHead>วันที่อัปเดต</TableHead>
+                      <TableHead className="text-right">การดำเนินการ</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredData.map((item) => (
+                      <TableRow key={item.id}>
+                        <TableCell className="font-medium">{item.code}</TableCell>
+                        <TableCell>{item.name}</TableCell>
+                        <TableCell>
+                          <div className="max-w-xs">
+                            <p className="text-sm line-clamp-2">{item.description || "-"}</p>
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-center">{item.order}</TableCell>
+                        <TableCell className="text-center">
+                          {item.isActive ? (
+                            <Badge className="bg-success text-success-foreground">ใช้งาน</Badge>
+                          ) : (
+                            <Badge variant="secondary">ไม่ใช้งาน</Badge>
+                          )}
+                        </TableCell>
+                        <TableCell>{item.updatedAt}</TableCell>
+                        <TableCell className="text-right">
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" className="h-8 w-8 p-0">
+                                <MoreHorizontal className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="bg-popover">
+                              <DropdownMenuLabel>การดำเนินการ</DropdownMenuLabel>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem onClick={() => openEditDialog(item)}>
+                                <Edit className="h-4 w-4 mr-2" />
+                                แก้ไข
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => handleToggleStatus(item.id)}>
+                                <Settings className="h-4 w-4 mr-2" />
+                                {item.isActive ? "ปิดใช้งาน" : "เปิดใช้งาน"}
+                              </DropdownMenuItem>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem 
+                                onClick={() => handleDelete(item.id)}
+                                className="text-destructive"
+                              >
+                                <Trash2 className="h-4 w-4 mr-2" />
+                                ลบ
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </TableCell>
                       </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {filteredData.map((item) => (
-                        <TableRow key={item.id}>
-                          <TableCell className="font-medium">{item.code}</TableCell>
-                          <TableCell>{item.name}</TableCell>
-                          <TableCell>
-                            <div className="max-w-xs">
-                              <p className="text-sm line-clamp-2">{item.description || "-"}</p>
-                            </div>
-                          </TableCell>
-                          <TableCell className="text-center">{item.order}</TableCell>
-                          <TableCell className="text-center">
-                            {item.isActive ? (
-                              <Badge className="bg-success text-success-foreground">ใช้งาน</Badge>
-                            ) : (
-                              <Badge variant="secondary">ไม่ใช้งาน</Badge>
-                            )}
-                          </TableCell>
-                          <TableCell>{item.updatedAt}</TableCell>
-                          <TableCell className="text-right">
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" className="h-8 w-8 p-0">
-                                  <MoreHorizontal className="h-4 w-4" />
-                                </Button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end" className="bg-popover">
-                                <DropdownMenuLabel>การดำเนินการ</DropdownMenuLabel>
-                                <DropdownMenuSeparator />
-                                <DropdownMenuItem onClick={() => openEditDialog(item)}>
-                                  <Edit className="h-4 w-4 mr-2" />
-                                  แก้ไข
-                                </DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => handleToggleStatus(item.id)}>
-                                  <Settings className="h-4 w-4 mr-2" />
-                                  {item.isActive ? "ปิดใช้งาน" : "เปิดใช้งาน"}
-                                </DropdownMenuItem>
-                                <DropdownMenuSeparator />
-                                <DropdownMenuItem 
-                                  onClick={() => handleDelete(item.id)}
-                                  className="text-destructive"
-                                >
-                                  <Trash2 className="h-4 w-4 mr-2" />
-                                  ลบ
-                                </DropdownMenuItem>
-                              </DropdownMenuContent>
-                            </DropdownMenu>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
-              </TabsContent>
-            ))}
-          </Tabs>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            </div>
+          )}
         </CardContent>
       </Card>
 
