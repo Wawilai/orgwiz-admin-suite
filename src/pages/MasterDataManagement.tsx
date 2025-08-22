@@ -37,6 +37,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { LoadingButton } from "@/components/ui/loading-button";
+import { FormFieldWrapper } from "@/components/ui/form-field-wrapper";
+import { useDeleteConfirmation, useStatusChangeConfirmation } from "@/components/ui/confirmation-dialog";
+import { useFormValidation, createDuplicateValidator } from "@/hooks/use-form-validation";
+import { toastSuccess, toastError, toastWithUndo } from "@/components/ui/enhanced-toast";
 import {
   Database,
   Plus,
@@ -50,7 +55,6 @@ import {
   Globe,
   Settings,
 } from "lucide-react";
-import { toast } from "sonner";
 
 // Master Data Types
 interface MasterDataItem {
@@ -210,12 +214,77 @@ const MasterDataManagement = () => {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState<MasterDataItem | null>(null);
   const [accordionValue, setAccordionValue] = useState("organization-group");
-  const [formData, setFormData] = useState({
+
+  // Confirmation dialogs
+  const { showDeleteConfirmation, DeleteConfirmationDialog } = useDeleteConfirmation();
+  const { showStatusConfirmation, StatusConfirmationDialog } = useStatusChangeConfirmation();
+
+  // Form validation for adding items
+  const addItemValidation = useFormValidation({
     code: "",
     name: "",
     description: "",
     isActive: true,
     order: 0,
+  }, {
+    code: { 
+      required: true, 
+      minLength: 2, 
+      maxLength: 20,
+      pattern: /^[A-Z0-9_]+$/,
+      custom: createDuplicateValidator(
+        currentData, 
+        null, 
+        (item) => item.code, 
+        "รหัส"
+      )
+    },
+    name: { 
+      required: true, 
+      minLength: 2, 
+      maxLength: 100,
+      custom: createDuplicateValidator(
+        currentData, 
+        null, 
+        (item) => item.name, 
+        "ชื่อ"
+      )
+    },
+    description: { maxLength: 255 },
+  });
+
+  // Form validation for editing items
+  const editItemValidation = useFormValidation({
+    code: "",
+    name: "",
+    description: "",
+    isActive: true,
+    order: 0,
+  }, {
+    code: { 
+      required: true, 
+      minLength: 2, 
+      maxLength: 20,
+      pattern: /^[A-Z0-9_]+$/,
+      custom: createDuplicateValidator(
+        currentData, 
+        selectedItem?.id, 
+        (item) => item.code, 
+        "รหัส"
+      )
+    },
+    name: { 
+      required: true, 
+      minLength: 2, 
+      maxLength: 100,
+      custom: createDuplicateValidator(
+        currentData, 
+        selectedItem?.id, 
+        (item) => item.name, 
+        "ชื่อ"
+      )
+    },
+    description: { maxLength: 255 },
   });
 
   const currentType = masterDataTypes.find(type => type.key === selectedType);
@@ -227,49 +296,70 @@ const MasterDataManagement = () => {
     (item.description && item.description.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
-  const handleAdd = () => {
-    if (formData.code && formData.name) {
+  const handleAdd = async () => {
+    await addItemValidation.handleSubmit(async (values) => {
       const newItem: MasterDataItem = {
         id: Math.max(...currentData.map(i => i.id), 0) + 1,
-        ...formData,
+        ...values,
         createdAt: new Date().toISOString().split('T')[0],
         updatedAt: new Date().toISOString().split('T')[0],
       };
+      
       setCurrentData([...currentData, newItem]);
-      setFormData({ code: "", name: "", description: "", isActive: true, order: 0 });
       setIsAddDialogOpen(false);
-      toast.success("เพิ่มข้อมูลสำเร็จ");
-    }
+      addItemValidation.reset();
+      
+      toastSuccess("เพิ่มข้อมูลสำเร็จ", `เพิ่ม "${values.name}" เรียบร้อยแล้ว`);
+    });
   };
 
-  const handleEdit = () => {
-    if (selectedItem && formData.code && formData.name) {
+  const handleEdit = async () => {
+    await editItemValidation.handleSubmit(async (values) => {
       setCurrentData(currentData.map(item => 
-        item.id === selectedItem.id 
-          ? { ...item, ...formData, updatedAt: new Date().toISOString().split('T')[0] }
+        item.id === selectedItem!.id 
+          ? { ...item, ...values, updatedAt: new Date().toISOString().split('T')[0] }
           : item
       ));
+      
       setIsEditDialogOpen(false);
       setSelectedItem(null);
-      toast.success("แก้ไขข้อมูลสำเร็จ");
-    }
+      editItemValidation.reset();
+      
+      toastSuccess("แก้ไขข้อมูลสำเร็จ", `แก้ไข "${values.name}" เรียบร้อยแล้ว`);
+    });
   };
 
-  const handleDelete = (id: number) => {
-    setCurrentData(currentData.filter(item => item.id !== id));
-    toast.success("ลบข้อมูลสำเร็จ");
+  const handleDelete = async (item: MasterDataItem) => {
+    const originalData = [...currentData];
+    setCurrentData(currentData.filter(i => i.id !== item.id));
+    
+    toastWithUndo(
+      "ลบข้อมูลสำเร็จ",
+      `ลบ "${item.name}" แล้ว`,
+      () => {
+        setCurrentData(originalData);
+        toastSuccess("เลิกทำการลบ", "กู้คืนข้อมูลเรียบร้อยแล้ว");
+      }
+    );
   };
 
-  const handleToggleStatus = (id: number) => {
-    setCurrentData(currentData.map(item => 
-      item.id === id ? { ...item, isActive: !item.isActive } : item
+  const handleToggleStatus = async (item: MasterDataItem) => {
+    const newStatus = !item.isActive;
+    const statusText = newStatus ? 'เปิดใช้งาน' : 'ปิดใช้งาน';
+    
+    setCurrentData(currentData.map(i => 
+      i.id === item.id ? { ...i, isActive: newStatus } : i
     ));
-    toast.success("เปลี่ยนสถานะสำเร็จ");
+
+    toastSuccess(
+      `${statusText}สำเร็จ`,
+      `เปลี่ยนสถานะ "${item.name}" เป็น ${statusText} แล้ว`
+    );
   };
 
   const openEditDialog = (item: MasterDataItem) => {
     setSelectedItem(item);
-    setFormData({
+    editItemValidation.setValues({
       code: item.code,
       name: item.name,
       description: item.description || "",
@@ -284,6 +374,10 @@ const MasterDataManagement = () => {
     const typeData = masterDataTypes.find(type => type.key === newType);
     setCurrentData(typeData?.data || []);
     setSearchTerm("");
+    
+    // Reset form validations when changing type
+    addItemValidation.reset();
+    editItemValidation.reset();
     
     // Set accordion value based on the selected type
     if (organizationDataTypes.find(type => type.key === newType)) {
@@ -376,16 +470,13 @@ const MasterDataManagement = () => {
                   </DialogDescription>
                 </DialogHeader>
                 <div className="grid gap-4 py-4">
-                  <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="code" className="text-right">รหัส *</Label>
+                  <FormFieldWrapper label="รหัส" required error={addItemValidation.errors.code}>
                     <Input
-                      id="code"
-                      value={formData.code}
-                      onChange={(e) => setFormData({...formData, code: e.target.value.toUpperCase()})}
-                      placeholder="รหัส"
-                      className="col-span-3"
+                      value={addItemValidation.values.code}
+                      onChange={(e) => addItemValidation.setValue('code', e.target.value.toUpperCase())}
+                      placeholder="รหัส (เช่น ORG_001)"
                     />
-                  </div>
+                  </FormFieldWrapper>
                   <div className="grid grid-cols-4 items-center gap-4">
                     <Label htmlFor="name" className="text-right">ชื่อ *</Label>
                     <Input
@@ -420,12 +511,15 @@ const MasterDataManagement = () => {
                   </div>
                 </div>
                 <div className="flex justify-end space-x-2">
-                  <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>
+                  <Button variant="outline" onClick={() => {
+                    setIsAddDialogOpen(false);
+                    addItemValidation.reset();
+                  }}>
                     ยกเลิก
                   </Button>
-                  <Button onClick={handleAdd}>
+                  <LoadingButton loading={addItemValidation.isSubmitting} onClick={handleAdd}>
                     บันทึก
-                  </Button>
+                  </LoadingButton>
                 </div>
               </DialogContent>
             </Dialog>
@@ -562,13 +656,18 @@ const MasterDataManagement = () => {
                                 <Edit className="h-4 w-4 mr-2" />
                                 แก้ไข
                               </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => handleToggleStatus(item.id)}>
+                              <DropdownMenuItem onClick={() => 
+                                showStatusConfirmation(
+                                  `คุณต้องการ${item.isActive ? 'ปิด' : 'เปิด'}ใช้งาน "${item.name}" หรือไม่?`,
+                                  () => handleToggleStatus(item)
+                                )
+                              }>
                                 <Settings className="h-4 w-4 mr-2" />
                                 {item.isActive ? "ปิดใช้งาน" : "เปิดใช้งาน"}
                               </DropdownMenuItem>
                               <DropdownMenuSeparator />
                               <DropdownMenuItem 
-                                onClick={() => handleDelete(item.id)}
+                                onClick={() => showDeleteConfirmation(item.name, () => handleDelete(item))}
                                 className="text-destructive"
                               >
                                 <Trash2 className="h-4 w-4 mr-2" />

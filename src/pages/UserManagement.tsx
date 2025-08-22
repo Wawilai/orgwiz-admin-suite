@@ -38,7 +38,11 @@ import {
 } from "@/components/ui/select";
 import { DatePicker } from "@/components/ui/date-picker";
 import { useMasterData } from "@/contexts/MasterDataContext";
-import { toast } from "sonner";
+import { LoadingButton } from "@/components/ui/loading-button";
+import { FormFieldWrapper } from "@/components/ui/form-field-wrapper";
+import { useDeleteConfirmation, useStatusChangeConfirmation } from "@/components/ui/confirmation-dialog";
+import { useFormValidation, createEmailRule, createPhoneRule, createDuplicateValidator } from "@/hooks/use-form-validation";
+import { toastSuccess, toastError, toastWithUndo } from "@/components/ui/enhanced-toast";
 import {
   Users,
   UserPlus,
@@ -108,6 +112,53 @@ const UserManagement = () => {
   const [selectedUser, setSelectedUser] = useState<any>(null);
   const [usersData, setUsersData] = useState(users);
 
+  // Confirmation dialogs
+  const { showDeleteConfirmation, DeleteConfirmationDialog } = useDeleteConfirmation();
+  const { showStatusConfirmation, StatusConfirmationDialog } = useStatusChangeConfirmation();
+
+  // Form validation for adding users
+  const addUserValidation = useFormValidation({
+    name: "",
+    email: "",
+    phone: "",
+    employeeId: "",
+    organization: "",
+    department: "",
+    role: "",
+    position: "",
+    startDate: "",
+    manager: "",
+    tempPassword: "",
+  }, {
+    name: { required: true, minLength: 2, maxLength: 100 },
+    email: { 
+      ...createEmailRule(),
+      custom: createDuplicateValidator(usersData, null, (user) => user.email, "อีเมล")
+    },
+    phone: createPhoneRule(),
+    organization: { required: true },
+    role: { required: true },
+    tempPassword: { required: true, minLength: 8 },
+  });
+
+  // Form validation for editing users
+  const editUserValidation = useFormValidation({
+    name: "",
+    email: "",
+    phone: "",
+    organization: "",
+    role: "",
+  }, {
+    name: { required: true, minLength: 2, maxLength: 100 },
+    email: { 
+      ...createEmailRule(),
+      custom: createDuplicateValidator(usersData, editingUser?.id, (user) => user.email, "อีเมล")
+    },
+    phone: createPhoneRule(),
+    organization: { required: true },
+    role: { required: true },
+  });
+
   // Get master data
   const organizationTypes = getActiveItems('organizationTypes');
   const departments = getActiveItems('departments');
@@ -142,19 +193,83 @@ const UserManagement = () => {
 
   const openEditDialog = (user: any) => {
     setEditingUser(user);
+    editUserValidation.setValues({
+      name: user.name,
+      email: user.email,
+      phone: user.phone,
+      organization: user.organization,
+      role: user.role,
+    });
     setIsEditUserOpen(true);
   };
 
-  const handleDeleteUser = (userId: number) => {
-    setUsersData(usersData.filter(user => user.id !== userId));
+  const handleAddUser = async () => {
+    await addUserValidation.handleSubmit(async (values) => {
+      const newUser = {
+        id: Math.max(...usersData.map(u => u.id), 0) + 1,
+        name: values.name,
+        email: values.email,
+        phone: values.phone,
+        organization: values.organization,
+        organizationUnit: values.department,
+        role: values.role,
+        status: "active",
+        lastLogin: "ยังไม่เคยเข้าสู่ระบบ",
+        avatar: null
+      };
+      
+      setUsersData([...usersData, newUser]);
+      setIsAddUserOpen(false);
+      addUserValidation.reset();
+      
+      toastSuccess("เพิ่มผู้ใช้งานสำเร็จ", `เพิ่มผู้ใช้งาน "${values.name}" เรียบร้อยแล้ว`);
+    });
   };
 
-  const handleSuspendUser = (userId: number) => {
-    setUsersData(usersData.map(user => 
-      user.id === userId 
-        ? { ...user, status: user.status === 'active' ? 'suspended' : 'active' } 
-        : user
+  const handleEditUser = async () => {
+    await editUserValidation.handleSubmit(async (values) => {
+      setUsersData(usersData.map(user => 
+        user.id === editingUser.id 
+          ? { ...user, ...values }
+          : user
+      ));
+      
+      setIsEditUserOpen(false);
+      setEditingUser(null);
+      editUserValidation.reset();
+      
+      toastSuccess("แก้ไขผู้ใช้งานสำเร็จ", `แก้ไขข้อมูลผู้ใช้งาน "${values.name}" เรียบร้อยแล้ว`);
+    });
+  };
+
+  const handleDeleteUser = async (user: any) => {
+    const originalUsers = [...usersData];
+    setUsersData(usersData.filter(u => u.id !== user.id));
+    
+    toastWithUndo(
+      "ลบผู้ใช้งานสำเร็จ",
+      `ลบผู้ใช้งาน "${user.name}" แล้ว`,
+      () => {
+        setUsersData(originalUsers);
+        toastSuccess("เลิกทำการลบ", "กู้คืนผู้ใช้งานเรียบร้อยแล้ว");
+      }
+    );
+  };
+
+  const handleSuspendUser = async (user: any) => {
+    const newStatus = user.status === 'active' ? 'suspended' : 'active';
+    const statusText = newStatus === 'suspended' ? 'ระงับ' : 'เปิดใช้งาน';
+    
+    setUsersData(usersData.map(u => 
+      u.id === user.id 
+        ? { ...u, status: newStatus } 
+        : u
     ));
+
+    toastSuccess(
+      `${statusText}ผู้ใช้งานสำเร็จ`,
+      `เปลี่ยนสถานะผู้ใช้งาน "${user.name}" เป็น ${statusText} แล้ว`
+    );
   };
 
   const openResetPasswordDialog = (user: any) => {
@@ -235,44 +350,65 @@ const UserManagement = () => {
               </DialogHeader>
               <div className="grid gap-6 py-4 max-h-[60vh] overflow-y-auto">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="name">ชื่อ-นามสกุล *</Label>
+                  <FormFieldWrapper
+                    label="ชื่อ-นามสกุล"
+                    required
+                    error={addUserValidation.errors.name}
+                  >
                     <Input
-                      id="name"
                       placeholder="กรอกชื่อ-นามสกุล"
+                      value={addUserValidation.values.name}
+                      onChange={(e) => addUserValidation.setValue('name', e.target.value)}
                     />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="email">อีเมล *</Label>
+                  </FormFieldWrapper>
+                  <FormFieldWrapper
+                    label="อีเมล"
+                    required
+                    error={addUserValidation.errors.email}
+                  >
                     <Input
-                      id="email"
                       type="email"
                       placeholder="user@company.com"
+                      value={addUserValidation.values.email}
+                      onChange={(e) => addUserValidation.setValue('email', e.target.value)}
                     />
-                  </div>
+                  </FormFieldWrapper>
                 </div>
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="phone">เบอร์โทร</Label>
+                  <FormFieldWrapper
+                    label="เบอร์โทร"
+                    error={addUserValidation.errors.phone}
+                    hint="เช่น 081-234-5678"
+                  >
                     <Input
-                      id="phone"
                       placeholder="081-234-5678"
+                      value={addUserValidation.values.phone}
+                      onChange={(e) => addUserValidation.setValue('phone', e.target.value)}
                     />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="employee-id">รหัสพนักงาน</Label>
+                  </FormFieldWrapper>
+                  <FormFieldWrapper
+                    label="รหัสพนักงาน"
+                    error={addUserValidation.errors.employeeId}
+                  >
                     <Input
-                      id="employee-id"
                       placeholder="EMP001"
+                      value={addUserValidation.values.employeeId}
+                      onChange={(e) => addUserValidation.setValue('employeeId', e.target.value)}
                     />
-                  </div>
+                  </FormFieldWrapper>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="organization">องค์กร *</Label>
-                    <Select>
+                  <FormFieldWrapper
+                    label="องค์กร"
+                    required
+                    error={addUserValidation.errors.organization}
+                  >
+                    <Select 
+                      value={addUserValidation.values.organization}
+                      onValueChange={(value) => addUserValidation.setValue('organization', value)}
+                    >
                       <SelectTrigger>
                         <SelectValue placeholder="เลือกองค์กร" />
                       </SelectTrigger>
@@ -284,10 +420,15 @@ const UserManagement = () => {
                         ))}
                       </SelectContent>
                     </Select>
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="department">หน่วยงาน</Label>
-                    <Select>
+                  </FormFieldWrapper>
+                  <FormFieldWrapper
+                    label="หน่วยงาน"
+                    error={addUserValidation.errors.department}
+                  >
+                    <Select 
+                      value={addUserValidation.values.department}
+                      onValueChange={(value) => addUserValidation.setValue('department', value)}
+                    >
                       <SelectTrigger>
                         <SelectValue placeholder="เลือกหน่วยงาน" />
                       </SelectTrigger>
@@ -299,13 +440,19 @@ const UserManagement = () => {
                         ))}
                       </SelectContent>
                     </Select>
-                  </div>
+                  </FormFieldWrapper>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="role">บทบาท *</Label>
-                    <Select>
+                  <FormFieldWrapper
+                    label="บทบาท"
+                    required
+                    error={addUserValidation.errors.role}
+                  >
+                    <Select 
+                      value={addUserValidation.values.role}
+                      onValueChange={(value) => addUserValidation.setValue('role', value)}
+                    >
                       <SelectTrigger>
                         <SelectValue placeholder="เลือกบทบาท" />
                       </SelectTrigger>
@@ -317,10 +464,15 @@ const UserManagement = () => {
                         ))}
                       </SelectContent>
                     </Select>
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="position">ตำแหน่ง</Label>
-                    <Select>
+                  </FormFieldWrapper>
+                  <FormFieldWrapper
+                    label="ตำแหน่ง"
+                    error={addUserValidation.errors.position}
+                  >
+                    <Select 
+                      value={addUserValidation.values.position}
+                      onValueChange={(value) => addUserValidation.setValue('position', value)}
+                    >
                       <SelectTrigger>
                         <SelectValue placeholder="เลือกตำแหน่ง" />
                       </SelectTrigger>
@@ -332,55 +484,36 @@ const UserManagement = () => {
                         ))}
                       </SelectContent>
                     </Select>
-                  </div>
+                  </FormFieldWrapper>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="start-date">วันที่เริ่มงาน</Label>
-                    <DatePicker
-                      placeholder="เลือกวันที่เริ่มงาน"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="manager">ผู้บังคับบัญชา</Label>
-                    <Select>
-                      <SelectTrigger>
-                        <SelectValue placeholder="เลือกผู้บังคับบัญชา" />
-                      </SelectTrigger>
-                      <SelectContent className="bg-popover">
-                        <SelectItem value="manager1">นายสมชาย ใจดี</SelectItem>
-                        <SelectItem value="manager2">นางสาววิชาญ เก่งกาจ</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="temp-password">รหัสผ่านชั่วคราว</Label>
+                <FormFieldWrapper
+                  label="รหัสผ่านชั่วคราว"
+                  required
+                  error={addUserValidation.errors.tempPassword}
+                  hint="ผู้ใช้จะต้องเปลี่ยนรหัสผ่านในการเข้าใช้งานครั้งแรก"
+                >
                   <Input
-                    id="temp-password"
                     type="password"
                     placeholder="อย่างน้อย 8 ตัวอักษร"
+                    value={addUserValidation.values.tempPassword}
+                    onChange={(e) => addUserValidation.setValue('tempPassword', e.target.value)}
                   />
-                  <p className="text-sm text-muted-foreground">
-                    ผู้ใช้จะต้องเปลี่ยนรหัสผ่านในการเข้าใช้งานครั้งแรก
-                  </p>
-                </div>
+                </FormFieldWrapper>
               </div>
               <div className="flex justify-end space-x-2">
                 <Button variant="outline" onClick={() => {
                   setIsAddUserOpen(false);
-                  toast.success("ยกเลิกการเพิ่มผู้ใช้งาน");
+                  addUserValidation.reset();
                 }}>
                   ยกเลิก
                 </Button>
-                <Button onClick={() => {
-                  setIsAddUserOpen(false);
-                  toast.success("เพิ่มผู้ใช้งานสำเร็จ");
-                }}>
+                <LoadingButton 
+                  loading={addUserValidation.isSubmitting}
+                  onClick={handleAddUser}
+                >
                   บันทึก
-                </Button>
+                </LoadingButton>
               </div>
             </DialogContent>
           </Dialog>
@@ -396,37 +529,52 @@ const UserManagement = () => {
               </DialogHeader>
               <div className="grid gap-6 py-4 max-h-[60vh] overflow-y-auto">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="edit-name">ชื่อ-นามสกุล *</Label>
+                  <FormFieldWrapper
+                    label="ชื่อ-นามสกุล"
+                    required
+                    error={editUserValidation.errors.name}
+                  >
                     <Input
-                      id="edit-name"
-                      defaultValue={editingUser?.name || ""}
                       placeholder="กรอกชื่อ-นามสกุล"
+                      value={editUserValidation.values.name}
+                      onChange={(e) => editUserValidation.setValue('name', e.target.value)}
                     />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="edit-email">อีเมล *</Label>
+                  </FormFieldWrapper>
+                  <FormFieldWrapper
+                    label="อีเมล"
+                    required
+                    error={editUserValidation.errors.email}
+                  >
                     <Input
-                      id="edit-email"
                       type="email"
-                      defaultValue={editingUser?.email || ""}
                       placeholder="user@company.com"
+                      value={editUserValidation.values.email}
+                      onChange={(e) => editUserValidation.setValue('email', e.target.value)}
                     />
-                  </div>
+                  </FormFieldWrapper>
                 </div>
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="edit-phone">เบอร์โทร</Label>
+                  <FormFieldWrapper
+                    label="เบอร์โทร"
+                    error={editUserValidation.errors.phone}
+                    hint="เช่น 081-234-5678"
+                  >
                     <Input
-                      id="edit-phone"
-                      defaultValue={editingUser?.phone || ""}
                       placeholder="081-234-5678"
+                      value={editUserValidation.values.phone}
+                      onChange={(e) => editUserValidation.setValue('phone', e.target.value)}
                     />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="edit-organization">องค์กร</Label>
-                    <Select defaultValue={editingUser?.organization || ""}>
+                  </FormFieldWrapper>
+                  <FormFieldWrapper
+                    label="องค์กร"
+                    required
+                    error={editUserValidation.errors.organization}
+                  >
+                    <Select 
+                      value={editUserValidation.values.organization}
+                      onValueChange={(value) => editUserValidation.setValue('organization', value)}
+                    >
                       <SelectTrigger>
                         <SelectValue placeholder="เลือกองค์กร" />
                       </SelectTrigger>
@@ -438,53 +586,45 @@ const UserManagement = () => {
                         ))}
                       </SelectContent>
                     </Select>
-                  </div>
+                  </FormFieldWrapper>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="edit-role">บทบาท</Label>
-                    <Select defaultValue={editingUser?.role || ""}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="เลือกบทบาท" />
-                      </SelectTrigger>
-                      <SelectContent className="bg-popover">
-                        {userRoles.map((role) => (
-                          <SelectItem key={role.id} value={role.name}>
-                            {role.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="edit-status">สถานะ</Label>
-                    <Select defaultValue={editingUser?.status || ""}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="เลือกสถานะ" />
-                      </SelectTrigger>
-                      <SelectContent className="bg-popover">
-                        <SelectItem value="active">ใช้งาน</SelectItem>
-                        <SelectItem value="suspended">ระงับ</SelectItem>
-                        <SelectItem value="inactive">ไม่ใช้งาน</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
+                <FormFieldWrapper
+                  label="บทบาท"
+                  required
+                  error={editUserValidation.errors.role}
+                >
+                  <Select 
+                    value={editUserValidation.values.role}
+                    onValueChange={(value) => editUserValidation.setValue('role', value)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="เลือกบทบาท" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-popover">
+                      {userRoles.map((role) => (
+                        <SelectItem key={role.id} value={role.name}>
+                          {role.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </FormFieldWrapper>
               </div>
               <div className="flex justify-end space-x-2">
                 <Button variant="outline" onClick={() => {
                   setIsEditUserOpen(false);
-                  toast.success("ยกเลิกการแก้ไข");
+                  setEditingUser(null);
+                  editUserValidation.reset();
                 }}>
                   ยกเลิก
                 </Button>
-                <Button onClick={() => {
-                  setIsEditUserOpen(false);  
-                  toast.success("แก้ไขข้อมูลผู้ใช้งานสำเร็จ");
-                }}>
+                <LoadingButton 
+                  loading={editUserValidation.isSubmitting}
+                  onClick={handleEditUser}
+                >
                   บันทึกการเปลี่ยนแปลง
-                </Button>
+                </LoadingButton>
               </div>
             </DialogContent>
           </Dialog>
@@ -757,7 +897,12 @@ const UserManagement = () => {
                             <Shield className="mr-2 h-4 w-4" />
                             รีเซ็ตรหัสผ่าน
                           </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => handleSuspendUser(user.id)}>
+                          <DropdownMenuItem onClick={() => 
+                            showStatusConfirmation(
+                              `คุณต้องการ${user.status === 'active' ? 'ระงับ' : 'เปิด'}ใช้งานผู้ใช้ "${user.name}" หรือไม่?`,
+                              () => handleSuspendUser(user)
+                            )
+                          }>
                             <Shield className="mr-2 h-4 w-4" />
                             {user.status === 'active' ? 'ระงับใช้งาน' : 'เปิดใช้งาน'}
                           </DropdownMenuItem>
@@ -771,7 +916,7 @@ const UserManagement = () => {
                           </DropdownMenuItem>
                           <DropdownMenuItem 
                             className="text-destructive"
-                            onClick={() => handleDeleteUser(user.id)}
+                            onClick={() => showDeleteConfirmation(user.name, () => handleDeleteUser(user))}
                           >
                             <Trash2 className="mr-2 h-4 w-4" />
                             ลบ
@@ -786,6 +931,10 @@ const UserManagement = () => {
           </div>
         </CardContent>
       </Card>
+
+      {/* Confirmation Dialogs */}
+      <DeleteConfirmationDialog />
+      <StatusConfirmationDialog />
     </div>
   );
 };
