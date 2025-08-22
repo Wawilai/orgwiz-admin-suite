@@ -6,6 +6,7 @@ import { ServerManagement } from '@/components/system/ServerManagement';
 import { BackupManagement } from '@/components/system/BackupManagement';
 import { SecurityPolicyManagement } from '@/components/system/SecurityPolicyManagement';
 import { CertificateManagement } from '@/components/system/CertificateManagement';
+import { DropdownManagement } from '@/components/system/DropdownManagement';
 
 
 export default function SystemSettings() {
@@ -37,6 +38,7 @@ export default function SystemSettings() {
           <TabsTrigger value="backup">สำรองข้อมูล</TabsTrigger>
           <TabsTrigger value="security">ความปลอดภัย</TabsTrigger>
           <TabsTrigger value="certificates">ใบรับรอง</TabsTrigger>
+          <TabsTrigger value="dropdowns">จัดการ Dropdown</TabsTrigger>
         </TabsList>
 
         <TabsContent value="servers" className="space-y-6">
@@ -53,6 +55,10 @@ export default function SystemSettings() {
 
         <TabsContent value="certificates" className="space-y-6">
           <CertificateManagement />
+        </TabsContent>
+
+        <TabsContent value="dropdowns" className="space-y-6">
+          <DropdownManagement />
         </TabsContent>
       </Tabs>
 

@@ -265,7 +265,18 @@ export function ServerManagement() {
                     </div>
                     <div className="space-y-2">
                       <Label>Location</Label>
-                      <Input placeholder="Data Center A" />
+                      <Select>
+                        <SelectTrigger>
+                          <SelectValue placeholder="เลือกสถานที่" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Data Center A">Data Center A</SelectItem>
+                          <SelectItem value="Data Center B">Data Center B</SelectItem>
+                          <SelectItem value="Data Center C">Data Center C</SelectItem>
+                          <SelectItem value="Cloud Region 1">Cloud Region 1</SelectItem>
+                          <SelectItem value="Cloud Region 2">Cloud Region 2</SelectItem>
+                        </SelectContent>
+                      </Select>
                     </div>
                   </div>
                   <div className="space-y-2">
@@ -482,7 +493,18 @@ export function ServerManagement() {
                 </div>
                 <div className="space-y-2">
                   <Label>สถานที่</Label>
-                  <Input defaultValue={selectedServer.location} />
+                  <Select defaultValue={selectedServer.location}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Data Center A">Data Center A</SelectItem>
+                      <SelectItem value="Data Center B">Data Center B</SelectItem>
+                      <SelectItem value="Data Center C">Data Center C</SelectItem>
+                      <SelectItem value="Cloud Region 1">Cloud Region 1</SelectItem>
+                      <SelectItem value="Cloud Region 2">Cloud Region 2</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div className="space-y-2">
                   <Label>เวอร์ชัน</Label>
