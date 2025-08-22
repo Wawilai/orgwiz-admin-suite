@@ -296,81 +296,11 @@ const MasterDataManagement = () => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-3xl font-bold text-foreground">จัดการข้อมูลหลัก</h1>
-          <p className="text-muted-foreground mt-1">
-            จัดการข้อมูลหลักที่ใช้ในระบบทั้งหมด
-          </p>
-        </div>
-        <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-          <DialogTrigger asChild>
-            <Button>
-              <Plus className="w-4 h-4 mr-2" />
-              เพิ่มข้อมูล
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="bg-card">
-            <DialogHeader>
-              <DialogTitle>เพิ่มข้อมูลใหม่</DialogTitle>
-              <DialogDescription>
-                เพิ่มข้อมูลใหม่สำหรับ {currentType?.name}
-              </DialogDescription>
-            </DialogHeader>
-            <div className="grid gap-4 py-4">
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="code" className="text-right">รหัส *</Label>
-                <Input
-                  id="code"
-                  value={formData.code}
-                  onChange={(e) => setFormData({...formData, code: e.target.value.toUpperCase()})}
-                  placeholder="รหัส"
-                  className="col-span-3"
-                />
-              </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="name" className="text-right">ชื่อ *</Label>
-                <Input
-                  id="name"
-                  value={formData.name}
-                  onChange={(e) => setFormData({...formData, name: e.target.value})}
-                  placeholder="ชื่อ"
-                  className="col-span-3"
-                />
-              </div>
-              <div className="grid grid-cols-4 items-start gap-4">
-                <Label htmlFor="description" className="text-right pt-2">คำอธิบาย</Label>
-                <Textarea
-                  id="description"
-                  value={formData.description}
-                  onChange={(e) => setFormData({...formData, description: e.target.value})}
-                  placeholder="คำอธิบาย (ไม่บังคับ)"
-                  className="col-span-3"
-                  rows={3}
-                />
-              </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="order" className="text-right">ลำดับ</Label>
-                <Input
-                  id="order"
-                  type="number"
-                  value={formData.order}
-                  onChange={(e) => setFormData({...formData, order: parseInt(e.target.value) || 0})}
-                  placeholder="ลำดับ"
-                  className="col-span-3"
-                />
-              </div>
-            </div>
-            <div className="flex justify-end space-x-2">
-              <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>
-                ยกเลิก
-              </Button>
-              <Button onClick={handleAdd}>
-                บันทึก
-              </Button>
-            </div>
-          </DialogContent>
-        </Dialog>
+      <div>
+        <h1 className="text-3xl font-bold text-foreground">จัดการข้อมูลหลัก</h1>
+        <p className="text-muted-foreground mt-1">
+          จัดการข้อมูลหลักที่ใช้ในระบบทั้งหมด
+        </p>
       </div>
 
       {/* Stats Cards */}
@@ -426,8 +356,80 @@ const MasterDataManagement = () => {
       {/* Accordion for different master data types */}
       <Card>
         <CardHeader>
-          <CardTitle>ข้อมูลหลัก</CardTitle>
-          <CardDescription>เลือกประเภทข้อมูลหลักที่ต้องการจัดการ</CardDescription>
+          <div className="flex justify-between items-center">
+            <div>
+              <CardTitle>ข้อมูลหลัก</CardTitle>
+              <CardDescription>เลือกประเภทข้อมูลหลักที่ต้องการจัดการ</CardDescription>
+            </div>
+            <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+              <DialogTrigger asChild>
+                <Button>
+                  <Plus className="w-4 h-4 mr-2" />
+                  เพิ่มข้อมูล
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="bg-card">
+                <DialogHeader>
+                  <DialogTitle>เพิ่มข้อมูลใหม่</DialogTitle>
+                  <DialogDescription>
+                    เพิ่มข้อมูลใหม่สำหรับ {currentType?.name}
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="grid gap-4 py-4">
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="code" className="text-right">รหัส *</Label>
+                    <Input
+                      id="code"
+                      value={formData.code}
+                      onChange={(e) => setFormData({...formData, code: e.target.value.toUpperCase()})}
+                      placeholder="รหัส"
+                      className="col-span-3"
+                    />
+                  </div>
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="name" className="text-right">ชื่อ *</Label>
+                    <Input
+                      id="name"
+                      value={formData.name}
+                      onChange={(e) => setFormData({...formData, name: e.target.value})}
+                      placeholder="ชื่อ"
+                      className="col-span-3"
+                    />
+                  </div>
+                  <div className="grid grid-cols-4 items-start gap-4">
+                    <Label htmlFor="description" className="text-right pt-2">คำอธิบาย</Label>
+                    <Textarea
+                      id="description"
+                      value={formData.description}
+                      onChange={(e) => setFormData({...formData, description: e.target.value})}
+                      placeholder="คำอธิบาย (ไม่บังคับ)"
+                      className="col-span-3"
+                      rows={3}
+                    />
+                  </div>
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="order" className="text-right">ลำดับ</Label>
+                    <Input
+                      id="order"
+                      type="number"
+                      value={formData.order}
+                      onChange={(e) => setFormData({...formData, order: parseInt(e.target.value) || 0})}
+                      placeholder="ลำดับ"
+                      className="col-span-3"
+                    />
+                  </div>
+                </div>
+                <div className="flex justify-end space-x-2">
+                  <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>
+                    ยกเลิก
+                  </Button>
+                  <Button onClick={handleAdd}>
+                    บันทึก
+                  </Button>
+                </div>
+              </DialogContent>
+            </Dialog>
+          </div>
         </CardHeader>
         <CardContent>
           <Accordion type="single" value={accordionValue} onValueChange={setAccordionValue} collapsible className="space-y-2">
