@@ -130,7 +130,7 @@ export function AdminSidebar() {
 
   const getGroupHeaderClass = (groupTitle: string, hasActiveItem: boolean) => {
     return cn(
-      "flex items-center justify-between w-full px-2 md:px-3 py-1.5 md:py-2 text-xs md:text-sm font-medium transition-colors rounded-md",
+      "flex items-center justify-between w-full px-2 md:px-3 py-1.5 md:py-2 text-sm md:text-base font-medium transition-colors rounded-md",
       "hover:bg-sidebar-accent/30",
       hasActiveItem 
         ? "text-sidebar-primary bg-sidebar-accent/20" 
@@ -178,7 +178,7 @@ export function AdminSidebar() {
                       "h-5 w-5",
                       collapsed ? "mx-auto" : "mr-3"
                     )} />
-                    {!collapsed && <span className="text-sm">{group.title}</span>}
+                    {!collapsed && <span className="text-base">{group.title}</span>}
                   </NavLink>
                 </SidebarMenuButton>
               </div>
@@ -199,7 +199,7 @@ export function AdminSidebar() {
                 >
                   <div className="flex items-center">
                     <group.icon className="h-4 w-4 mr-2" />
-                    <SidebarGroupLabel className="text-xs font-semibold uppercase tracking-wide">
+                    <SidebarGroupLabel className="text-sm font-semibold uppercase tracking-wide">
                       {group.title}
                     </SidebarGroupLabel>
                   </div>
@@ -230,7 +230,7 @@ export function AdminSidebar() {
                             "h-4 w-4",
                             collapsed ? "mx-auto" : "mr-3"
                           )} />
-                          {!collapsed && <span className="text-sm">{item.title}</span>}
+                          {!collapsed && <span className="text-base">{item.title}</span>}
                         </NavLink>
                       </SidebarMenuButton>
                     </SidebarMenuItem>
