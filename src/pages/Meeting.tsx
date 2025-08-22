@@ -49,7 +49,8 @@ import {
   EyeOff,
   Maximize,
   Minimize,
-  Volume2
+  Volume2,
+  XCircle
 } from 'lucide-react';
 
 interface Meeting {
@@ -249,6 +250,8 @@ export default function Meeting() {
   const [isPollDialogOpen, setIsPollDialogOpen] = useState(false);
   const [isInviteDialogOpen, setIsInviteDialogOpen] = useState(false);
   const [isChatOpen, setIsChatOpen] = useState(false);
+  const [isEditMeetingDialogOpen, setIsEditMeetingDialogOpen] = useState(false);
+  const [editingMeeting, setEditingMeeting] = useState<Meeting | null>(null);
   const [isRecording, setIsRecording] = useState(false);
   const [isScreenSharing, setIsScreenSharing] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -561,6 +564,136 @@ export default function Meeting() {
     });
   };
 
+  const handleEditMeeting = (meeting: Meeting) => {
+    setEditingMeeting(meeting);
+    setFormData({
+      title: meeting.title,
+      description: meeting.description,
+      scheduledDate: meeting.scheduledDate,
+      scheduledTime: meeting.scheduledTime,
+      duration: meeting.duration,
+      password: meeting.password,
+      waitingRoom: meeting.waitingRoom,
+      maxParticipants: meeting.maxParticipants,
+      invitedEmails: meeting.invitedEmails
+    });
+    setIsEditMeetingDialogOpen(true);
+  };
+
+  const handleSaveEditMeeting = () => {
+    if (!editingMeeting) return;
+    
+    const updatedMeeting = {
+      ...editingMeeting,
+      ...formData
+    };
+    
+    setMeetings(meetings.map(m => m.id === editingMeeting.id ? updatedMeeting : m));
+    setIsEditMeetingDialogOpen(false);
+    setEditingMeeting(null);
+    resetForm();
+    toast({
+      title: "แก้ไขสำเร็จ",
+      description: "แก้ไขการประชุมเรียบร้อยแล้ว",
+    });
+  };
+
+  const handleDeleteMeeting = (meetingId: string) => {
+    setMeetings(meetings.filter(m => m.id !== meetingId));
+    toast({
+      title: "ลบสำเร็จ",
+      description: "ลบการประชุมเรียบร้อยแล้ว",
+    });
+  };
+
+  const handleDuplicateMeeting = (meeting: Meeting) => {
+    const duplicatedMeeting: Meeting = {
+      ...meeting,
+      id: Date.now().toString(),
+      title: `${meeting.title} (สำเนา)`,
+      status: 'Scheduled',
+      participants: [],
+      chatMessages: [],
+      polls: [],
+      meetingRoom: `room-${Date.now()}`,
+      meetingLink: `https://meet.company.com/room-${Date.now()}`,
+      createdAt: new Date().toISOString()
+    };
+    
+    setMeetings([...meetings, duplicatedMeeting]);
+    toast({
+      title: "ทำสำเนาสำเร็จ",
+      description: "ทำสำเนาการประชุมเรียบร้อยแล้ว",
+    });
+  };
+
+  const handleDownloadRecording = (meeting: Meeting) => {
+    if (!meeting.recordingUrl) return;
+    
+    // Simulate download
+    const element = document.createElement('a');
+    element.href = meeting.recordingUrl;
+    element.download = `${meeting.title}_recording.mp4`;
+    document.body.appendChild(element);
+    element.click();
+    document.body.removeChild(element);
+    
+    toast({
+      title: "ดาวน์โหลดเริ่มต้น",
+      description: "กำลังดาวน์โหลดไฟล์บันทึกการประชุม",
+    });
+  };
+
+  const handleExportAttendeeReport = (meeting: Meeting) => {
+    const reportData = {
+      meetingTitle: meeting.title,
+      date: meeting.scheduledDate,
+      time: meeting.scheduledTime,
+      duration: meeting.duration,
+      participants: meeting.participants.map(p => ({
+        name: p.name,
+        email: p.email,
+        joinTime: p.joinTime,
+        leaveTime: p.leaveTime,
+        status: p.status
+      }))
+    };
+
+    const dataStr = JSON.stringify(reportData, null, 2);
+    const dataBlob = new Blob([dataStr], { type: 'application/json' });
+    const url = URL.createObjectURL(dataBlob);
+    const element = document.createElement('a');
+    element.href = url;
+    element.download = `${meeting.title}_attendee_report.json`;
+    document.body.appendChild(element);
+    element.click();
+    document.body.removeChild(element);
+    URL.revokeObjectURL(url);
+
+    toast({
+      title: "ส่งออกรายงานสำเร็จ",
+      description: "ดาวน์โหลดรายงานผู้เข้าร่วมแล้ว",
+    });
+  };
+
+  const handleSendMeetingReminder = (meeting: Meeting) => {
+    // Simulate sending reminder
+    toast({
+      title: "ส่งการแจ้งเตือนแล้ว",
+      description: `ส่งการแจ้งเตือนไปยังผู้เข้าร่วม ${meeting.participants.length} คน`,
+    });
+  };
+
+  const handleCancelMeeting = (meetingId: string) => {
+    setMeetings(meetings.map(meeting =>
+      meeting.id === meetingId ? { ...meeting, status: 'Cancelled' as const } : meeting
+    ));
+    toast({
+      title: "ยกเลิกการประชุมแล้ว",
+      description: "ยกเลิกการประชุมและแจ้งผู้เข้าร่วมแล้ว",
+    });
+  };
+
   const handleToggleMic = () => {
     if (!activeMeeting) return;
     
@@ -869,17 +1002,38 @@ export default function Meeting() {
                                 <Copy className="mr-2 h-4 w-4" />
                                 คัดลอกลิงก์
                               </DropdownMenuItem>
-                              <DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => handleEditMeeting(meeting)}>
                                 <Edit2 className="mr-2 h-4 w-4" />
                                 แก้ไข
                               </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => handleDuplicateMeeting(meeting)}>
+                                <Copy className="mr-2 h-4 w-4" />
+                                ทำสำเนา
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => handleSendMeetingReminder(meeting)}>
+                                <Send className="mr-2 h-4 w-4" />
+                                ส่งการแจ้งเตือน
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => handleExportAttendeeReport(meeting)}>
+                                <FileText className="mr-2 h-4 w-4" />
+                                ส่งออกรายงานผู้เข้าร่วม
+                              </DropdownMenuItem>
                               {meeting.recordingUrl && (
-                                <DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => handleDownloadRecording(meeting)}>
                                   <Download className="mr-2 h-4 w-4" />
                                   ดาวน์โหลดบันทึก
                                 </DropdownMenuItem>
                               )}
-                              <DropdownMenuItem className="text-red-600">
+                              {meeting.status === 'Scheduled' && (
+                                <DropdownMenuItem onClick={() => handleCancelMeeting(meeting.id)}>
+                                  <XCircle className="mr-2 h-4 w-4" />
+                                  ยกเลิกการประชุม
+                                </DropdownMenuItem>
+                              )}
+                              <DropdownMenuItem 
+                                onClick={() => handleDeleteMeeting(meeting.id)}
+                                className="text-red-600"
+                              >
                                 <Trash2 className="mr-2 h-4 w-4" />
                                 ลบ
                               </DropdownMenuItem>
@@ -1449,6 +1603,111 @@ export default function Meeting() {
           )}
         </TabsContent>
       </Tabs>
+
+      {/* Edit Meeting Dialog */}
+      <Dialog open={isEditMeetingDialogOpen} onOpenChange={setIsEditMeetingDialogOpen}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>แก้ไขการประชุม</DialogTitle>
+            <DialogDescription>
+              แก้ไขรายละเอียดการประชุม
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="edit-title">หัวข้อการประชุม *</Label>
+                <Input
+                  id="edit-title"
+                  value={formData.title}
+                  onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                  placeholder="กรอกหัวข้อการประชุม"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-duration">ระยะเวลา (นาที)</Label>
+                <Input
+                  id="edit-duration"
+                  type="number"
+                  value={formData.duration}
+                  onChange={(e) => setFormData({ ...formData, duration: parseInt(e.target.value) })}
+                  min="15"
+                  max="480"
+                />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-description">คำอธิบาย</Label>
+              <Textarea
+                id="edit-description"
+                value={formData.description}
+                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                placeholder="คำอธิบายการประชุม"
+                rows={3}
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="edit-date">วันที่</Label>
+                <Input
+                  id="edit-date"
+                  type="date"
+                  value={formData.scheduledDate}
+                  onChange={(e) => setFormData({ ...formData, scheduledDate: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-time">เวลา</Label>
+                <Input
+                  id="edit-time"
+                  type="time"
+                  value={formData.scheduledTime}
+                  onChange={(e) => setFormData({ ...formData, scheduledTime: e.target.value })}
+                />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="edit-password">รหัสผ่าน (ไม่บังคับ)</Label>
+                <Input
+                  id="edit-password"
+                  type="password"
+                  value={formData.password}
+                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                  placeholder="กรอกรหัสผ่าน"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-maxParticipants">จำนวนผู้เข้าร่วมสูงสุด</Label>
+                <Input
+                  id="edit-maxParticipants"
+                  type="number"
+                  value={formData.maxParticipants}
+                  onChange={(e) => setFormData({ ...formData, maxParticipants: parseInt(e.target.value) })}
+                  min="2"
+                  max="1000"
+                />
+              </div>
+            </div>
+            <div className="flex items-center space-x-2">
+              <Switch
+                id="edit-waitingRoom"
+                checked={formData.waitingRoom}
+                onCheckedChange={(checked) => setFormData({ ...formData, waitingRoom: checked })}
+              />
+              <Label htmlFor="edit-waitingRoom">เปิดห้องรอ (Waiting Room)</Label>
+            </div>
+          </div>
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" onClick={() => setIsEditMeetingDialogOpen(false)}>
+              ยกเลิก
+            </Button>
+            <Button onClick={handleSaveEditMeeting}>
+              บันทึกการแก้ไข
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
