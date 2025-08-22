@@ -215,11 +215,15 @@ const MasterDataManagement = () => {
   const [selectedItem, setSelectedItem] = useState<MasterDataItem | null>(null);
   const [accordionValue, setAccordionValue] = useState("organization-group");
 
+  // Get current type and data first
+  const currentType = masterDataTypes.find(type => type.key === selectedType);
+  const [currentData, setCurrentData] = useState<MasterDataItem[]>(currentType?.data || []);
+
   // Confirmation dialogs
   const { showDeleteConfirmation, DeleteConfirmationDialog } = useDeleteConfirmation();
   const { showStatusConfirmation, StatusConfirmationDialog } = useStatusChangeConfirmation();
 
-  // Form validation for adding items
+  // Form validation for adding items - now currentData is available
   const addItemValidation = useFormValidation({
     code: "",
     name: "",
@@ -286,9 +290,6 @@ const MasterDataManagement = () => {
     },
     description: { maxLength: 255 },
   });
-
-  const currentType = masterDataTypes.find(type => type.key === selectedType);
-  const [currentData, setCurrentData] = useState<MasterDataItem[]>(currentType?.data || []);
 
   const filteredData = currentData.filter(item =>
     item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -477,38 +478,29 @@ const MasterDataManagement = () => {
                       placeholder="รหัส (เช่น ORG_001)"
                     />
                   </FormFieldWrapper>
-                  <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="name" className="text-right">ชื่อ *</Label>
+                  <FormFieldWrapper label="ชื่อ" required error={addItemValidation.errors.name}>
                     <Input
-                      id="name"
-                      value={formData.name}
-                      onChange={(e) => setFormData({...formData, name: e.target.value})}
                       placeholder="ชื่อ"
-                      className="col-span-3"
+                      value={addItemValidation.values.name}
+                      onChange={(e) => addItemValidation.setValue('name', e.target.value)}
                     />
-                  </div>
-                  <div className="grid grid-cols-4 items-start gap-4">
-                    <Label htmlFor="description" className="text-right pt-2">คำอธิบาย</Label>
+                  </FormFieldWrapper>
+                  <FormFieldWrapper label="คำอธิบาย" error={addItemValidation.errors.description}>
                     <Textarea
-                      id="description"
-                      value={formData.description}
-                      onChange={(e) => setFormData({...formData, description: e.target.value})}
                       placeholder="คำอธิบาย (ไม่บังคับ)"
-                      className="col-span-3"
+                      value={addItemValidation.values.description}
+                      onChange={(e) => addItemValidation.setValue('description', e.target.value)}
                       rows={3}
                     />
-                  </div>
-                  <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="order" className="text-right">ลำดับ</Label>
+                  </FormFieldWrapper>
+                  <FormFieldWrapper label="ลำดับ" error={addItemValidation.errors.order}>
                     <Input
-                      id="order"
                       type="number"
-                      value={formData.order}
-                      onChange={(e) => setFormData({...formData, order: parseInt(e.target.value) || 0})}
                       placeholder="ลำดับ"
-                      className="col-span-3"
+                      value={addItemValidation.values.order}
+                      onChange={(e) => addItemValidation.setValue('order', parseInt(e.target.value) || 0)}
                     />
-                  </div>
+                  </FormFieldWrapper>
                 </div>
                 <div className="flex justify-end space-x-2">
                   <Button variant="outline" onClick={() => {
@@ -696,55 +688,42 @@ const MasterDataManagement = () => {
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="edit-code" className="text-right">รหัส *</Label>
+            <FormFieldWrapper label="รหัส" required error={editItemValidation.errors.code}>
               <Input
-                id="edit-code"
-                value={formData.code}
-                onChange={(e) => setFormData({...formData, code: e.target.value.toUpperCase()})}
                 placeholder="รหัส"
-                className="col-span-3"
+                value={editItemValidation.values.code}
+                onChange={(e) => editItemValidation.setValue('code', e.target.value.toUpperCase())}
               />
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="edit-name" className="text-right">ชื่อ *</Label>
+            </FormFieldWrapper>
+            <FormFieldWrapper label="ชื่อ" required error={editItemValidation.errors.name}>
               <Input
-                id="edit-name"
-                value={formData.name}
-                onChange={(e) => setFormData({...formData, name: e.target.value})}
                 placeholder="ชื่อ"
-                className="col-span-3"
+                value={editItemValidation.values.name}
+                onChange={(e) => editItemValidation.setValue('name', e.target.value)}
               />
-            </div>
-            <div className="grid grid-cols-4 items-start gap-4">
-              <Label htmlFor="edit-description" className="text-right pt-2">คำอธิบาย</Label>
+            </FormFieldWrapper>
+            <FormFieldWrapper label="คำอธิบาย" error={editItemValidation.errors.description}>
               <Textarea
-                id="edit-description"
-                value={formData.description}
-                onChange={(e) => setFormData({...formData, description: e.target.value})}
                 placeholder="คำอธิบาย (ไม่บังคับ)"
-                className="col-span-3"
+                value={editItemValidation.values.description}
+                onChange={(e) => editItemValidation.setValue('description', e.target.value)}
                 rows={3}
               />
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="edit-order" className="text-right">ลำดับ</Label>
+            </FormFieldWrapper>
+            <FormFieldWrapper label="ลำดับ" error={editItemValidation.errors.order}>
               <Input
-                id="edit-order"
                 type="number"
-                value={formData.order}
-                onChange={(e) => setFormData({...formData, order: parseInt(e.target.value) || 0})}
                 placeholder="ลำดับ"
-                className="col-span-3"
+                value={editItemValidation.values.order}
+                onChange={(e) => editItemValidation.setValue('order', parseInt(e.target.value) || 0)}
               />
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="edit-status" className="text-right">สถานะ</Label>
+            </FormFieldWrapper>
+            <FormFieldWrapper label="สถานะ">
               <Select 
-                value={formData.isActive ? "active" : "inactive"} 
-                onValueChange={(value) => setFormData({...formData, isActive: value === "active"})}
+                value={editItemValidation.values.isActive ? "active" : "inactive"} 
+                onValueChange={(value) => editItemValidation.setValue('isActive', value === "active")}
               >
-                <SelectTrigger className="col-span-3">
+                <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent className="bg-popover">
@@ -752,18 +731,25 @@ const MasterDataManagement = () => {
                   <SelectItem value="inactive">ไม่ใช้งาน</SelectItem>
                 </SelectContent>
               </Select>
-            </div>
+            </FormFieldWrapper>
           </div>
           <div className="flex justify-end space-x-2">
-            <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
+            <Button variant="outline" onClick={() => {
+              setIsEditDialogOpen(false);
+              setSelectedItem(null);
+              editItemValidation.reset();
+            }}>
               ยกเลิก
             </Button>
-            <Button onClick={handleEdit}>
+            <LoadingButton loading={editItemValidation.isSubmitting} onClick={handleEdit}>
               บันทึก
-            </Button>
+            </LoadingButton>
           </div>
         </DialogContent>
       </Dialog>
+      {/* Confirmation Dialogs */}
+      <DeleteConfirmationDialog />
+      <StatusConfirmationDialog />
     </div>
   );
 };
