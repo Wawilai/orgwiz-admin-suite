@@ -12,7 +12,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Separator } from '@/components/ui/separator';
 import { toast } from '@/hooks/use-toast';
-import { useLanguage } from '@/contexts/LanguageContext';
 import { 
   User, 
   Mail, 
@@ -175,7 +174,6 @@ const mockNotificationSettings: NotificationSettings = {
 };
 
 export default function AccountSettings() {
-  const { t } = useLanguage();
   const [profile, setProfile] = useState<UserProfile>(mockProfile);
   const [securitySettings, setSecuritySettings] = useState<SecuritySettings>(mockSecuritySettings);
   const [notificationSettings, setNotificationSettings] = useState<NotificationSettings>(mockNotificationSettings);
@@ -275,16 +273,16 @@ export default function AccountSettings() {
       <Tabs value={currentTab} onValueChange={setCurrentTab} className="space-y-6">
         <div className="flex justify-between items-center">
           <div>
-            <h1 className="text-3xl font-bold">{t('account.title')}</h1>
+            <h1 className="text-3xl font-bold">ตั้งค่าบัญชี</h1>
             <p className="text-muted-foreground">จัดการข้อมูลส่วนตัว ความปลอดภัย และการแจ้งเตือน</p>
           </div>
         </div>
 
         <TabsList>
-          <TabsTrigger value="profile">{t('account.profile')}</TabsTrigger>
-          <TabsTrigger value="security">{t('account.security')}</TabsTrigger>
-          <TabsTrigger value="notifications">{t('account.notifications')}</TabsTrigger>
-          <TabsTrigger value="preferences">{t('account.preferences')}</TabsTrigger>
+          <TabsTrigger value="profile">โปรไฟล์</TabsTrigger>
+          <TabsTrigger value="security">ความปลอดภัย</TabsTrigger>
+          <TabsTrigger value="notifications">การแจ้งเตือน</TabsTrigger>
+          <TabsTrigger value="preferences">การตั้งค่า</TabsTrigger>
         </TabsList>
 
         <TabsContent value="profile" className="space-y-6">
@@ -292,7 +290,7 @@ export default function AccountSettings() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <User className="h-5 w-5" />
-                {t('profile.personalInfo')}
+                ข้อมูลส่วนตัว
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
@@ -307,10 +305,10 @@ export default function AccountSettings() {
                 <div className="space-y-2">
                   <Button variant="outline">
                     <Camera className="h-4 w-4 mr-2" />
-                    {t('profile.changeAvatar')}
+                    เปลี่ยนรูปโปรไฟล์
                   </Button>
                   <p className="text-sm text-muted-foreground">
-                    {t('profile.avatarFormat')}
+                    ไฟล์ JPG, PNG หรือ GIF ขนาดไม่เกิน 2MB
                   </p>
                 </div>
               </div>
@@ -320,7 +318,7 @@ export default function AccountSettings() {
               {/* Basic Information */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">
-                  <Label htmlFor="firstName">{t('profile.firstName')}</Label>
+                  <Label htmlFor="firstName">ชื่อ</Label>
                   <Input
                     id="firstName"
                     value={profile.firstName}
@@ -328,7 +326,7 @@ export default function AccountSettings() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="lastName">{t('profile.lastName')}</Label>
+                  <Label htmlFor="lastName">นามสกุล</Label>
                   <Input
                     id="lastName"
                     value={profile.lastName}
@@ -336,7 +334,7 @@ export default function AccountSettings() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="email">{t('profile.email')}</Label>
+                  <Label htmlFor="email">อีเมล</Label>
                   <div className="flex gap-2">
                     <Input
                       id="email"
@@ -345,12 +343,12 @@ export default function AccountSettings() {
                       onChange={(e) => setProfile({ ...profile, email: e.target.value })}
                     />
                     <Button variant="outline" size="sm">
-                      {t('profile.verify')}
+                      ยืนยัน
                     </Button>
                   </div>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="phone">{t('profile.phone')}</Label>
+                  <Label htmlFor="phone">เบอร์โทรศัพท์</Label>
                   <Input
                     id="phone"
                     value={profile.phone}
@@ -358,7 +356,7 @@ export default function AccountSettings() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="position">{t('profile.position')}</Label>
+                  <Label htmlFor="position">ตำแหน่ง</Label>
                   <Input
                     id="position"
                     value={profile.position}
@@ -366,7 +364,7 @@ export default function AccountSettings() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="department">{t('profile.department')}</Label>
+                  <Label htmlFor="department">แผนก</Label>
                   <Input
                     id="department"
                     value={profile.department}
@@ -376,7 +374,7 @@ export default function AccountSettings() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="organization">{t('profile.organization')}</Label>
+                <Label htmlFor="organization">องค์กร</Label>
                 <Input
                   id="organization"
                   value={profile.organization}
@@ -385,7 +383,7 @@ export default function AccountSettings() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="address">{t('profile.address')}</Label>
+                <Label htmlFor="address">ที่อยู่</Label>
                 <Textarea
                   id="address"
                   value={profile.address}
@@ -398,14 +396,14 @@ export default function AccountSettings() {
               <Separator />
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">
-                  <Label>{t('profile.joinDate')}</Label>
+                  <Label>วันที่เข้าร่วม</Label>
                   <div className="flex items-center gap-2 text-sm text-muted-foreground">
                     <Calendar className="h-4 w-4" />
                     {new Date(profile.joinDate).toLocaleDateString('th-TH')}
                   </div>
                 </div>
                 <div className="space-y-2">
-                  <Label>{t('profile.lastLogin')}</Label>
+                  <Label>เข้าสู่ระบบล่าสุด</Label>
                   <div className="flex items-center gap-2 text-sm text-muted-foreground">
                     <Clock className="h-4 w-4" />
                     {new Date(profile.lastLogin).toLocaleString('th-TH')}
@@ -414,7 +412,7 @@ export default function AccountSettings() {
               </div>
 
               <div className="flex justify-end">
-                <Button onClick={handleSaveProfile}>{t('profile.saveChanges')}</Button>
+                <Button onClick={handleSaveProfile}>บันทึกการเปลี่ยนแปลง</Button>
               </div>
             </CardContent>
           </Card>
@@ -426,28 +424,28 @@ export default function AccountSettings() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Key className="h-5 w-5" />
-                {t('security.passwordAuth')}
+                รหัสผ่านและการยืนยันตัวตน
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="flex justify-between items-center">
                 <div>
-                  <h4 className="font-medium">{t('security.password')}</h4>
+                  <h4 className="font-medium">รหัสผ่าน</h4>
                   <p className="text-sm text-muted-foreground">
-                    {t('security.passwordLastChanged')}: {new Date(securitySettings.passwordLastChanged).toLocaleDateString('th-TH')}
+                    เปลี่ยนแปลงล่าสุด: {new Date(securitySettings.passwordLastChanged).toLocaleDateString('th-TH')}
                   </p>
                 </div>
                 <Dialog open={isChangePasswordDialogOpen} onOpenChange={setIsChangePasswordDialogOpen}>
                   <DialogTrigger asChild>
-                    <Button variant="outline">{t('security.changePassword')}</Button>
+                    <Button variant="outline">เปลี่ยนรหัสผ่าน</Button>
                   </DialogTrigger>
                   <DialogContent>
                     <DialogHeader>
-                      <DialogTitle>{t('security.changePassword')}</DialogTitle>
+                      <DialogTitle>เปลี่ยนรหัสผ่าน</DialogTitle>
                     </DialogHeader>
                     <div className="space-y-4">
                       <div className="space-y-2">
-                        <Label htmlFor="currentPassword">{t('security.currentPassword')}</Label>
+                        <Label htmlFor="currentPassword">รหัสผ่านปัจจุบัน</Label>
                         <div className="relative">
                           <Input
                             id="currentPassword"
@@ -467,7 +465,7 @@ export default function AccountSettings() {
                         </div>
                       </div>
                       <div className="space-y-2">
-                        <Label htmlFor="newPassword">{t('security.newPassword')}</Label>
+                        <Label htmlFor="newPassword">รหัสผ่านใหม่</Label>
                         <div className="relative">
                           <Input
                             id="newPassword"
@@ -486,11 +484,11 @@ export default function AccountSettings() {
                           </Button>
                         </div>
                         <p className="text-xs text-muted-foreground">
-                          {t('security.passwordRequirements')}
+                          รหัสผ่านต้องมีอย่างน้อย 8 ตัวอักษร และประกอบด้วยตัวอักษรใหญ่ เล็ก ตัวเลข และสัญลักษณ์
                         </p>
                       </div>
                       <div className="space-y-2">
-                        <Label htmlFor="confirmPassword">{t('security.confirmPassword')}</Label>
+                        <Label htmlFor="confirmPassword">ยืนยันรหัสผ่านใหม่</Label>
                         <Input
                           id="confirmPassword"
                           type="password"
@@ -501,10 +499,10 @@ export default function AccountSettings() {
                     </div>
                     <div className="flex justify-end gap-2">
                       <Button variant="outline" onClick={() => setIsChangePasswordDialogOpen(false)}>
-                        {t('common.cancel')}
+                        ยกเลิก
                       </Button>
                       <Button onClick={handleChangePassword}>
-                        {t('security.changePassword')}
+                        เปลี่ยนรหัสผ่าน
                       </Button>
                     </div>
                   </DialogContent>
@@ -515,9 +513,9 @@ export default function AccountSettings() {
 
               <div className="flex justify-between items-center">
                 <div>
-                  <h4 className="font-medium">{t('security.mfa')}</h4>
+                  <h4 className="font-medium">การรักษาความปลอดภัยสองขั้นตอน (MFA)</h4>
                   <p className="text-sm text-muted-foreground">
-                    {t('security.mfaDescription')}
+                    เพิ่มความปลอดภัยให้กับบัญชีด้วยการยืนยันตัวตนสองขั้นตอน
                   </p>
                 </div>
                 <div className="flex items-center gap-2">
