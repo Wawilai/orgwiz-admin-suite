@@ -121,7 +121,7 @@ export function AdminSidebar() {
   const getNavClass = (path: string) => {
     return cn(
       "flex items-center transition-colors rounded-md",
-      collapsed ? "justify-center py-3 px-2" : "px-3 py-2",
+      collapsed ? "justify-center py-2.5 px-1" : "px-3 py-1.5",
       isActive(path)
         ? "bg-sidebar-accent text-sidebar-primary font-medium"
         : "hover:bg-sidebar-accent/50 text-sidebar-foreground"
@@ -130,7 +130,7 @@ export function AdminSidebar() {
 
   const getGroupHeaderClass = (groupTitle: string, hasActiveItem: boolean) => {
     return cn(
-      "flex items-center justify-between w-full px-3 py-2 text-sm font-medium transition-colors rounded-md",
+      "flex items-center justify-between w-full px-3 py-1.5 text-sm font-medium transition-colors rounded-md",
       "hover:bg-sidebar-accent/30",
       hasActiveItem 
         ? "text-sidebar-primary bg-sidebar-accent/20" 
@@ -140,7 +140,7 @@ export function AdminSidebar() {
 
   return (
     <Sidebar
-      className={collapsed ? "w-16" : "w-60"}
+      className={collapsed ? "w-20" : "w-64"}
       collapsible="icon"
     >
       <div className="flex items-center justify-between p-4 border-b border-sidebar-border">
@@ -153,12 +153,12 @@ export function AdminSidebar() {
         <SidebarTrigger className="hover:bg-sidebar-accent/50" />
       </div>
 
-      <SidebarContent className="px-2 py-4">
+      <SidebarContent className={collapsed ? "px-1 py-2" : "px-3 py-2"}>
         {menuItems.map((group) => {
           // Handle standalone items (like Dashboard)
           if (group.standalone) {
             return (
-              <div key={group.title} className="mb-2">
+              <div key={group.title} className="mb-1">
                 <SidebarMenuButton asChild>
                   <NavLink
                     to={group.url!}
@@ -181,7 +181,7 @@ export function AdminSidebar() {
           const hasActiveItem = group.items?.some(item => isActive(item.url));
 
           return (
-            <SidebarGroup key={group.title} className="mb-4">
+            <SidebarGroup key={group.title} className={collapsed ? "mb-1" : "mb-2"}>
               {/* Group Header */}
               {!collapsed && (
                 <button
@@ -205,10 +205,10 @@ export function AdminSidebar() {
               {/* Group Items */}
               <SidebarGroupContent className={cn(
                 "transition-all duration-300 ease-in-out overflow-hidden",
-                !collapsed && isExpanded ? "max-h-96 opacity-100 mt-1" : "max-h-0 opacity-0",
-                collapsed ? "max-h-96 opacity-100 mt-1" : ""
+                !collapsed && isExpanded ? "max-h-96 opacity-100 mt-0.5" : "max-h-0 opacity-0",
+                collapsed ? "max-h-96 opacity-100" : ""
               )}>
-                <SidebarMenu className="space-y-1">
+                <SidebarMenu className={collapsed ? "space-y-0.5" : "space-y-0.5"}>
                   {group.items?.map((item) => (
                     <SidebarMenuItem key={item.title}>
                       <SidebarMenuButton asChild>
@@ -231,7 +231,7 @@ export function AdminSidebar() {
 
               {/* Show icons only when collapsed */}
               {collapsed && group.items && (
-                <div className="space-y-1">
+                <div className="space-y-0.5">
                   {group.items.map((item) => (
                     <SidebarMenuButton key={item.title} asChild>
                       <NavLink
