@@ -12,6 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Separator } from '@/components/ui/separator';
 import { toast } from '@/hooks/use-toast';
+import { useMasterData } from '@/contexts/MasterDataContext';
 import { 
   User, 
   Mail, 
@@ -181,7 +182,8 @@ const mockNotificationSettings: NotificationSettings = {
   marketingEmails: false
 };
 
-export default function AccountSettings() {
+const AccountSettings = () => {
+  const { getActiveItems } = useMasterData();
   const [profile, setProfile] = useState<UserProfile>(mockProfile);
   const [securitySettings, setSecuritySettings] = useState<SecuritySettings>(mockSecuritySettings);
   const [notificationSettings, setNotificationSettings] = useState<NotificationSettings>(mockNotificationSettings);
@@ -195,6 +197,12 @@ export default function AccountSettings() {
     newPassword: '',
     confirmPassword: ''
   });
+  
+  // Get master data
+  const organizationTypes = getActiveItems('organizationTypes');
+  const departments = getActiveItems('departments');
+  const positions = getActiveItems('positions');
+  const userRoles = getActiveItems('userRoles');
 
   const handleSaveProfile = () => {
     toast({
@@ -441,19 +449,39 @@ export default function AccountSettings() {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="position">ตำแหน่ง</Label>
-                  <Input
-                    id="position"
+                  <Select
                     value={profile.position}
-                    onChange={(e) => setProfile({ ...profile, position: e.target.value })}
-                  />
+                    onValueChange={(value) => setProfile({ ...profile, position: value })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="เลือกตำแหน่ง" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-popover">
+                      {positions.map((pos) => (
+                        <SelectItem key={pos.id} value={pos.code}>
+                          {pos.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="department">แผนก (ไทย)</Label>
-                  <Input
-                    id="department"
+                  <Select
                     value={profile.department}
-                    onChange={(e) => setProfile({ ...profile, department: e.target.value })}
-                  />
+                    onValueChange={(value) => setProfile({ ...profile, department: value })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="เลือกแผนก" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-popover">
+                      {departments.map((dept) => (
+                        <SelectItem key={dept.id} value={dept.code}>
+                          {dept.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="departmentEn">แผนก (อังกฤษ)</Label>
@@ -473,7 +501,7 @@ export default function AccountSettings() {
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent className="bg-popover">
                       <SelectItem value="user">ผู้ใช้งานทั่วไป</SelectItem>
                       <SelectItem value="admin">ผู้ดูแลระบบ</SelectItem>
                       <SelectItem value="manager">ผู้จัดการ</SelectItem>
@@ -485,11 +513,21 @@ export default function AccountSettings() {
 
               <div className="space-y-2">
                 <Label htmlFor="organization">องค์กร</Label>
-                <Input
-                  id="organization"
+                <Select
                   value={profile.organization}
-                  onChange={(e) => setProfile({ ...profile, organization: e.target.value })}
-                />
+                  onValueChange={(value) => setProfile({ ...profile, organization: value })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="เลือกองค์กร" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-popover">
+                    {organizationTypes.map((org) => (
+                      <SelectItem key={org.id} value={org.code}>
+                        {org.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
 
               <div className="space-y-2">
@@ -938,4 +976,6 @@ export default function AccountSettings() {
       </Tabs>
     </div>
   );
-}
+};
+
+export default AccountSettings;
