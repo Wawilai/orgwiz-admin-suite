@@ -89,8 +89,8 @@ const menuItems = [
     title: "ตั้งค่าระบบ",
     icon: Settings,
     items: [
-      { title: "ข้อมูลหลัก", url: "/master-data", icon: Database },
-      { title: "ตั้งค่าระบบ", url: "/system-settings", icon: Settings },
+      { title: "จัดการข้อมูลหลัก", url: "/master-data", icon: Database },
+      { title: "จัดการเซิร์ฟเวอร์", url: "/system-settings", icon: Settings },
       { title: "ตั้งค่าบัญชี", url: "/account-settings", icon: User }
     ]
   }
