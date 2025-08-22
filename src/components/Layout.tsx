@@ -12,12 +12,15 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
+import { useNavigate } from "react-router-dom";
 
 interface LayoutProps {
   children: React.ReactNode;
 }
 
 export function Layout({ children }: LayoutProps) {
+  const navigate = useNavigate();
+
   return (
     <SidebarProvider 
       defaultOpen={true}
@@ -69,7 +72,7 @@ export function Layout({ children }: LayoutProps) {
                     </div>
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => navigate('/account-settings')}>
                     <User className="mr-2 h-4 w-4" />
                     <span>โปรไฟล์</span>
                   </DropdownMenuItem>
