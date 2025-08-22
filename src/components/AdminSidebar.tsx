@@ -40,7 +40,7 @@ import { cn } from "@/lib/utils";
 const menuItems = [
   {
     title: "แดชบอร์ด",
-    url: "/",
+    url: "/dashboard",
     icon: LayoutDashboard,
     standalone: true
   },
