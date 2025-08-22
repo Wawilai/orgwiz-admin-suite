@@ -1,18 +1,19 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Building2, Mail, Lock, User, AlertCircle } from "lucide-react";
+import { Building2, Mail, Lock, User, AlertCircle, CheckCircle2 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { toast } from "sonner";
 
 const Auth = () => {
-  const { signIn, signUp, loading } = useAuth();
+  const { signIn, signUp, loading, isAuthenticated } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const [activeTab, setActiveTab] = useState("signin");
   const [formData, setFormData] = useState({
     email: "",
@@ -21,6 +22,36 @@ const Auth = () => {
   });
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [authSuccess, setAuthSuccess] = useState(false);
+
+  // Handle authentication callback from URL hash
+  useEffect(() => {
+    const hash = location.hash;
+    if (hash.includes('access_token')) {
+      console.log('Auth callback detected in URL hash');
+      setAuthSuccess(true);
+      toast.success("ยืนยันอีเมลสำเร็จ! กำลังเข้าสู่ระบบ...");
+      
+      // Clear the hash and redirect after a brief delay
+      setTimeout(() => {
+        window.history.replaceState({}, document.title, window.location.pathname);
+        if (isAuthenticated) {
+          navigate("/dashboard", { replace: true });
+        }
+      }, 2000);
+    } else if (hash.includes('error')) {
+      const errorParam = new URLSearchParams(hash.substring(1)).get('error_description');
+      setError(errorParam || 'เกิดข้อผิดพลาดในการยืนยันอีเมล');
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+  }, [location.hash, isAuthenticated, navigate]);
+
+  // Redirect if already authenticated
+  useEffect(() => {
+    if (isAuthenticated && !location.hash.includes('access_token')) {
+      navigate("/dashboard", { replace: true });
+    }
+  }, [isAuthenticated, navigate, location.hash]);
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -97,6 +128,29 @@ const Auth = () => {
     setFormData(prev => ({ ...prev, [field]: value }));
     if (error) setError("");
   };
+
+  // Show success state while processing auth callback
+  if (authSuccess) {
+    return (
+      <div className="min-h-screen bg-gradient-elegant flex items-center justify-center p-4">
+        <Card className="w-full max-w-md shadow-elegant">
+          <CardContent className="py-12">
+            <div className="text-center space-y-4">
+              <div className="p-3 bg-success/10 rounded-full w-fit mx-auto">
+                <CheckCircle2 className="h-8 w-8 text-success" />
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-success">ยืนยันสำเร็จ!</h3>
+                <p className="text-muted-foreground mt-2">
+                  กำลังเข้าสู่ระบบ...
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-elegant flex items-center justify-center p-4">

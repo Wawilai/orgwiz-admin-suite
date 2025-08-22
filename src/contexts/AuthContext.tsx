@@ -32,23 +32,80 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Set up auth state listener
+    let mounted = true;
+
+    // Handle authentication state changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
+      async (event, session) => {
+        if (!mounted) return;
+        
+        console.log('Auth state change:', event, session?.user?.email);
+        
         setSession(session);
         setUser(session?.user ?? null);
         setLoading(false);
+
+        // Handle different auth events
+        if (event === 'SIGNED_IN') {
+          console.log('User signed in successfully');
+        } else if (event === 'SIGNED_OUT') {
+          console.log('User signed out');
+        } else if (event === 'TOKEN_REFRESHED') {
+          console.log('Token refreshed');
+        }
       }
     );
 
-    // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      setLoading(false);
-    });
+    // Get initial session and handle URL hash
+    const initializeAuth = async () => {
+      try {
+        // Check for auth tokens in URL hash (from email verification or social login)
+        const hashParams = new URLSearchParams(window.location.hash.substring(1));
+        const accessToken = hashParams.get('access_token');
+        const refreshToken = hashParams.get('refresh_token');
+        
+        if (accessToken && refreshToken) {
+          console.log('Found auth tokens in URL hash, setting session...');
+          
+          // Set the session from URL hash
+          const { data, error } = await supabase.auth.setSession({
+            access_token: accessToken,
+            refresh_token: refreshToken,
+          });
+          
+          if (error) {
+            console.error('Error setting session from hash:', error);
+          } else {
+            console.log('Session set successfully from hash');
+            // Clear the hash from URL
+            window.history.replaceState({}, document.title, window.location.pathname);
+          }
+        } else {
+          // Get current session normally
+          const { data: { session }, error } = await supabase.auth.getSession();
+          if (error) {
+            console.error('Error getting session:', error);
+          }
+          if (mounted) {
+            setSession(session);
+            setUser(session?.user ?? null);
+          }
+        }
+      } catch (error) {
+        console.error('Error initializing auth:', error);
+      } finally {
+        if (mounted) {
+          setLoading(false);
+        }
+      }
+    };
 
-    return () => subscription.unsubscribe();
+    initializeAuth();
+
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
   }, []);
 
   const signIn = async (email: string, password: string) => {

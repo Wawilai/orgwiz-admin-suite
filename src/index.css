@@ -284,6 +284,7 @@ All colors MUST be HSL.
   }
 }
 
+@layer base {
   /* Enhanced Focus States - Fix for mouse focus issues */
   button:focus-visible,
   [role="button"]:focus-visible,

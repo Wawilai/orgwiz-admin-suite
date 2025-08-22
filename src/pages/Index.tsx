@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { Layout } from "@/components/Layout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -10,13 +10,22 @@ import OrganizationManagement from "./OrganizationManagement";
 const Index = () => {
   const { isAuthenticated, loading } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
 
   useEffect(() => {
+    // Check for auth callback in hash
+    const hash = location.hash;
+    if (hash.includes('access_token') || hash.includes('error')) {
+      // Redirect to auth page to handle the callback
+      navigate('/auth', { replace: true });
+      return;
+    }
+
     // Auto redirect authenticated users to dashboard
     if (isAuthenticated && !loading) {
-      navigate("/dashboard");
+      navigate("/dashboard", { replace: true });
     }
-  }, [isAuthenticated, loading, navigate]);
+  }, [isAuthenticated, loading, navigate, location.hash]);
 
   // Show loading state
   if (loading) {
