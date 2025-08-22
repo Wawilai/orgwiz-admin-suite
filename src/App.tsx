@@ -23,6 +23,7 @@ import Storage from "./pages/Storage";
 import StorageReports from "./pages/StorageReports";
 import PackageManagement from "./pages/PackageManagement";
 import BillingManagement from "./pages/BillingManagement";
+import PaymentHistory from "./pages/PaymentHistory";
 import LicenseManagement from "./pages/LicenseManagement";
 import Reports from "./pages/Reports";
 import ExecutiveDetail from "./pages/reports/ExecutiveDetail";
@@ -63,6 +64,7 @@ const App = () => (
           <Route path="/storage/reports" element={<Layout><StorageReports onBack={() => window.history.back()} /></Layout>} />
           <Route path="/packages" element={<Layout><PackageManagement /></Layout>} />
           <Route path="/billing" element={<Layout><BillingManagement /></Layout>} />
+          <Route path="/billing/payment-history/:organizationId?" element={<Layout><PaymentHistory onBack={() => window.history.back()} /></Layout>} />
           <Route path="/licenses" element={<Layout><LicenseManagement /></Layout>} />
           <Route path="/reports" element={<Layout><Reports /></Layout>} />
           <Route path="/reports/executive-detail" element={<Layout><ExecutiveDetail /></Layout>} />

@@ -725,7 +725,7 @@ export default function BillingManagement() {
                                 </>
                               )}
                             </DropdownMenuItem>
-                            <DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => window.location.href = `/billing/payment-history/${setting.organizationId}`}>
                               <Eye className="mr-2 h-4 w-4" />
                               ดูประวัติการชำระ
                             </DropdownMenuItem>
