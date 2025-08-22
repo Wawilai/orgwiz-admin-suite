@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
 import { toast } from '@/hooks/use-toast';
+import ReportModal from '@/components/ReportModal';
 import { 
   BarChart3, 
   TrendingUp, 
@@ -36,7 +37,8 @@ import {
   FileText,
   PieChart,
   BarChart,
-  LineChart
+  LineChart,
+  ExternalLink
 } from 'lucide-react';
 import { 
   PieChart as RechartsPieChart, 
@@ -312,6 +314,15 @@ export default function Reports() {
   const [dateRange, setDateRange] = useState('7days');
   const [isExportDialogOpen, setIsExportDialogOpen] = useState(false);
   const [selectedReport, setSelectedReport] = useState('');
+  const [modalData, setModalData] = useState<{
+    isOpen: boolean;
+    reportType: string;
+    title: string;
+  }>({
+    isOpen: false,
+    reportType: '',
+    title: ''
+  });
 
   const handleRefreshData = () => {
     toast({
@@ -326,6 +337,22 @@ export default function Reports() {
       description: `กำลังดาวน์โหลด ${selectedReport}`,
     });
     setIsExportDialogOpen(false);
+  };
+
+  const handleCardClick = (reportType: string, title: string) => {
+    setModalData({ 
+      isOpen: true, 
+      reportType, 
+      title 
+    });
+  };
+
+  const closeModal = () => {
+    setModalData({ 
+      isOpen: false, 
+      reportType: '', 
+      title: '' 
+    });
   };
 
   const getStatusBadge = (status: string) => {
