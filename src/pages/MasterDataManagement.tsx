@@ -49,8 +49,27 @@ import {
   Shield,
   Globe,
   Settings,
+  List,
+  Edit2,
+  Save,
 } from "lucide-react";
 import { toast } from "sonner";
+
+// Dropdown Management Interfaces (moved from DropdownManagement component)
+interface DropdownItem {
+  id: string;
+  value: string;
+  label: string;
+  isActive: boolean;
+  order: number;
+}
+
+interface DropdownCategory {
+  id: string;
+  name: string;
+  description: string;
+  items: DropdownItem[];
+}
 
 // Master Data Types
 interface MasterDataItem {
@@ -65,7 +84,55 @@ interface MasterDataItem {
   updatedAt: string;
 }
 
-// Mock data for different master data types
+// Mock data for dropdown categories  
+const mockDropdownCategories: DropdownCategory[] = [
+  {
+    id: '1',
+    name: 'Server Locations',
+    description: 'สถานที่ตั้งเซิร์ฟเวอร์',
+    items: [
+      { id: '1', value: 'Data Center A', label: 'Data Center A', isActive: true, order: 1 },
+      { id: '2', value: 'Data Center B', label: 'Data Center B', isActive: true, order: 2 },
+      { id: '3', value: 'Data Center C', label: 'Data Center C', isActive: true, order: 3 },
+      { id: '4', value: 'Cloud Region 1', label: 'Cloud Region 1', isActive: true, order: 4 },
+      { id: '5', value: 'Cloud Region 2', label: 'Cloud Region 2', isActive: false, order: 5 },
+    ]
+  },
+  {
+    id: '2',
+    name: 'Server Types',
+    description: 'ประเภทเซิร์ฟเวอร์',
+    items: [
+      { id: '6', value: 'Web Server', label: 'เว็บเซิร์ฟเวอร์', isActive: true, order: 1 },
+      { id: '7', value: 'Database', label: 'ฐานข้อมูล', isActive: true, order: 2 },
+      { id: '8', value: 'Mail Server', label: 'เมลเซิร์ฟเวอร์', isActive: true, order: 3 },
+      { id: '9', value: 'File Server', label: 'ไฟล์เซิร์ฟเวอร์', isActive: true, order: 4 },
+      { id: '10', value: 'Load Balancer', label: 'โหลดบาลานเซอร์', isActive: true, order: 5 },
+    ]
+  },
+  {
+    id: '3',
+    name: 'Backup Types',
+    description: 'ประเภทการสำรองข้อมูล',
+    items: [
+      { id: '11', value: 'Full Backup', label: 'สำรองข้อมูลแบบเต็ม', isActive: true, order: 1 },
+      { id: '12', value: 'Incremental', label: 'สำรองข้อมูลแบบเพิ่มเติม', isActive: true, order: 2 },
+      { id: '13', value: 'Differential', label: 'สำรองข้อมูลแบบต่าง', isActive: true, order: 3 },
+      { id: '14', value: 'Mirror', label: 'สำรองข้อมูลแบบมิเรอร์', isActive: true, order: 4 },
+    ]
+  },
+  {
+    id: '4',
+    name: 'Certificate Types',
+    description: 'ประเภทใบรับรอง',
+    items: [
+      { id: '15', value: 'SSL/TLS', label: 'SSL/TLS Certificate', isActive: true, order: 1 },
+      { id: '16', value: 'Code Signing', label: 'Code Signing Certificate', isActive: true, order: 2 },
+      { id: '17', value: 'Client Certificate', label: 'Client Certificate', isActive: true, order: 3 },
+      { id: '18', value: 'Document Signing', label: 'Document Signing Certificate', isActive: true, order: 4 },
+    ]
+  }
+];
 const mockOrganizationTypes: MasterDataItem[] = [
   { id: 1, code: "PUBLIC", name: "บริษัทมหาชน", description: "บริษัทจดทะเบียนในตลาดหลักทรัพย์", isActive: true, order: 1, createdAt: "2024-01-01", updatedAt: "2024-01-01" },
   { id: 2, code: "LIMITED", name: "บริษัทจำกัด", description: "บริษัทจำกัดทั่วไป", isActive: true, order: 2, createdAt: "2024-01-01", updatedAt: "2024-01-01" },
@@ -135,6 +202,13 @@ const masterDataTypes = [
     icon: Globe,
     data: mockCountries 
   },
+  { 
+    key: "dropdown-management", 
+    name: "จัดการ Dropdown", 
+    description: "จัดการ Dropdown สำหรับระบบและเซิร์ฟเวอร์",
+    icon: List,
+    data: [] // ใช้ข้อมูลแยกต่างหาก
+  },
 ];
 
 const MasterDataManagement = () => {
@@ -150,6 +224,15 @@ const MasterDataManagement = () => {
     isActive: true,
     order: 0,
   });
+
+  // Dropdown Management State
+  const [dropdownCategories] = useState<DropdownCategory[]>(mockDropdownCategories);
+  const [selectedDropdownCategory, setSelectedDropdownCategory] = useState<DropdownCategory | null>(null);
+  const [selectedDropdownItem, setSelectedDropdownItem] = useState<DropdownItem | null>(null);
+  const [isAddCategoryDialogOpen, setIsAddCategoryDialogOpen] = useState(false);
+  const [isEditCategoryDialogOpen, setIsEditCategoryDialogOpen] = useState(false);
+  const [isAddItemDialogOpen, setIsAddItemDialogOpen] = useState(false);
+  const [isEditItemDialogOpen, setIsEditItemDialogOpen] = useState(false);
 
   const currentType = masterDataTypes.find(type => type.key === selectedType);
   const [currentData, setCurrentData] = useState<MasterDataItem[]>(currentType?.data || []);
@@ -217,6 +300,41 @@ const MasterDataManagement = () => {
     const typeData = masterDataTypes.find(type => type.key === newType);
     setCurrentData(typeData?.data || []);
     setSearchTerm("");
+  };
+
+  // Dropdown Management Functions
+  const handleEditCategory = (category: DropdownCategory) => {
+    setSelectedDropdownCategory(category);
+    setIsEditCategoryDialogOpen(true);
+  };
+
+  const handleDeleteCategory = (categoryId: string) => {
+    toast.success("ลบหมวดหมู่สำเร็จ", {
+      description: "ลบหมวดหมู่ Dropdown แล้ว",
+    });
+  };
+
+  const handleAddItem = (category: DropdownCategory) => {
+    setSelectedDropdownCategory(category);
+    setIsAddItemDialogOpen(true);
+  };
+
+  const handleEditItem = (item: DropdownItem, category: DropdownCategory) => {
+    setSelectedDropdownItem(item);
+    setSelectedDropdownCategory(category);
+    setIsEditItemDialogOpen(true);
+  };
+
+  const handleDeleteItem = (itemId: string) => {
+    toast.success("ลบรายการสำเร็จ", {
+      description: "ลบรายการใน Dropdown แล้ว",
+    });
+  };
+
+  const handleToggleItemStatus = (itemId: string) => {
+    toast.success("เปลี่ยนสถานะสำเร็จ", {
+      description: "เปลี่ยนสถานะรายการแล้ว",
+    });
   };
 
   return (
@@ -357,7 +475,7 @@ const MasterDataManagement = () => {
         </CardHeader>
         <CardContent>
           <Tabs value={selectedType} onValueChange={handleTypeChange} className="space-y-4">
-            <TabsList className="grid w-full grid-cols-5">
+            <TabsList className="grid w-full grid-cols-6">
               {masterDataTypes.map((type) => (
                 <TabsTrigger key={type.key} value={type.key} className="text-xs">
                   {type.name}
@@ -367,91 +485,279 @@ const MasterDataManagement = () => {
 
             {masterDataTypes.map((type) => (
               <TabsContent key={type.key} value={type.key} className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-2">
-                    <type.icon className="h-5 w-5 text-primary" />
-                    <div>
-                      <h3 className="font-semibold">{type.name}</h3>
-                      <p className="text-sm text-muted-foreground">{type.description}</p>
+                {type.key === "dropdown-management" ? (
+                  // Dropdown Management Content
+                  <div className="space-y-6">
+                    {/* Categories Overview */}
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                      <Card>
+                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                          <CardTitle className="text-sm font-medium">หมวดหมู่ทั้งหมด</CardTitle>
+                          <List className="h-4 w-4 text-muted-foreground" />
+                        </CardHeader>
+                        <CardContent>
+                          <div className="text-2xl font-bold">{dropdownCategories.length}</div>
+                        </CardContent>
+                      </Card>
+                      <Card>
+                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                          <CardTitle className="text-sm font-medium">รายการทั้งหมด</CardTitle>
+                          <Settings className="h-4 w-4 text-muted-foreground" />
+                        </CardHeader>
+                        <CardContent>
+                          <div className="text-2xl font-bold">
+                            {dropdownCategories.reduce((sum, cat) => sum + cat.items.length, 0)}
+                          </div>
+                        </CardContent>
+                      </Card>
+                      <Card>
+                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                          <CardTitle className="text-sm font-medium">รายการใช้งาน</CardTitle>
+                          <Settings className="h-4 w-4 text-muted-foreground" />
+                        </CardHeader>
+                        <CardContent>
+                          <div className="text-2xl font-bold text-success">
+                            {dropdownCategories.reduce((sum, cat) => sum + cat.items.filter(item => item.isActive).length, 0)}
+                          </div>
+                        </CardContent>
+                      </Card>
+                      <Card>
+                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                          <CardTitle className="text-sm font-medium">รายการไม่ใช้งาน</CardTitle>
+                          <Settings className="h-4 w-4 text-muted-foreground" />
+                        </CardHeader>
+                        <CardContent>
+                          <div className="text-2xl font-bold text-destructive">
+                            {dropdownCategories.reduce((sum, cat) => sum + cat.items.filter(item => !item.isActive).length, 0)}
+                          </div>
+                        </CardContent>
+                      </Card>
                     </div>
-                  </div>
-                  <div className="relative w-64">
-                    <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      placeholder="ค้นหา..."
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                      className="pl-8"
-                    />
-                  </div>
-                </div>
 
-                <div className="rounded-md border">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>รหัส</TableHead>
-                        <TableHead>ชื่อ</TableHead>
-                        <TableHead>คำอธิบาย</TableHead>
-                        <TableHead className="text-center">ลำดับ</TableHead>
-                        <TableHead className="text-center">สถานะ</TableHead>
-                        <TableHead>วันที่อัปเดต</TableHead>
-                        <TableHead className="text-right">การดำเนินการ</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {filteredData.map((item) => (
-                        <TableRow key={item.id}>
-                          <TableCell className="font-medium">{item.code}</TableCell>
-                          <TableCell>{item.name}</TableCell>
-                          <TableCell>
-                            <div className="max-w-xs">
-                              <p className="text-sm line-clamp-2">{item.description || "-"}</p>
-                            </div>
-                          </TableCell>
-                          <TableCell className="text-center">{item.order}</TableCell>
-                          <TableCell className="text-center">
-                            {item.isActive ? (
-                              <Badge className="bg-success text-success-foreground">ใช้งาน</Badge>
-                            ) : (
-                              <Badge variant="secondary">ไม่ใช้งาน</Badge>
-                            )}
-                          </TableCell>
-                          <TableCell>{item.updatedAt}</TableCell>
-                          <TableCell className="text-right">
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" className="h-8 w-8 p-0">
-                                  <MoreHorizontal className="h-4 w-4" />
+                    {/* Categories Management */}
+                    <Card>
+                      <CardHeader>
+                        <div className="flex justify-between items-center">
+                          <CardTitle>จัดการหมวดหมู่ Dropdown</CardTitle>
+                          <Dialog open={isAddCategoryDialogOpen} onOpenChange={setIsAddCategoryDialogOpen}>
+                            <DialogTrigger asChild>
+                              <Button>
+                                <Plus className="h-4 w-4 mr-2" />
+                                เพิ่มหมวดหมู่
+                              </Button>
+                            </DialogTrigger>
+                            <DialogContent className="bg-card">
+                              <DialogHeader>
+                                <DialogTitle>เพิ่มหมวดหมู่ใหม่</DialogTitle>
+                              </DialogHeader>
+                              <div className="space-y-4">
+                                <div className="space-y-2">
+                                  <Label>ชื่อหมวดหมู่</Label>
+                                  <Input placeholder="เช่น Server Locations" />
+                                </div>
+                                <div className="space-y-2">
+                                  <Label>คำอธิบาย</Label>
+                                  <Textarea placeholder="อธิบายหมวดหมู่นี้" />
+                                </div>
+                              </div>
+                              <div className="flex justify-end gap-2">
+                                <Button variant="outline" onClick={() => setIsAddCategoryDialogOpen(false)}>
+                                  ยกเลิก
                                 </Button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end" className="bg-popover">
-                                <DropdownMenuLabel>การดำเนินการ</DropdownMenuLabel>
-                                <DropdownMenuSeparator />
-                                <DropdownMenuItem onClick={() => openEditDialog(item)}>
-                                  <Edit className="h-4 w-4 mr-2" />
-                                  แก้ไข
-                                </DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => handleToggleStatus(item.id)}>
-                                  <Settings className="h-4 w-4 mr-2" />
-                                  {item.isActive ? "ปิดใช้งาน" : "เปิดใช้งาน"}
-                                </DropdownMenuItem>
-                                <DropdownMenuSeparator />
-                                <DropdownMenuItem 
-                                  onClick={() => handleDelete(item.id)}
-                                  className="text-destructive"
-                                >
-                                  <Trash2 className="h-4 w-4 mr-2" />
-                                  ลบ
-                                </DropdownMenuItem>
-                              </DropdownMenuContent>
-                            </DropdownMenu>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
+                                <Button onClick={() => {
+                                  setIsAddCategoryDialogOpen(false);
+                                  toast.success("เพิ่มหมวดหมู่สำเร็จ");
+                                }}>เพิ่มหมวดหมู่</Button>
+                              </div>
+                            </DialogContent>
+                          </Dialog>
+                        </div>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="space-y-4">
+                          {dropdownCategories.map((category) => (
+                            <Card key={category.id}>
+                              <CardHeader>
+                                <div className="flex justify-between items-center">
+                                  <div>
+                                    <CardTitle className="text-lg">{category.name}</CardTitle>
+                                    <p className="text-sm text-muted-foreground">{category.description}</p>
+                                  </div>
+                                  <div className="flex gap-2">
+                                    <Button size="sm" onClick={() => handleAddItem(category)}>
+                                      <Plus className="h-4 w-4 mr-2" />
+                                      เพิ่มรายการ
+                                    </Button>
+                                    <DropdownMenu>
+                                      <DropdownMenuTrigger asChild>
+                                        <Button variant="ghost" size="sm">
+                                          <MoreHorizontal className="h-4 w-4" />
+                                        </Button>
+                                      </DropdownMenuTrigger>
+                                      <DropdownMenuContent align="end" className="bg-popover">
+                                        <DropdownMenuItem onClick={() => handleEditCategory(category)}>
+                                          <Edit2 className="mr-2 h-4 w-4" />
+                                          แก้ไขหมวดหมู่
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem onClick={() => handleDeleteCategory(category.id)} className="text-destructive">
+                                          <Trash2 className="mr-2 h-4 w-4" />
+                                          ลบหมวดหมู่
+                                        </DropdownMenuItem>
+                                      </DropdownMenuContent>
+                                    </DropdownMenu>
+                                  </div>
+                                </div>
+                              </CardHeader>
+                              <CardContent>
+                                <Table>
+                                  <TableHeader>
+                                    <TableRow>
+                                      <TableHead>ลำดับ</TableHead>
+                                      <TableHead>ค่า</TableHead>
+                                      <TableHead>ป้ายกำกับ</TableHead>
+                                      <TableHead>สถานะ</TableHead>
+                                      <TableHead>จัดการ</TableHead>
+                                    </TableRow>
+                                  </TableHeader>
+                                  <TableBody>
+                                    {category.items.map((item) => (
+                                      <TableRow key={item.id}>
+                                        <TableCell>{item.order}</TableCell>
+                                        <TableCell className="font-mono">{item.value}</TableCell>
+                                        <TableCell>{item.label}</TableCell>
+                                        <TableCell>
+                                          <Badge 
+                                            variant={item.isActive ? "default" : "secondary"}
+                                            className="cursor-pointer"
+                                            onClick={() => handleToggleItemStatus(item.id)}
+                                          >
+                                            {item.isActive ? "ใช้งาน" : "ไม่ใช้งาน"}
+                                          </Badge>
+                                        </TableCell>
+                                        <TableCell>
+                                          <DropdownMenu>
+                                            <DropdownMenuTrigger asChild>
+                                              <Button variant="ghost" size="sm">
+                                                <MoreHorizontal className="h-4 w-4" />
+                                              </Button>
+                                            </DropdownMenuTrigger>
+                                            <DropdownMenuContent align="end" className="bg-popover">
+                                              <DropdownMenuItem onClick={() => handleEditItem(item, category)}>
+                                                <Edit2 className="mr-2 h-4 w-4" />
+                                                แก้ไข
+                                              </DropdownMenuItem>
+                                              <DropdownMenuItem onClick={() => handleToggleItemStatus(item.id)}>
+                                                <Settings className="mr-2 h-4 w-4" />
+                                                {item.isActive ? "ปิดใช้งาน" : "เปิดใช้งาน"}
+                                              </DropdownMenuItem>
+                                              <DropdownMenuItem onClick={() => handleDeleteItem(item.id)} className="text-destructive">
+                                                <Trash2 className="mr-2 h-4 w-4" />
+                                                ลบ
+                                              </DropdownMenuItem>
+                                            </DropdownMenuContent>
+                                          </DropdownMenu>
+                                        </TableCell>
+                                      </TableRow>
+                                    ))}
+                                  </TableBody>
+                                </Table>
+                              </CardContent>
+                            </Card>
+                          ))}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </div>
+                ) : (
+                  // Regular Master Data Content
+                  <>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-2">
+                        <type.icon className="h-5 w-5 text-primary" />
+                        <div>
+                          <h3 className="font-semibold">{type.name}</h3>
+                          <p className="text-sm text-muted-foreground">{type.description}</p>
+                        </div>
+                      </div>
+                      <div className="relative w-64">
+                        <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                        <Input
+                          placeholder="ค้นหา..."
+                          value={searchTerm}
+                          onChange={(e) => setSearchTerm(e.target.value)}
+                          className="pl-8"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="rounded-md border">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>รหัส</TableHead>
+                            <TableHead>ชื่อ</TableHead>
+                            <TableHead>คำอธิบาย</TableHead>
+                            <TableHead className="text-center">ลำดับ</TableHead>
+                            <TableHead className="text-center">สถานะ</TableHead>
+                            <TableHead>วันที่อัปเดต</TableHead>
+                            <TableHead className="text-right">การดำเนินการ</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {filteredData.map((item) => (
+                            <TableRow key={item.id}>
+                              <TableCell className="font-medium">{item.code}</TableCell>
+                              <TableCell>{item.name}</TableCell>
+                              <TableCell>
+                                <div className="max-w-xs">
+                                  <p className="text-sm line-clamp-2">{item.description || "-"}</p>
+                                </div>
+                              </TableCell>
+                              <TableCell className="text-center">{item.order}</TableCell>
+                              <TableCell className="text-center">
+                                {item.isActive ? (
+                                  <Badge className="bg-success text-success-foreground">ใช้งาน</Badge>
+                                ) : (
+                                  <Badge variant="secondary">ไม่ใช้งาน</Badge>
+                                )}
+                              </TableCell>
+                              <TableCell>{item.updatedAt}</TableCell>
+                              <TableCell className="text-right">
+                                <DropdownMenu>
+                                  <DropdownMenuTrigger asChild>
+                                    <Button variant="ghost" className="h-8 w-8 p-0">
+                                      <MoreHorizontal className="h-4 w-4" />
+                                    </Button>
+                                  </DropdownMenuTrigger>
+                                  <DropdownMenuContent align="end" className="bg-popover">
+                                    <DropdownMenuLabel>การดำเนินการ</DropdownMenuLabel>
+                                    <DropdownMenuSeparator />
+                                    <DropdownMenuItem onClick={() => openEditDialog(item)}>
+                                      <Edit className="h-4 w-4 mr-2" />
+                                      แก้ไข
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem onClick={() => handleToggleStatus(item.id)}>
+                                      <Settings className="h-4 w-4 mr-2" />
+                                      {item.isActive ? "ปิดใช้งาน" : "เปิดใช้งาน"}
+                                    </DropdownMenuItem>
+                                    <DropdownMenuSeparator />
+                                    <DropdownMenuItem 
+                                      onClick={() => handleDelete(item.id)}
+                                      className="text-destructive"
+                                    >
+                                      <Trash2 className="h-4 w-4 mr-2" />
+                                      ลบ
+                                    </DropdownMenuItem>
+                                  </DropdownMenuContent>
+                                </DropdownMenu>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  </>
+                )}
               </TabsContent>
             ))}
           </Tabs>
@@ -534,6 +840,145 @@ const MasterDataManagement = () => {
               บันทึก
             </Button>
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dropdown Management Dialogs */}
+      {/* Edit Category Dialog */}
+      <Dialog open={isEditCategoryDialogOpen} onOpenChange={setIsEditCategoryDialogOpen}>
+        <DialogContent className="bg-card">
+          <DialogHeader>
+            <DialogTitle>แก้ไขหมวดหมู่</DialogTitle>
+          </DialogHeader>
+          {selectedDropdownCategory && (
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label>ชื่อหมวดหมู่</Label>
+                <Input defaultValue={selectedDropdownCategory.name} />
+              </div>
+              <div className="space-y-2">
+                <Label>คำอธิบาย</Label>
+                <Textarea defaultValue={selectedDropdownCategory.description} />
+              </div>
+              <div className="flex justify-end gap-2">
+                <Button variant="outline" onClick={() => setIsEditCategoryDialogOpen(false)}>
+                  ยกเลิก
+                </Button>
+                <Button onClick={() => {
+                  toast.success("บันทึกการเปลี่ยนแปลงสำเร็จ", {
+                    description: "แก้ไขหมวดหมู่เรียบร้อยแล้ว",
+                  });
+                  setIsEditCategoryDialogOpen(false);
+                }}>
+                  <Save className="h-4 w-4 mr-2" />
+                  บันทึก
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Add Item Dialog */}
+      <Dialog open={isAddItemDialogOpen} onOpenChange={setIsAddItemDialogOpen}>
+        <DialogContent className="bg-card">
+          <DialogHeader>
+            <DialogTitle>เพิ่มรายการใหม่ - {selectedDropdownCategory?.name}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>ค่า (Value)</Label>
+                <Input placeholder="เช่น Data Center D" />
+              </div>
+              <div className="space-y-2">
+                <Label>ป้ายกำกับ (Label)</Label>
+                <Input placeholder="เช่น ศูนย์ข้อมูล D" />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>ลำดับ</Label>
+                <Input type="number" placeholder="1" />
+              </div>
+              <div className="space-y-2">
+                <Label>สถานะ</Label>
+                <Select defaultValue="active">
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="bg-popover">
+                    <SelectItem value="active">ใช้งาน</SelectItem>
+                    <SelectItem value="inactive">ไม่ใช้งาน</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setIsAddItemDialogOpen(false)}>
+                ยกเลิก
+              </Button>
+              <Button onClick={() => {
+                setIsAddItemDialogOpen(false);
+                toast.success("เพิ่มรายการสำเร็จ");
+              }}>เพิ่มรายการ</Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Item Dialog */}
+      <Dialog open={isEditItemDialogOpen} onOpenChange={setIsEditItemDialogOpen}>
+        <DialogContent className="bg-card">
+          <DialogHeader>
+            <DialogTitle>แก้ไขรายการ - {selectedDropdownCategory?.name}</DialogTitle>
+          </DialogHeader>
+          {selectedDropdownItem && (
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>ค่า (Value)</Label>
+                  <Input defaultValue={selectedDropdownItem.value} />
+                </div>
+                <div className="space-y-2">
+                  <Label>ป้ายกำกับ (Label)</Label>
+                  <Input defaultValue={selectedDropdownItem.label} />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>ลำดับ</Label>
+                  <Input type="number" defaultValue={selectedDropdownItem.order} />
+                </div>
+                <div className="space-y-2">
+                  <Label>สถานะ</Label>
+                  <Select defaultValue={selectedDropdownItem.isActive ? "active" : "inactive"}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent className="bg-popover">
+                      <SelectItem value="active">ใช้งาน</SelectItem>
+                      <SelectItem value="inactive">ไม่ใช้งาน</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div className="flex justify-end gap-2">
+                <Button variant="outline" onClick={() => setIsEditItemDialogOpen(false)}>
+                  ยกเลิก
+                </Button>
+                <Button onClick={() => {
+                  toast.success("บันทึกการเปลี่ยนแปลงสำเร็จ", {
+                    description: "แก้ไขรายการเรียบร้อยแล้ว",
+                  });
+                  setIsEditItemDialogOpen(false);
+                }}>
+                  <Save className="h-4 w-4 mr-2" />
+                  บันทึก
+                </Button>
+              </div>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
     </div>
