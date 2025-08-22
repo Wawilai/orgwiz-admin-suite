@@ -50,6 +50,7 @@ const menuItems = [
     icon: Building2,
     items: [
       { title: "จัดการผู้ใช้งาน", url: "/users", icon: Users },
+      { title: "จัดการกลุ่ม", url: "/groups", icon: Users },
       { title: "จัดการองค์กร", url: "/organizations", icon: Building2 },
       { title: "หน่วยงาน", url: "/organization-units", icon: Building2 },
       { title: "จัดการโดเมน", url: "/domains", icon: Globe },

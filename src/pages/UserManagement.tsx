@@ -118,45 +118,72 @@ const UserManagement = () => {
 
   // Form validation for adding users
   const addUserValidation = useFormValidation({
-    name: "",
+    username: "",
+    firstName: "",
+    lastName: "",
+    firstNameEn: "",
+    lastNameEn: "",
     email: "",
-    phone: "",
+    backupEmail: "",
+    phoneOffice: "",
+    phoneMobile: "",
+    nationalId: "",
     employeeId: "",
     organization: "",
     department: "",
+    departmentEn: "",
     role: "",
     position: "",
+    userType: "",
     startDate: "",
     manager: "",
     tempPassword: "",
   }, {
-    name: { required: true, minLength: 2, maxLength: 100 },
+    username: { required: true, minLength: 3, maxLength: 50 },
+    firstName: { required: true, minLength: 2, maxLength: 100 },
+    lastName: { required: true, minLength: 2, maxLength: 100 },
     email: { 
       ...createEmailRule(),
       custom: createDuplicateValidator(usersData, null, (user) => user.email, "อีเมล")
     },
-    phone: createPhoneRule(),
+    phoneMobile: createPhoneRule(),
+    nationalId: { minLength: 13, maxLength: 13 },
     organization: { required: true },
     role: { required: true },
+    userType: { required: true },
     tempPassword: { required: true, minLength: 8 },
   });
 
   // Form validation for editing users
   const editUserValidation = useFormValidation({
-    name: "",
+    username: "",
+    firstName: "",
+    lastName: "",
+    firstNameEn: "",
+    lastNameEn: "",
     email: "",
-    phone: "",
+    backupEmail: "",
+    phoneOffice: "",
+    phoneMobile: "",
+    nationalId: "",
     organization: "",
+    department: "",
+    departmentEn: "",
     role: "",
+    userType: "",
   }, {
-    name: { required: true, minLength: 2, maxLength: 100 },
+    username: { required: true, minLength: 3, maxLength: 50 },
+    firstName: { required: true, minLength: 2, maxLength: 100 },
+    lastName: { required: true, minLength: 2, maxLength: 100 },
     email: { 
       ...createEmailRule(),
       custom: createDuplicateValidator(usersData, editingUser?.id, (user) => user.email, "อีเมล")
     },
-    phone: createPhoneRule(),
+    phoneMobile: createPhoneRule(),
+    nationalId: { minLength: 13, maxLength: 13 },
     organization: { required: true },
     role: { required: true },
+    userType: { required: true },
   });
 
   // Get master data
@@ -194,11 +221,21 @@ const UserManagement = () => {
   const openEditDialog = (user: any) => {
     setEditingUser(user);
     editUserValidation.setValues({
-      name: user.name,
+      username: user.username || "",
+      firstName: user.firstName || user.name?.split(' ')[0] || "",
+      lastName: user.lastName || user.name?.split(' ')[1] || "",
+      firstNameEn: user.firstNameEn || "",
+      lastNameEn: user.lastNameEn || "",
       email: user.email,
-      phone: user.phone,
+      backupEmail: user.backupEmail || "",
+      phoneOffice: user.phoneOffice || "",
+      phoneMobile: user.phoneMobile || user.phone || "",
+      nationalId: user.nationalId || "",
       organization: user.organization,
+      department: user.organizationUnit || "",
+      departmentEn: user.departmentEn || "",
       role: user.role,
+      userType: user.userType || "user",
     });
     setIsEditUserOpen(true);
   };
@@ -207,9 +244,9 @@ const UserManagement = () => {
     await addUserValidation.handleSubmit(async (values) => {
       const newUser = {
         id: Math.max(...usersData.map(u => u.id), 0) + 1,
-        name: values.name,
+        name: `${values.firstName} ${values.lastName}`,
         email: values.email,
-        phone: values.phone,
+        phone: values.phoneMobile,
         organization: values.organization,
         organizationUnit: values.department,
         role: values.role,
@@ -222,7 +259,7 @@ const UserManagement = () => {
       setIsAddUserOpen(false);
       addUserValidation.reset();
       
-      toastSuccess("เพิ่มผู้ใช้งานสำเร็จ", `เพิ่มผู้ใช้งาน "${values.name}" เรียบร้อยแล้ว`);
+      toastSuccess("เพิ่มผู้ใช้งานสำเร็จ", `เพิ่มผู้ใช้งาน "${values.firstName} ${values.lastName}" เรียบร้อยแล้ว`);
     });
   };
 
@@ -230,7 +267,7 @@ const UserManagement = () => {
     await editUserValidation.handleSubmit(async (values) => {
       setUsersData(usersData.map(user => 
         user.id === editingUser.id 
-          ? { ...user, ...values }
+          ? { ...user, name: `${values.firstName} ${values.lastName}`, email: values.email, phone: values.phoneMobile, organization: values.organization, role: values.role }
           : user
       ));
       
@@ -238,7 +275,7 @@ const UserManagement = () => {
       setEditingUser(null);
       editUserValidation.reset();
       
-      toastSuccess("แก้ไขผู้ใช้งานสำเร็จ", `แก้ไขข้อมูลผู้ใช้งาน "${values.name}" เรียบร้อยแล้ว`);
+      toastSuccess("แก้ไขผู้ใช้งานสำเร็จ", `แก้ไขข้อมูลผู้ใช้งาน "${values.firstName} ${values.lastName}" เรียบร้อยแล้ว`);
     });
   };
 
@@ -351,14 +388,14 @@ const UserManagement = () => {
               <div className="grid gap-6 py-4 max-h-[60vh] overflow-y-auto">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <FormFieldWrapper
-                    label="ชื่อ-นามสกุล"
+                    label="ชื่อผู้ใช้ (Username)"
                     required
-                    error={addUserValidation.errors.name}
+                    error={addUserValidation.errors.username}
                   >
                     <Input
-                      placeholder="กรอกชื่อ-นามสกุล"
-                      value={addUserValidation.values.name}
-                      onChange={(e) => addUserValidation.setValue('name', e.target.value)}
+                      placeholder="กรอก username"
+                      value={addUserValidation.values.username}
+                      onChange={(e) => addUserValidation.setValue('username', e.target.value)}
                     />
                   </FormFieldWrapper>
                   <FormFieldWrapper
@@ -374,19 +411,106 @@ const UserManagement = () => {
                     />
                   </FormFieldWrapper>
                 </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <FormFieldWrapper
+                    label="ชื่อ (ภาษาไทย)"
+                    required
+                    error={addUserValidation.errors.firstName}
+                  >
+                    <Input
+                      placeholder="กรอกชื่อ"
+                      value={addUserValidation.values.firstName}
+                      onChange={(e) => addUserValidation.setValue('firstName', e.target.value)}
+                    />
+                  </FormFieldWrapper>
+                  <FormFieldWrapper
+                    label="นามสกุล (ภาษาไทย)"
+                    required
+                    error={addUserValidation.errors.lastName}
+                  >
+                    <Input
+                      placeholder="กรอกนามสกุล"
+                      value={addUserValidation.values.lastName}
+                      onChange={(e) => addUserValidation.setValue('lastName', e.target.value)}
+                    />
+                  </FormFieldWrapper>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <FormFieldWrapper
+                    label="ชื่อ (ภาษาอังกฤษ)"
+                    error={addUserValidation.errors.firstNameEn}
+                  >
+                    <Input
+                      placeholder="First Name"
+                      value={addUserValidation.values.firstNameEn}
+                      onChange={(e) => addUserValidation.setValue('firstNameEn', e.target.value)}
+                    />
+                  </FormFieldWrapper>
+                  <FormFieldWrapper
+                    label="นามสกุล (ภาษาอังกฤษ)"
+                    error={addUserValidation.errors.lastNameEn}
+                  >
+                    <Input
+                      placeholder="Last Name"
+                      value={addUserValidation.values.lastNameEn}
+                      onChange={(e) => addUserValidation.setValue('lastNameEn', e.target.value)}
+                    />
+                  </FormFieldWrapper>
+                </div>
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <FormFieldWrapper
-                    label="เบอร์โทร"
-                    error={addUserValidation.errors.phone}
+                    label="อีเมลสำรอง"
+                    error={addUserValidation.errors.backupEmail}
+                  >
+                    <Input
+                      type="email"
+                      placeholder="backup@company.com"
+                      value={addUserValidation.values.backupEmail}
+                      onChange={(e) => addUserValidation.setValue('backupEmail', e.target.value)}
+                    />
+                  </FormFieldWrapper>
+                  <FormFieldWrapper
+                    label="เลขบัตรประชาชน"
+                    error={addUserValidation.errors.nationalId}
+                    hint="13 หลัก"
+                  >
+                    <Input
+                      placeholder="1234567890123"
+                      maxLength={13}
+                      value={addUserValidation.values.nationalId}
+                      onChange={(e) => addUserValidation.setValue('nationalId', e.target.value)}
+                    />
+                  </FormFieldWrapper>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <FormFieldWrapper
+                    label="เบอร์โทรสำนักงาน"
+                    error={addUserValidation.errors.phoneOffice}
+                  >
+                    <Input
+                      placeholder="02-123-4567"
+                      value={addUserValidation.values.phoneOffice}
+                      onChange={(e) => addUserValidation.setValue('phoneOffice', e.target.value)}
+                    />
+                  </FormFieldWrapper>
+                  <FormFieldWrapper
+                    label="เบอร์โทรมือถือ"
+                    error={addUserValidation.errors.phoneMobile}
                     hint="เช่น 081-234-5678"
                   >
                     <Input
                       placeholder="081-234-5678"
-                      value={addUserValidation.values.phone}
-                      onChange={(e) => addUserValidation.setValue('phone', e.target.value)}
+                      value={addUserValidation.values.phoneMobile}
+                      onChange={(e) => addUserValidation.setValue('phoneMobile', e.target.value)}
                     />
                   </FormFieldWrapper>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <FormFieldWrapper
                     label="รหัสพนักงาน"
                     error={addUserValidation.errors.employeeId}
@@ -396,6 +520,26 @@ const UserManagement = () => {
                       value={addUserValidation.values.employeeId}
                       onChange={(e) => addUserValidation.setValue('employeeId', e.target.value)}
                     />
+                  </FormFieldWrapper>
+                  <FormFieldWrapper
+                    label="ประเภทผู้ใช้"
+                    required
+                    error={addUserValidation.errors.userType}
+                  >
+                    <Select 
+                      value={addUserValidation.values.userType}
+                      onValueChange={(value) => addUserValidation.setValue('userType', value)}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="เลือกประเภทผู้ใช้" />
+                      </SelectTrigger>
+                      <SelectContent className="bg-popover">
+                        <SelectItem value="user">ผู้ใช้งานทั่วไป</SelectItem>
+                        <SelectItem value="admin">ผู้ดูแลระบบ</SelectItem>
+                        <SelectItem value="manager">ผู้จัดการ</SelectItem>
+                        <SelectItem value="supervisor">หัวหน้างาน</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </FormFieldWrapper>
                 </div>
 
@@ -530,40 +674,39 @@ const UserManagement = () => {
               <div className="grid gap-6 py-4 max-h-[60vh] overflow-y-auto">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <FormFieldWrapper
-                    label="ชื่อ-นามสกุล"
+                    label="ชื่อ (ภาษาไทย)"
                     required
-                    error={editUserValidation.errors.name}
+                    error={editUserValidation.errors.firstName}
                   >
                     <Input
-                      placeholder="กรอกชื่อ-นามสกุล"
-                      value={editUserValidation.values.name}
-                      onChange={(e) => editUserValidation.setValue('name', e.target.value)}
+                      placeholder="กรอกชื่อ"
+                      value={editUserValidation.values.firstName}
+                      onChange={(e) => editUserValidation.setValue('firstName', e.target.value)}
                     />
                   </FormFieldWrapper>
                   <FormFieldWrapper
-                    label="อีเมล"
+                    label="นามสกุล (ภาษาไทย)"
                     required
-                    error={editUserValidation.errors.email}
+                    error={editUserValidation.errors.lastName}
                   >
                     <Input
-                      type="email"
-                      placeholder="user@company.com"
-                      value={editUserValidation.values.email}
-                      onChange={(e) => editUserValidation.setValue('email', e.target.value)}
+                      placeholder="กรอกนามสกุล"
+                      value={editUserValidation.values.lastName}
+                      onChange={(e) => editUserValidation.setValue('lastName', e.target.value)}
                     />
                   </FormFieldWrapper>
                 </div>
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <FormFieldWrapper
-                    label="เบอร์โทร"
-                    error={editUserValidation.errors.phone}
+                    label="เบอร์โทรมือถือ"
+                    error={editUserValidation.errors.phoneMobile}
                     hint="เช่น 081-234-5678"
                   >
                     <Input
                       placeholder="081-234-5678"
-                      value={editUserValidation.values.phone}
-                      onChange={(e) => editUserValidation.setValue('phone', e.target.value)}
+                      value={editUserValidation.values.phoneMobile}
+                      onChange={(e) => editUserValidation.setValue('phoneMobile', e.target.value)}
                     />
                   </FormFieldWrapper>
                   <FormFieldWrapper

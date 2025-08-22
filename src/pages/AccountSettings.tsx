@@ -38,12 +38,19 @@ import {
 
 interface UserProfile {
   id: string;
+  username?: string;
   firstName: string;
   lastName: string;
+  firstNameEn?: string;
+  lastNameEn?: string;
+  nationalId?: string;
   email: string;
+  backupEmail?: string;
   phone: string;
+  phoneOffice?: string;
   position: string;
   department: string;
+  departmentEn?: string;
   organization: string;
   address: string;
   avatar: string;
@@ -51,6 +58,7 @@ interface UserProfile {
   lastLogin: string;
   timezone: string;
   language: string;
+  userType?: string;
 }
 
 interface SecuritySettings {
@@ -339,7 +347,7 @@ export default function AccountSettings() {
               {/* Basic Information */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">
-                  <Label htmlFor="firstName">ชื่อ</Label>
+                  <Label htmlFor="firstName">ชื่อ (ไทย)</Label>
                   <Input
                     id="firstName"
                     value={profile.firstName}
@@ -347,11 +355,47 @@ export default function AccountSettings() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="lastName">นามสกุล</Label>
+                  <Label htmlFor="lastName">นามสกุล (ไทย)</Label>
                   <Input
                     id="lastName"
                     value={profile.lastName}
                     onChange={(e) => setProfile({ ...profile, lastName: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="firstNameEn">ชื่อ (อังกฤษ)</Label>
+                  <Input
+                    id="firstNameEn"
+                    placeholder="First Name"
+                    value={profile.firstNameEn || ""}
+                    onChange={(e) => setProfile({ ...profile, firstNameEn: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="lastNameEn">นามสกุล (อังกฤษ)</Label>
+                  <Input
+                    id="lastNameEn"
+                    placeholder="Last Name"
+                    value={profile.lastNameEn || ""}
+                    onChange={(e) => setProfile({ ...profile, lastNameEn: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="username">ชื่อผู้ใช้</Label>
+                  <Input
+                    id="username"
+                    value={profile.username || ""}
+                    onChange={(e) => setProfile({ ...profile, username: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="nationalId">เลขบัตรประชาชน</Label>
+                  <Input
+                    id="nationalId"
+                    placeholder="1234567890123"
+                    maxLength={13}
+                    value={profile.nationalId || ""}
+                    onChange={(e) => setProfile({ ...profile, nationalId: e.target.value })}
                   />
                 </div>
                 <div className="space-y-2">
@@ -369,9 +413,28 @@ export default function AccountSettings() {
                   </div>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="phone">เบอร์โทรศัพท์</Label>
+                  <Label htmlFor="backupEmail">อีเมลสำรอง</Label>
+                  <Input
+                    id="backupEmail"
+                    type="email"
+                    value={profile.backupEmail || ""}
+                    onChange={(e) => setProfile({ ...profile, backupEmail: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="phoneOffice">โทรศัพท์สำนักงาน</Label>
+                  <Input
+                    id="phoneOffice"
+                    placeholder="02-123-4567"
+                    value={profile.phoneOffice || ""}
+                    onChange={(e) => setProfile({ ...profile, phoneOffice: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="phone">โทรศัพท์มือถือ</Label>
                   <Input
                     id="phone"
+                    placeholder="081-234-5678"
                     value={profile.phone}
                     onChange={(e) => setProfile({ ...profile, phone: e.target.value })}
                   />
@@ -385,12 +448,38 @@ export default function AccountSettings() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="department">แผนก</Label>
+                  <Label htmlFor="department">แผนก (ไทย)</Label>
                   <Input
                     id="department"
                     value={profile.department}
                     onChange={(e) => setProfile({ ...profile, department: e.target.value })}
                   />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="departmentEn">แผนก (อังกฤษ)</Label>
+                  <Input
+                    id="departmentEn"
+                    placeholder="Department Name"
+                    value={profile.departmentEn || ""}
+                    onChange={(e) => setProfile({ ...profile, departmentEn: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="userType">ประเภทผู้ใช้</Label>
+                  <Select
+                    value={profile.userType || "user"}
+                    onValueChange={(value) => setProfile({ ...profile, userType: value })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="user">ผู้ใช้งานทั่วไป</SelectItem>
+                      <SelectItem value="admin">ผู้ดูแลระบบ</SelectItem>
+                      <SelectItem value="manager">ผู้จัดการ</SelectItem>
+                      <SelectItem value="supervisor">หัวหน้างาน</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
 

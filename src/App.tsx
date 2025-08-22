@@ -11,6 +11,7 @@ import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
 import UserManagement from "./pages/UserManagement";
+import GroupManagement from "./pages/GroupManagement";
 import OrganizationManagement from "./pages/OrganizationManagement";
 import OrganizationUnits from "./pages/OrganizationUnits";
 import DomainManagement from "./pages/DomainManagement";
@@ -57,6 +58,7 @@ const App = () => (
             <Route path="/auth" element={<Auth />} />
             <Route path="/dashboard" element={<Layout><Reports /></Layout>} />
           <Route path="/users" element={<Layout><UserManagement /></Layout>} />
+          <Route path="/groups" element={<Layout><GroupManagement /></Layout>} />
           <Route path="/organizations" element={<Layout><OrganizationManagement /></Layout>} />
           <Route path="/organization-units" element={<Layout><OrganizationUnits /></Layout>} />
           <Route path="/domains" element={<Layout><DomainManagement /></Layout>} />
