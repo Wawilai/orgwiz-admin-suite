@@ -787,7 +787,6 @@ export type Database = {
           backup_email: string | null
           bio: string | null
           created_at: string
-          department_en: string | null
           display_name: string | null
           email: string
           employee_id: string | null
@@ -820,7 +819,6 @@ export type Database = {
           backup_email?: string | null
           bio?: string | null
           created_at?: string
-          department_en?: string | null
           display_name?: string | null
           email: string
           employee_id?: string | null
@@ -853,7 +851,6 @@ export type Database = {
           backup_email?: string | null
           bio?: string | null
           created_at?: string
-          department_en?: string | null
           display_name?: string | null
           email?: string
           employee_id?: string | null

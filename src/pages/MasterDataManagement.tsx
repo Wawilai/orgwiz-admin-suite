@@ -61,6 +61,7 @@ interface MasterDataItem {
   id: number;
   code: string;
   name: string;
+  nameEn?: string;
   description?: string;
   isActive: boolean;
   order: number;
@@ -107,17 +108,10 @@ const mockOrganizationTypes: MasterDataItem[] = [
 ];
 
 const mockDepartments: MasterDataItem[] = [
-  { id: 1, code: "IT", name: "แผนกเทคโนโลยีสารสนเทศ", description: "จัดการระบบและเทคโนโลยี", isActive: true, order: 1, createdAt: "2024-01-01", updatedAt: "2024-01-01" },
-  { id: 2, code: "HR", name: "แผนกทรัพยากรบุคคล", description: "จัดการบุคลากรและสวัสดิการ", isActive: true, order: 2, createdAt: "2024-01-01", updatedAt: "2024-01-01" },
-  { id: 3, code: "FINANCE", name: "แผนกการเงิน", description: "จัดการเงินและบัญชี", isActive: true, order: 3, createdAt: "2024-01-01", updatedAt: "2024-01-01" },
-  { id: 4, code: "MARKETING", name: "แผนกการตลาด", description: "จัดการการตลาดและประชาสัมพันธ์", isActive: true, order: 4, createdAt: "2024-01-01", updatedAt: "2024-01-01" },
-];
-
-const mockDepartmentsEn: MasterDataItem[] = [
-  { id: 1, code: "IT", name: "Information Technology Department", description: "Manages systems and technology", isActive: true, order: 1, createdAt: "2024-01-01", updatedAt: "2024-01-01" },
-  { id: 2, code: "HR", name: "Human Resources Department", description: "Manages personnel and welfare", isActive: true, order: 2, createdAt: "2024-01-01", updatedAt: "2024-01-01" },
-  { id: 3, code: "FINANCE", name: "Finance Department", description: "Manages finance and accounting", isActive: true, order: 3, createdAt: "2024-01-01", updatedAt: "2024-01-01" },
-  { id: 4, code: "MARKETING", name: "Marketing Department", description: "Manages marketing and public relations", isActive: true, order: 4, createdAt: "2024-01-01", updatedAt: "2024-01-01" },
+  { id: 1, code: "IT", name: "แผนกเทคโนโลยีสารสนเทศ", nameEn: "Information Technology Department", description: "จัดการระบบและเทคโนโลยี", isActive: true, order: 1, createdAt: "2024-01-01", updatedAt: "2024-01-01" },
+  { id: 2, code: "HR", name: "แผนกทรัพยากรบุคคล", nameEn: "Human Resources Department", description: "จัดการบุคลากรและสวัสดิการ", isActive: true, order: 2, createdAt: "2024-01-01", updatedAt: "2024-01-01" },
+  { id: 3, code: "FINANCE", name: "แผนกการเงิน", nameEn: "Finance Department", description: "จัดการเงินและบัญชี", isActive: true, order: 3, createdAt: "2024-01-01", updatedAt: "2024-01-01" },
+  { id: 4, code: "MARKETING", name: "แผนกการตลาด", nameEn: "Marketing Department", description: "จัดการการตลาดและประชาสัมพันธ์", isActive: true, order: 4, createdAt: "2024-01-01", updatedAt: "2024-01-01" },
 ];
 
 const mockPositions: MasterDataItem[] = [
@@ -152,16 +146,9 @@ const organizationDataTypes = [
   { 
     key: "departments", 
     name: "แผนก/หน่วยงาน", 
-    description: "จัดการแผนกและหน่วยงานต่างๆ",
+    description: "จัดการแผนกและหน่วยงานต่างๆ (รวมทั้งชื่อภาษาอังกฤษ)",
     icon: Users,
     data: mockDepartments 
-  },
-  { 
-    key: "departments-en", 
-    name: "แผนก (อังกฤษ)", 
-    description: "จัดการชื่อแผนกภาษาอังกฤษ",
-    icon: Users,
-    data: mockDepartmentsEn 
   },
   { 
     key: "positions", 
