@@ -756,6 +756,7 @@ export type Database = {
           registration_number: string | null
           status: string
           tax_id: string | null
+          tenant_id: string | null
           type: string
           updated_at: string
           website: string | null
@@ -772,6 +773,7 @@ export type Database = {
           registration_number?: string | null
           status?: string
           tax_id?: string | null
+          tenant_id?: string | null
           type: string
           updated_at?: string
           website?: string | null
@@ -788,11 +790,20 @@ export type Database = {
           registration_number?: string | null
           status?: string
           tax_id?: string | null
+          tenant_id?: string | null
           type?: string
           updated_at?: string
           website?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "organizations_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       profiles: {
         Row: {
@@ -1090,6 +1101,39 @@ export type Database = {
           },
         ]
       }
+      tenants: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          name: string
+          settings: Json | null
+          slug: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          name: string
+          settings?: Json | null
+          slug: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          name?: string
+          settings?: Json | null
+          slug?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           assigned_at: string
@@ -1193,6 +1237,11 @@ export type Database = {
         | "manager"
         | "user"
         | "viewer"
+        | "global_admin"
+        | "tenant_admin"
+        | "org_admin"
+        | "domain_admin"
+        | "system_security"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1326,6 +1375,11 @@ export const Constants = {
         "manager",
         "user",
         "viewer",
+        "global_admin",
+        "tenant_admin",
+        "org_admin",
+        "domain_admin",
+        "system_security",
       ],
     },
   },
