@@ -1040,12 +1040,27 @@ export type Database = {
         Args: { domain_id: string; local_part: string }
         Returns: string
       }
+      get_organization_stats: {
+        Args: { org_id: string }
+        Returns: Json
+      }
       has_role: {
         Args: {
           _role_type: Database["public"]["Enums"]["app_role"]
           _user_id: string
         }
         Returns: boolean
+      }
+      initialize_organization: {
+        Args: {
+          admin_email?: string
+          admin_first_name?: string
+          admin_last_name?: string
+          org_email: string
+          org_name: string
+          org_type?: string
+        }
+        Returns: string
       }
       is_organization_admin: {
         Args: { _org_id: string; _user_id: string }
