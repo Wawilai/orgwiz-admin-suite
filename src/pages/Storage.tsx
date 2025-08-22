@@ -302,9 +302,12 @@ export default function Storage() {
           <p className="text-muted-foreground">ตั้งค่าและติดตาม Storage Quota ของผู้ใช้และองค์กร</p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline">
-            <Download className="h-4 w-4 mr-2" />
-            ส่งออกรายงาน
+          <Button variant="outline" onClick={() => {
+            // Navigate to storage reports
+            window.location.href = '/storage/reports';
+          }}>
+            <BarChart3 className="h-4 w-4 mr-2" />
+            ดูรายงาน
           </Button>
           <Dialog open={isAddQuotaDialogOpen} onOpenChange={setIsAddQuotaDialogOpen}>
             <DialogTrigger asChild>

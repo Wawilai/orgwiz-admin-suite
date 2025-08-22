@@ -10,6 +10,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from '@/hooks/use-toast';
 import { 
   MessageSquare, 
@@ -405,20 +406,103 @@ export default function Chat() {
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent>
-                        <DropdownMenuItem>
-                          <Settings className="mr-2 h-4 w-4" />
-                          ตั้งค่าแชท
-                        </DropdownMenuItem>
+                        <Dialog>
+                          <DialogTrigger asChild>
+                            <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                              <Settings className="mr-2 h-4 w-4" />
+                              ตั้งค่าแชท
+                            </DropdownMenuItem>
+                          </DialogTrigger>
+                          <DialogContent>
+                            <DialogHeader>
+                              <DialogTitle>ตั้งค่าแชท</DialogTitle>
+                            </DialogHeader>
+                            <div className="space-y-4">
+                              <div className="space-y-2">
+                                <Label>การแจ้งเตือน</Label>
+                                <div className="space-y-2">
+                                  <div className="flex items-center space-x-2">
+                                    <input type="checkbox" id="sound-notification" defaultChecked className="rounded" />
+                                    <Label htmlFor="sound-notification">เสียงแจ้งเตือน</Label>
+                                  </div>
+                                  <div className="flex items-center space-x-2">
+                                    <input type="checkbox" id="desktop-notification" defaultChecked className="rounded" />
+                                    <Label htmlFor="desktop-notification">การแจ้งเตือนบนเดสก์ท็อป</Label>
+                                  </div>
+                                </div>
+                              </div>
+                              <div className="space-y-2">
+                                <Label htmlFor="auto-archive">การเก็บข้อความอัตโนมัติ</Label>
+                                <Select defaultValue="30days">
+                                  <SelectTrigger>
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="7days">7 วัน</SelectItem>
+                                    <SelectItem value="30days">30 วัน</SelectItem>
+                                    <SelectItem value="90days">90 วัน</SelectItem>
+                                    <SelectItem value="never">ไม่เก็บ</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                            </div>
+                            <div className="flex justify-end">
+                              <Button>บันทึก</Button>
+                            </div>
+                          </DialogContent>
+                        </Dialog>
                         {activeChat.type === 'group' && (
                           <DropdownMenuItem>
                             <UserPlus className="mr-2 h-4 w-4" />
                             เพิ่มสมาชิก
                           </DropdownMenuItem>
                         )}
-                        <DropdownMenuItem>
-                          <Archive className="mr-2 h-4 w-4" />
-                          เก็บแชท
-                        </DropdownMenuItem>
+                        <Dialog>
+                          <DialogTrigger asChild>
+                            <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                              <Archive className="mr-2 h-4 w-4" />
+                              เก็บแชท
+                            </DropdownMenuItem>
+                          </DialogTrigger>
+                          <DialogContent className="max-w-2xl">
+                            <DialogHeader>
+                              <DialogTitle>แชทที่เก็บไว้</DialogTitle>
+                            </DialogHeader>
+                            <div className="space-y-4 max-h-96 overflow-y-auto">
+                              <div className="space-y-2">
+                                <div className="p-3 border rounded-lg">
+                                  <div className="flex justify-between items-start">
+                                    <div>
+                                      <div className="font-medium">แชทกับ วิชัย เก่งกาจ</div>
+                                      <div className="text-sm text-muted-foreground">เก็บเมื่อ: 15 มกราคม 2024</div>
+                                      <div className="text-sm text-muted-foreground">ข้อความสุดท้าย: ขอบคุณครับ</div>
+                                    </div>
+                                    <div className="flex space-x-2">
+                                      <Button size="sm" variant="outline">กู้คืน</Button>
+                                      <Button size="sm" variant="destructive">ลบ</Button>
+                                    </div>
+                                  </div>
+                                </div>
+                                <div className="p-3 border rounded-lg">
+                                  <div className="flex justify-between items-start">
+                                    <div>
+                                      <div className="font-medium">กลุ่ม โครงการเก่า</div>
+                                      <div className="text-sm text-muted-foreground">เก็บเมื่อ: 10 มกราคม 2024</div>
+                                      <div className="text-sm text-muted-foreground">สมาชิก: 5 คน</div>
+                                    </div>
+                                    <div className="flex space-x-2">
+                                      <Button size="sm" variant="outline">กู้คืน</Button>
+                                      <Button size="sm" variant="destructive">ลบ</Button>
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                            <div className="flex justify-end">
+                              <Button variant="outline">ปิด</Button>
+                            </div>
+                          </DialogContent>
+                        </Dialog>
                         <DropdownMenuItem className="text-red-600">
                           <Trash2 className="mr-2 h-4 w-4" />
                           ลบแชท

@@ -252,6 +252,9 @@ export default function Meeting() {
   const [isRecording, setIsRecording] = useState(false);
   const [isScreenSharing, setIsScreenSharing] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [isMuted, setIsMuted] = useState(false);
+  const [isVideoOn, setIsVideoOn] = useState(true);
+  const [isHandRaised, setIsHandRaised] = useState(false);
   const [selectedVideoUser, setSelectedVideoUser] = useState<string | null>(null);
   const [currentTab, setCurrentTab] = useState('meetings');
   const [chatMessage, setChatMessage] = useState('');

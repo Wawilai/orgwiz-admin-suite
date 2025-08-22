@@ -260,6 +260,126 @@ const MailService = () => {
             <Upload className="w-4 h-4 mr-2" />
             นำเข้า
           </Button>
+          {/* Reset Password Dialog */}
+          <Dialog>
+            <DialogTrigger asChild>
+              <Button variant="outline">
+                <Key className="w-4 h-4 mr-2" />
+                รีเซ็ตรหัสผ่าน
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-[500px] bg-card">
+              <DialogHeader>
+                <DialogTitle>รีเซ็ตรหัsผ่านผู้ใช้</DialogTitle>
+                <DialogDescription>
+                  เลือกผู้ใช้และดำเนินการรีเซ็ตรหัสผ่าน
+                </DialogDescription>
+              </DialogHeader>
+              <div className="grid gap-4 py-4">
+                <div className="space-y-2">
+                  <Label htmlFor="reset-user">เลือกผู้ใช้</Label>
+                  <Select>
+                    <SelectTrigger>
+                      <SelectValue placeholder="เลือกผู้ใช้ที่ต้องการรีเซ็ตรหัสผ่าน" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-popover">
+                      {mailboxes.map(mailbox => (
+                        <SelectItem key={mailbox.id} value={mailbox.email}>
+                          {mailbox.displayName} ({mailbox.email})
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="new-password">รหัสผ่านใหม่</Label>
+                  <Input 
+                    id="new-password" 
+                    type="password"
+                    placeholder="กรอกรหัสผ่านใหม่"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="confirm-password">ยืนยันรหัสผ่าน</Label>
+                  <Input 
+                    id="confirm-password" 
+                    type="password"
+                    placeholder="ยืนยันรหัสผ่านใหม่"
+                  />
+                </div>
+                <div className="flex items-center space-x-2">
+                  <input type="checkbox" id="force-change" className="rounded" />
+                  <Label htmlFor="force-change">บังคับเปลี่ยนรหัสผ่านในการเข้าใช้ครั้งถัดไป</Label>
+                </div>
+              </div>
+              <div className="flex justify-end space-x-2">
+                <Button variant="outline">ยกเลิก</Button>
+                <Button>รีเซ็ตรหัสผ่าน</Button>
+              </div>
+            </DialogContent>
+          </Dialog>
+
+          {/* Assign Owner Dialog */}
+          <Dialog>
+            <DialogTrigger asChild>
+              <Button variant="outline">
+                <UserCheck className="w-4 h-4 mr-2" />
+                กำหนดเจ้าของ
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-[500px] bg-card">
+              <DialogHeader>
+                <DialogTitle>กำหนดเจ้าของกล่องจดหมาย</DialogTitle>
+                <DialogDescription>
+                  เลือกกล่องจดหมายและกำหนดเจ้าของใหม่
+                </DialogDescription>
+              </DialogHeader>
+              <div className="grid gap-4 py-4">
+                <div className="space-y-2">
+                  <Label htmlFor="select-mailbox">เลือกกล่องจดหมาย</Label>
+                  <Select>
+                    <SelectTrigger>
+                      <SelectValue placeholder="เลือกกล่องจดหมาย" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-popover">
+                      {mailboxes.map(mailbox => (
+                        <SelectItem key={mailbox.id} value={mailbox.email}>
+                          {mailbox.email}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="new-owner">เจ้าของใหม่</Label>
+                  <Input 
+                    id="new-owner" 
+                    placeholder="ชื่อเจ้าของใหม่"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="owner-email">อีเมลติดต่อ</Label>
+                  <Input 
+                    id="owner-email" 
+                    type="email"
+                    placeholder="อีเมลของเจ้าของใหม่"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="transfer-note">หมายเหตุการโอน</Label>
+                  <Input 
+                    id="transfer-note" 
+                    placeholder="เหตุผลในการโอนความเป็นเจ้าของ"
+                  />
+                </div>
+              </div>
+              <div className="flex justify-end space-x-2">
+                <Button variant="outline">ยกเลิก</Button>
+                <Button>กำหนดเจ้าของ</Button>
+              </div>
+            </DialogContent>
+          </Dialog>
+
           <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
             <DialogTrigger asChild>
               <Button>

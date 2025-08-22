@@ -303,7 +303,28 @@ export default function AccountSettings() {
                   </AvatarFallback>
                 </Avatar>
                 <div className="space-y-2">
-                  <Button variant="outline">
+                  <Button variant="outline" onClick={() => {
+                    // Simulate file upload
+                    const input = document.createElement('input');
+                    input.type = 'file';
+                    input.accept = 'image/*';
+                    input.onchange = (e) => {
+                      const file = (e.target as HTMLInputElement).files?.[0];
+                      if (file) {
+                        const reader = new FileReader();
+                        reader.onload = (e) => {
+                          const result = e.target?.result as string;
+                          setProfile({ ...profile, avatar: result });
+                          toast({
+                            title: "อัปโหลดรูปภาพสำเร็จ",
+                            description: "รูปโปรไฟล์ใหม่ได้รับการบันทึกแล้ว",
+                          });
+                        };
+                        reader.readAsDataURL(file);
+                      }
+                    };
+                    input.click();
+                  }}>
                     <Camera className="h-4 w-4 mr-2" />
                     เปลี่ยนรูปโปรไฟล์
                   </Button>

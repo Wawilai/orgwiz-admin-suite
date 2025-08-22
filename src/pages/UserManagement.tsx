@@ -97,6 +97,9 @@ const UserManagement = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedFilter, setSelectedFilter] = useState("all");
   const [isAddUserOpen, setIsAddUserOpen] = useState(false);
+  const [isEditUserOpen, setIsEditUserOpen] = useState(false);
+  const [editingUser, setEditingUser] = useState<any>(null);
+  const [usersData, setUsersData] = useState(users);
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -124,7 +127,16 @@ const UserManagement = () => {
     }
   };
 
-  const filteredUsers = users.filter(user => {
+  const openEditDialog = (user: any) => {
+    setEditingUser(user);
+    setIsEditUserOpen(true);
+  };
+
+  const handleDeleteUser = (userId: number) => {
+    setUsersData(usersData.filter(user => user.id !== userId));
+  };
+
+  const filteredUsers = usersData.filter(user => {
     const matchesSearch = user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          user.email.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesFilter = selectedFilter === "all" || user.status === selectedFilter;
@@ -314,6 +326,100 @@ const UserManagement = () => {
                 </Button>
                 <Button onClick={() => setIsAddUserOpen(false)}>
                   บันทึก
+                </Button>
+              </div>
+            </DialogContent>
+          </Dialog>
+
+          {/* Edit User Dialog */}
+          <Dialog open={isEditUserOpen} onOpenChange={setIsEditUserOpen}>
+            <DialogContent className="bg-card overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle>แก้ไขข้อมูลผู้ใช้งาน</DialogTitle>
+                <DialogDescription>
+                  แก้ไขข้อมูลผู้ใช้งานในระบบ
+                </DialogDescription>
+              </DialogHeader>
+              <div className="grid gap-6 py-4 max-h-[60vh] overflow-y-auto">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="edit-name">ชื่อ-นามสกุล *</Label>
+                    <Input
+                      id="edit-name"
+                      defaultValue={editingUser?.name || ""}
+                      placeholder="กรอกชื่อ-นามสกุล"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="edit-email">อีเมล *</Label>
+                    <Input
+                      id="edit-email"
+                      type="email"
+                      defaultValue={editingUser?.email || ""}
+                      placeholder="user@company.com"
+                    />
+                  </div>
+                </div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="edit-phone">เบอร์โทร</Label>
+                    <Input
+                      id="edit-phone"
+                      defaultValue={editingUser?.phone || ""}
+                      placeholder="081-234-5678"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="edit-organization">องค์กร</Label>
+                    <Select defaultValue={editingUser?.organization || ""}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="เลือกองค์กร" />
+                      </SelectTrigger>
+                      <SelectContent className="bg-popover">
+                        <SelectItem value="ABC Corp">ABC Corp</SelectItem>
+                        <SelectItem value="XYZ Ltd">XYZ Ltd</SelectItem>
+                        <SelectItem value="DEF Co">DEF Co</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="edit-role">บทบาท</Label>
+                    <Select defaultValue={editingUser?.role || ""}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="เลือกบทบาท" />
+                      </SelectTrigger>
+                      <SelectContent className="bg-popover">
+                        <SelectItem value="Admin">ผู้ดูแลระบบ</SelectItem>
+                        <SelectItem value="Manager">ผู้จัดการ</SelectItem>
+                        <SelectItem value="User">ผู้ใช้งาน</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="edit-status">สถานะ</Label>
+                    <Select defaultValue={editingUser?.status || ""}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="เลือกสถานะ" />
+                      </SelectTrigger>
+                      <SelectContent className="bg-popover">
+                        <SelectItem value="active">ใช้งาน</SelectItem>
+                        <SelectItem value="suspended">ระงับ</SelectItem>
+                        <SelectItem value="inactive">ไม่ใช้งาน</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              </div>
+              <div className="flex justify-end space-x-2">
+                <Button variant="outline" onClick={() => setIsEditUserOpen(false)}>
+                  ยกเลิก
+                </Button>
+                <Button onClick={() => setIsEditUserOpen(false)}>
+                  บันทึกการเปลี่ยนแปลง
                 </Button>
               </div>
             </DialogContent>
