@@ -131,7 +131,6 @@ const UserManagement = () => {
     employeeId: "",
     organization: "",
     department: "",
-    departmentEn: "",
     role: "",
     position: "",
     userType: "",
@@ -168,7 +167,6 @@ const UserManagement = () => {
     nationalId: "",
     organization: "",
     department: "",
-    departmentEn: "",
     role: "",
     userType: "",
   }, {
@@ -233,7 +231,6 @@ const UserManagement = () => {
       nationalId: user.nationalId || "",
       organization: user.organization,
       department: user.organizationUnit || "",
-      departmentEn: user.departmentEn || "",
       role: user.role,
       userType: user.userType || "user",
     });
