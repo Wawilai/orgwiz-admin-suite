@@ -36,6 +36,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { DatePicker } from "@/components/ui/date-picker";
 import {
   Users,
   UserPlus,
@@ -256,9 +257,8 @@ const UserManagement = () => {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="start-date">วันที่เริ่มงาน</Label>
-                    <Input
-                      id="start-date"
-                      type="date"
+                    <DatePicker
+                      placeholder="เลือกวันที่เริ่มงาน"
                     />
                   </div>
                   <div className="space-y-2">

@@ -9,6 +9,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Switch } from '@/components/ui/switch';
+import { DatePicker } from '@/components/ui/date-picker';
 import { toast } from '@/hooks/use-toast';
 import { 
   Calendar as CalendarIcon, 
@@ -130,11 +131,15 @@ export default function Calendar() {
     isRecurring: false,
     status: 'Confirmed'
   });
+  const [startDate, setStartDate] = useState<Date>();
+  const [endDate, setEndDate] = useState<Date>();
 
   const handleAddEvent = () => {
     const newEvent: Event = {
       id: Date.now().toString(),
       ...formData as Event,
+      startDate: startDate?.toISOString().split('T')[0] || '',
+      endDate: endDate?.toISOString().split('T')[0] || '',
       reminders: [15],
       createdBy: 'ผู้ใช้ปัจจุบัน',
       createdAt: new Date().toISOString().split('T')[0]
@@ -185,11 +190,15 @@ export default function Calendar() {
       isRecurring: false,
       status: 'Confirmed'
     });
+    setStartDate(undefined);
+    setEndDate(undefined);
   };
 
   const openEditDialog = (event: Event) => {
     setEditingEvent(event);
     setFormData(event);
+    setStartDate(event.startDate ? new Date(event.startDate) : undefined);
+    setEndDate(event.endDate ? new Date(event.endDate) : undefined);
   };
 
   const getTypeBadge = (type: string) => {
@@ -319,11 +328,10 @@ export default function Calendar() {
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="startDate">วันที่เริ่ม</Label>
-                    <Input
-                      id="startDate"
-                      type="date"
-                      value={formData.startDate}
-                      onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
+                    <DatePicker
+                      date={startDate}
+                      onSelect={setStartDate}
+                      placeholder="เลือกวันที่เริ่ม"
                     />
                   </div>
                   <div className="space-y-2">
@@ -338,11 +346,10 @@ export default function Calendar() {
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="endDate">วันที่สิ้นสุด</Label>
-                    <Input
-                      id="endDate"
-                      type="date"
-                      value={formData.endDate}
-                      onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
+                    <DatePicker
+                      date={endDate}
+                      onSelect={setEndDate}
+                      placeholder="เลือกวันที่สิ้นสุด"
                     />
                   </div>
                   <div className="space-y-2">
@@ -625,11 +632,10 @@ export default function Calendar() {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="edit-startDate">วันที่เริ่ม</Label>
-                <Input
-                  id="edit-startDate"
-                  type="date"
-                  value={formData.startDate}
-                  onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
+                <DatePicker
+                  date={startDate}
+                  onSelect={setStartDate}
+                  placeholder="เลือกวันที่เริ่ม"
                 />
               </div>
               <div className="space-y-2">
@@ -644,11 +650,10 @@ export default function Calendar() {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="edit-endDate">วันที่สิ้นสุด</Label>
-                <Input
-                  id="edit-endDate"
-                  type="date"
-                  value={formData.endDate}
-                  onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
+                <DatePicker
+                  date={endDate}
+                  onSelect={setEndDate}
+                  placeholder="เลือกวันที่สิ้นสุด"
                 />
               </div>
               <div className="space-y-2">

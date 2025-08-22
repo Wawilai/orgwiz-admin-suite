@@ -11,6 +11,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { DatePicker } from '@/components/ui/date-picker';
 import { toast } from '@/hooks/use-toast';
 import { 
   Key, 
@@ -405,11 +406,8 @@ export default function LicenseManagement() {
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="expiryDate">วันหมดอายุ</Label>
-                    <Input
-                      id="expiryDate"
-                      type="date"
-                      value={formData.expiryDate}
-                      onChange={(e) => setFormData({ ...formData, expiryDate: e.target.value })}
+                    <DatePicker
+                      placeholder="เลือกวันหมดอายุ"
                     />
                   </div>
                   <div className="space-y-2">
@@ -845,11 +843,8 @@ export default function LicenseManagement() {
             </div>
             <div className="space-y-2">
               <Label htmlFor="edit-expiryDate">วันหมดอายุ</Label>
-              <Input
-                id="edit-expiryDate"
-                type="date"
-                value={formData.expiryDate}
-                onChange={(e) => setFormData({ ...formData, expiryDate: e.target.value })}
+              <DatePicker
+                placeholder="เลือกวันหมดอายุ"
               />
             </div>
             <div className="space-y-2">

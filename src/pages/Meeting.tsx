@@ -13,6 +13,7 @@ import { Switch } from '@/components/ui/switch';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Separator } from '@/components/ui/separator';
+import { DatePicker } from '@/components/ui/date-picker';
 import { toast } from '@/hooks/use-toast';
 import { 
   Video, 
@@ -344,11 +345,8 @@ export default function Meeting() {
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="scheduledDate">วันที่</Label>
-                    <Input
-                      id="scheduledDate"
-                      type="date"
-                      value={formData.scheduledDate}
-                      onChange={(e) => setFormData({ ...formData, scheduledDate: e.target.value })}
+                    <DatePicker
+                      placeholder="เลือกวันที่ประชุม"
                     />
                   </div>
                   <div className="space-y-2">
