@@ -167,7 +167,7 @@ export function AdminSidebar() {
           // Handle standalone items (like Dashboard)
           if (group.standalone) {
             return (
-              <div key={group.title} className="mb-0.5">
+              <div key={group.title} className="mb-0">
                 <SidebarMenuButton asChild>
                   <NavLink
                     to={group.url!}
@@ -190,7 +190,7 @@ export function AdminSidebar() {
           const hasActiveItem = group.items?.some(item => isActive(item.url));
 
           return (
-            <SidebarGroup key={group.title} className={collapsed ? "mb-0.5" : "mb-1"}>
+            <SidebarGroup key={group.title} className={collapsed ? "mb-0" : "mb-0.5"}>
               {/* Group Header */}
               {!collapsed && (
                 <button
@@ -217,7 +217,7 @@ export function AdminSidebar() {
                 !collapsed && isExpanded ? "max-h-96 opacity-100" : "max-h-0 opacity-0",
                 collapsed ? "max-h-96 opacity-100" : ""
               )}>
-                <SidebarMenu className="space-y-0">
+                <SidebarMenu className="space-y-px">
                   {group.items?.map((item) => (
                     <SidebarMenuItem key={item.title}>
                       <SidebarMenuButton asChild>
@@ -240,7 +240,7 @@ export function AdminSidebar() {
 
               {/* Show icons only when collapsed */}
               {collapsed && group.items && (
-                <div className="space-y-0">
+                <div className="space-y-px">
                   {group.items.map((item) => (
                     <SidebarMenuButton key={item.title} asChild>
                       <NavLink
