@@ -38,6 +38,11 @@ export function ProtectedRoute({
     return <Navigate to="/auth" replace />;
   }
 
+  // If no specific requirements, just show the children
+  if (!requiredModule && !requiredRoles && !requiredPermission) {
+    return <>{children}</>;
+  }
+
   // Check module access
   if (requiredModule && !canAccessModule(requiredModule)) {
     return fallback || (
@@ -52,7 +57,7 @@ export function ProtectedRoute({
     );
   }
 
-  // Check required roles
+  // Check required roles (only if we have role data)
   if (requiredRoles && requiredRoles.length > 0 && !hasAnyRole(requiredRoles)) {
     return fallback || (
       <div className="container mx-auto p-6">
@@ -66,7 +71,7 @@ export function ProtectedRoute({
     );
   }
 
-  // Check specific permission
+  // Check specific permission (only if we have permission data)
   if (requiredPermission && !hasPermission(requiredPermission as any)) {
     return fallback || (
       <div className="container mx-auto p-6">

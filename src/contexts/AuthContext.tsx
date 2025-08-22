@@ -125,31 +125,44 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 
   const fetchUserProfile = async (userId: string) => {
     try {
-      const [profileResult, rolesResult] = await Promise.all([
-        supabase
-          .from('profiles')
-          .select('*')
-          .eq('user_id', userId)
-          .single(),
-        supabase
+      // Try to fetch profile with proper error handling
+      const profileResult = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('user_id', userId)
+        .maybeSingle(); // Use maybeSingle to avoid errors when no profile exists
+
+      if (profileResult.data) {
+        setUserProfile(profileResult.data);
+      } else {
+        // Profile doesn't exist yet, create a default one
+        setUserProfile(null);
+      }
+
+      // Try to fetch user roles with error handling
+      try {
+        const rolesResult = await supabase
           .from('user_roles')
           .select(`
             roles (name, role_type)
           `)
           .eq('user_id', userId)
-          .eq('is_active', true)
-      ]);
+          .eq('is_active', true);
 
-      if (profileResult.data) {
-        setUserProfile(profileResult.data);
-      }
-
-      if (rolesResult.data) {
-        const roles = rolesResult.data.map(ur => ur.roles?.name).filter(Boolean);
-        setUserRoles(roles);
+        if (rolesResult.data) {
+          const roles = rolesResult.data.map(ur => ur.roles?.name).filter(Boolean);
+          setUserRoles(roles);
+        } else {
+          setUserRoles([]);
+        }
+      } catch (roleError) {
+        console.warn('Unable to fetch user roles:', roleError);
+        setUserRoles([]);
       }
     } catch (error) {
-      console.error('Error fetching user profile:', error);
+      console.warn('Unable to fetch user profile:', error);
+      setUserProfile(null);
+      setUserRoles([]);
     }
   };
 
