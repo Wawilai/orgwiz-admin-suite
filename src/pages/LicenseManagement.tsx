@@ -161,6 +161,8 @@ export default function LicenseManagement() {
   const [typeFilter, setTypeFilter] = useState<string>('all');
   const [isAddLicenseDialogOpen, setIsAddLicenseDialogOpen] = useState(false);
   const [isAssignDialogOpen, setIsAssignDialogOpen] = useState(false);
+  const [isUsageHistoryOpen, setIsUsageHistoryOpen] = useState(false);
+  const [isSendReportOpen, setIsSendReportOpen] = useState(false);
   const [editingLicense, setEditingLicense] = useState<License | null>(null);
   const [selectedLicense, setSelectedLicense] = useState<License | null>(null);
   const [currentTab, setCurrentTab] = useState('licenses');
@@ -269,6 +271,42 @@ export default function LicenseManagement() {
   const openAssignDialog = (license: License) => {
     setSelectedLicense(license);
     setIsAssignDialogOpen(true);
+  };
+
+  const openUsageHistoryDialog = (license: License) => {
+    setSelectedLicense(license);
+    setIsUsageHistoryOpen(true);
+  };
+
+  const openSendReportDialog = (license: License) => {
+    setSelectedLicense(license);
+    setIsSendReportOpen(true);
+  };
+
+  const handleDownloadCertificate = (license: License) => {
+    // Create a simple certificate content
+    const certificateContent = `
+CERTIFICATE OF LICENSE
+
+License Key: ${license.licenseKey}
+Product: ${license.productName}
+Organization: ${license.organizationName}
+Issue Date: ${license.issueDate}
+Expiry Date: ${license.expiryDate}
+Max Users: ${license.maxUsers}
+Status: ${license.status}
+
+This certificate confirms the valid license for the above product.
+Generated on: ${new Date().toLocaleString()}
+    `;
+    
+    const blob = new Blob([certificateContent], { type: 'text/plain' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `certificate-${license.licenseKey}.txt`;
+    a.click();
+    window.URL.revokeObjectURL(url);
   };
 
   const getStatusBadge = (status: string) => {
@@ -650,6 +688,18 @@ export default function LicenseManagement() {
                                 <Users className="mr-2 h-4 w-4" />
                                 กำหนดผู้ใช้
                               </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => handleDownloadCertificate(license)}>
+                                <Download className="mr-2 h-4 w-4" />
+                                ดาวน์โหลด Certificate
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => openUsageHistoryDialog(license)}>
+                                <Activity className="mr-2 h-4 w-4" />
+                                ดูประวัติการใช้งาน
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => openSendReportDialog(license)}>
+                                <Download className="mr-2 h-4 w-4" />
+                                ส่งรายงาน
+                              </DropdownMenuItem>
                               {license.status === 'Expired' && (
                                 <DropdownMenuItem onClick={() => handleRenewLicense(license.id)}>
                                   <RefreshCw className="mr-2 h-4 w-4" />
@@ -940,6 +990,108 @@ export default function LicenseManagement() {
           <div className="flex justify-end gap-2">
             <Button variant="outline" onClick={() => setIsAssignDialogOpen(false)}>
               ปิด
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Usage History Dialog */}
+      <Dialog open={isUsageHistoryOpen} onOpenChange={setIsUsageHistoryOpen}>
+        <DialogContent className="max-w-3xl">
+          <DialogHeader>
+            <DialogTitle>ประวัติการใช้งานลิขสิทธิ์</DialogTitle>
+            <DialogDescription>
+              ประวัติการใช้งานของ {selectedLicense?.productName}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>วันที่ใช้งาน</TableHead>
+                  <TableHead>ผู้ใช้</TableHead>
+                  <TableHead>ระยะเวลา</TableHead>
+                  <TableHead>IP Address</TableHead>
+                  <TableHead>User Agent</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {mockUsageLogs.filter(log => log.licenseId === selectedLicense?.id).map((usage) => (
+                  <TableRow key={usage.id}>
+                    <TableCell>
+                      {new Date(usage.usageDate).toLocaleString('th-TH')}
+                    </TableCell>
+                    <TableCell>{usage.userName}</TableCell>
+                    <TableCell>{usage.duration} นาที</TableCell>
+                    <TableCell className="font-mono text-sm">{usage.ipAddress}</TableCell>
+                    <TableCell className="max-w-xs truncate text-xs">
+                      {usage.userAgent.substring(0, 50)}...
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Send Report Dialog */}
+      <Dialog open={isSendReportOpen} onOpenChange={setIsSendReportOpen}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle>ส่งรายงานลิขสิทธิ์</DialogTitle>
+            <DialogDescription>
+              ส่งรายงานการใช้งานลิขสิทธิ์ {selectedLicense?.productName}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="report-type">ประเภทรายงาน</Label>
+              <Select>
+                <SelectTrigger>
+                  <SelectValue placeholder="เลือกประเภทรายงาน" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="usage">รายงานการใช้งาน</SelectItem>
+                  <SelectItem value="compliance">รายงานการปฏิบัติตามข้อกำหนด</SelectItem>
+                  <SelectItem value="expiry">รายงานการหมดอายุ</SelectItem>
+                  <SelectItem value="full">รายงานแบบเต็ม</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="recipient">ผู้รับรายงาน</Label>
+              <Input id="recipient" placeholder="อีเมลผู้รับรายงาน" type="email" />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="period">ช่วงเวลา</Label>
+              <Select>
+                <SelectTrigger>
+                  <SelectValue placeholder="เลือกช่วงเวลา" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="week">7 วันที่ผ่านมา</SelectItem>
+                  <SelectItem value="month">1 เดือนที่ผ่านมา</SelectItem>
+                  <SelectItem value="quarter">3 เดือนที่ผ่านมา</SelectItem>
+                  <SelectItem value="year">1 ปีที่ผ่านมา</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="note">หมายเหตุเพิ่มเติม</Label>
+              <textarea 
+                id="note" 
+                className="w-full p-3 border rounded-md min-h-[80px]" 
+                placeholder="หมายเหตุเพิ่มเติม (ไม่บังคับ)"
+              />
+            </div>
+          </div>
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" onClick={() => setIsSendReportOpen(false)}>
+              ยกเลิก
+            </Button>
+            <Button onClick={() => setIsSendReportOpen(false)}>
+              ส่งรายงาน
             </Button>
           </div>
         </DialogContent>

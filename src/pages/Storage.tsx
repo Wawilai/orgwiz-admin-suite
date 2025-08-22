@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
@@ -24,7 +24,9 @@ import {
   MoreHorizontal,
   Trash2,
   FileText,
-  BarChart3
+  BarChart3,
+  RefreshCw,
+  Activity
 } from 'lucide-react';
 
 interface StorageQuota {
@@ -150,6 +152,10 @@ export default function Storage() {
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [isAddQuotaDialogOpen, setIsAddQuotaDialogOpen] = useState(false);
   const [editingQuota, setEditingQuota] = useState<StorageQuota | null>(null);
+  const [isResetQuotaOpen, setIsResetQuotaOpen] = useState(false);
+  const [isSendAlertOpen, setIsSendAlertOpen] = useState(false);
+  const [isViewHistoryOpen, setIsViewHistoryOpen] = useState(false);
+  const [selectedQuota, setSelectedQuota] = useState<StorageQuota | null>(null);
   const [formData, setFormData] = useState<Partial<StorageQuota>>({
     entityType: 'User',
     entityName: '',
@@ -240,6 +246,42 @@ export default function Storage() {
   const openEditDialog = (quota: StorageQuota) => {
     setEditingQuota(quota);
     setFormData(quota);
+  };
+
+  const openResetQuotaDialog = (quota: StorageQuota) => {
+    setSelectedQuota(quota);
+    setIsResetQuotaOpen(true);
+  };
+
+  const openSendAlertDialog = (quota: StorageQuota) => {
+    setSelectedQuota(quota);
+    setIsSendAlertOpen(true);
+  };
+
+  const openViewHistoryDialog = (quota: StorageQuota) => {
+    setSelectedQuota(quota);
+    setIsViewHistoryOpen(true);
+  };
+
+  const handleResetQuota = (id: string) => {
+    setQuotas(quotas.map(quota => 
+      quota.id === id ? { ...quota, usedSpace: 0, status: 'Normal' } : quota
+    ));
+    toast({
+      title: "รีเซ็ต Quota สำเร็จ",
+      description: "รีเซ็ตการใช้งาน Storage สำเร็จ",
+    });
+    setIsResetQuotaOpen(false);
+  };
+
+  const handleExtendQuota = (id: string, additionalSpace: number) => {
+    setQuotas(quotas.map(quota => 
+      quota.id === id ? { ...quota, allocatedSpace: quota.allocatedSpace + additionalSpace } : quota
+    ));
+    toast({
+      title: "ขยาย Quota สำเร็จ",
+      description: "ขยายพื้นที่จัดเก็บเรียบร้อยแล้ว",
+    });
   };
 
   const getStatusBadge = (status: string, utilizationRate: number) => {
@@ -590,6 +632,22 @@ export default function Storage() {
                             <Edit2 className="mr-2 h-4 w-4" />
                             แก้ไข
                           </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => openResetQuotaDialog(quota)}>
+                            <RefreshCw className="mr-2 h-4 w-4" />
+                            รีเซ็ต Quota
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handleExtendQuota(quota.id, 10)}>
+                            <TrendingUp className="mr-2 h-4 w-4" />
+                            ขยาย Quota
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => openSendAlertDialog(quota)}>
+                            <AlertTriangle className="mr-2 h-4 w-4" />
+                            ส่งเตือน
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => openViewHistoryDialog(quota)}>
+                            <Activity className="mr-2 h-4 w-4" />
+                            ดูประวัติ
+                          </DropdownMenuItem>
                           <DropdownMenuItem>
                             <FileText className="mr-2 h-4 w-4" />
                             ดูรายงาน
@@ -757,6 +815,127 @@ export default function Storage() {
             <Button onClick={handleEditQuota}>
               บันทึก
             </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Reset Quota Dialog */}
+      <Dialog open={isResetQuotaOpen} onOpenChange={setIsResetQuotaOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>รีเซ็ต Storage Quota</DialogTitle>
+            <DialogDescription>
+              รีเซ็ตการใช้งาน Storage สำหรับ {selectedQuota?.entityName}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4">
+            <p className="text-sm text-muted-foreground">
+              การดำเนินการนี้จะรีเซ็ตการใช้งานพื้นที่จัดเก็บเป็น 0 GB และเปลี่ยนสถานะเป็น "ปกติ"
+            </p>
+            <div className="mt-4 p-3 bg-yellow-50 rounded-md">
+              <p className="text-sm text-yellow-800">
+                <strong>คำเตือน:</strong> การรีเซ็ตนี้จะไม่ลบไฟล์จริง แต่จะรีเซ็ตเฉพาะตัวเลขการใช้งานในระบบเท่านั้น
+              </p>
+            </div>
+          </div>
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" onClick={() => setIsResetQuotaOpen(false)}>
+              ยกเลิก
+            </Button>
+            <Button onClick={() => handleResetQuota(selectedQuota?.id || '')}>
+              รีเซ็ต
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Send Alert Dialog */}
+      <Dialog open={isSendAlertOpen} onOpenChange={setIsSendAlertOpen}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle>ส่งการแจ้งเตือน</DialogTitle>
+            <DialogDescription>
+              ส่งการแจ้งเตือนการใช้งาน Storage ถึง {selectedQuota?.entityName}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="alert-type">ประเภทการแจ้งเตือน</Label>
+              <Select>
+                <SelectTrigger>
+                  <SelectValue placeholder="เลือกประเภท" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="warning">เตือนการใช้งานใกล้เต็ม</SelectItem>
+                  <SelectItem value="exceeded">แจ้งเตือนใช้งานเกินขีด</SelectItem>
+                  <SelectItem value="cleanup">แจ้งให้จัดการไฟล์</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="message">ข้อความเพิ่มเติม</Label>
+              <textarea 
+                id="message" 
+                className="w-full p-3 border rounded-md min-h-[100px]" 
+                placeholder="ข้อความเพิ่มเติม (ไม่บังคับ)"
+              />
+            </div>
+            <div className="flex items-center space-x-2">
+              <input type="checkbox" id="email-alert" className="rounded" defaultChecked />
+              <Label htmlFor="email-alert">ส่งผ่านอีเมล</Label>
+            </div>
+          </div>
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" onClick={() => setIsSendAlertOpen(false)}>
+              ยกเลิก
+            </Button>
+            <Button onClick={() => setIsSendAlertOpen(false)}>
+              ส่งการแจ้งเตือน
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* View History Dialog */}
+      <Dialog open={isViewHistoryOpen} onOpenChange={setIsViewHistoryOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>ประวัติการใช้งาน Storage</DialogTitle>
+            <DialogDescription>
+              ประวัติการใช้งานของ {selectedQuota?.entityName}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>วันที่</TableHead>
+                  <TableHead>การใช้งาน</TableHead>
+                  <TableHead>การเปลี่ยนแปลง</TableHead>
+                  <TableHead>หมายเหตุ</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                <TableRow>
+                  <TableCell>25/01/2024</TableCell>
+                  <TableCell>35.2 GB</TableCell>
+                  <TableCell className="text-green-600">+2.1 GB</TableCell>
+                  <TableCell>อัปโหลดไฟล์โปรเจ็กต์</TableCell>
+                </TableRow>
+                <TableRow>
+                  <TableCell>24/01/2024</TableCell>
+                  <TableCell>33.1 GB</TableCell>
+                  <TableCell className="text-red-600">-0.5 GB</TableCell>
+                  <TableCell>ลบไฟล์ชั่วคราว</TableCell>
+                </TableRow>
+                <TableRow>
+                  <TableCell>23/01/2024</TableCell>
+                  <TableCell>33.6 GB</TableCell>
+                  <TableCell className="text-green-600">+1.8 GB</TableCell>
+                  <TableCell>สำรองข้อมูล</TableCell>
+                </TableRow>
+              </TableBody>
+            </Table>
           </div>
         </DialogContent>
       </Dialog>

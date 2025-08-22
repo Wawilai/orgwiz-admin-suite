@@ -98,7 +98,11 @@ const UserManagement = () => {
   const [selectedFilter, setSelectedFilter] = useState("all");
   const [isAddUserOpen, setIsAddUserOpen] = useState(false);
   const [isEditUserOpen, setIsEditUserOpen] = useState(false);
+  const [isResetPasswordOpen, setIsResetPasswordOpen] = useState(false);
+  const [isAssignRoleOpen, setIsAssignRoleOpen] = useState(false);
+  const [isSendEmailOpen, setIsSendEmailOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<any>(null);
+  const [selectedUser, setSelectedUser] = useState<any>(null);
   const [usersData, setUsersData] = useState(users);
 
   const getStatusBadge = (status: string) => {
@@ -134,6 +138,29 @@ const UserManagement = () => {
 
   const handleDeleteUser = (userId: number) => {
     setUsersData(usersData.filter(user => user.id !== userId));
+  };
+
+  const handleSuspendUser = (userId: number) => {
+    setUsersData(usersData.map(user => 
+      user.id === userId 
+        ? { ...user, status: user.status === 'active' ? 'suspended' : 'active' } 
+        : user
+    ));
+  };
+
+  const openResetPasswordDialog = (user: any) => {
+    setSelectedUser(user);
+    setIsResetPasswordOpen(true);
+  };
+
+  const openAssignRoleDialog = (user: any) => {
+    setSelectedUser(user);
+    setIsAssignRoleOpen(true);
+  };
+
+  const openSendEmailDialog = (user: any) => {
+    setSelectedUser(user);
+    setIsSendEmailOpen(true);
   };
 
   const filteredUsers = usersData.filter(user => {
@@ -424,6 +451,118 @@ const UserManagement = () => {
               </div>
             </DialogContent>
           </Dialog>
+
+          {/* Reset Password Dialog */}
+          <Dialog open={isResetPasswordOpen} onOpenChange={setIsResetPasswordOpen}>
+            <DialogContent className="sm:max-w-[425px] bg-card">
+              <DialogHeader>
+                <DialogTitle>รีเซ็ตรหัสผ่าน</DialogTitle>
+                <DialogDescription>
+                  รีเซ็ตรหัสผ่านสำหรับ {selectedUser?.name}
+                </DialogDescription>
+              </DialogHeader>
+              <div className="grid gap-4 py-4">
+                <div className="space-y-2">
+                  <Label htmlFor="new-password">รหัสผ่านใหม่</Label>
+                  <Input id="new-password" type="password" placeholder="กรอกรหัสผ่านใหม่" />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="confirm-password">ยืนยันรหัสผ่าน</Label>
+                  <Input id="confirm-password" type="password" placeholder="ยืนยันรหัสผ่านใหม่" />
+                </div>
+                <div className="flex items-center space-x-2">
+                  <input type="checkbox" id="force-change" className="rounded" />
+                  <Label htmlFor="force-change">บังคับเปลี่ยนรหัสผ่านในการเข้าใช้ครั้งถัดไป</Label>
+                </div>
+              </div>
+              <div className="flex justify-end space-x-2">
+                <Button variant="outline" onClick={() => setIsResetPasswordOpen(false)}>ยกเลิก</Button>
+                <Button onClick={() => setIsResetPasswordOpen(false)}>รีเซ็ตรหัสผ่าน</Button>
+              </div>
+            </DialogContent>
+          </Dialog>
+
+          {/* Assign Role Dialog */}
+          <Dialog open={isAssignRoleOpen} onOpenChange={setIsAssignRoleOpen}>
+            <DialogContent className="sm:max-w-[425px] bg-card">
+              <DialogHeader>
+                <DialogTitle>มอบสิทธิ์</DialogTitle>
+                <DialogDescription>
+                  กำหนดบทบาทและสิทธิ์ให้ {selectedUser?.name}
+                </DialogDescription>
+              </DialogHeader>
+              <div className="grid gap-4 py-4">
+                <div className="space-y-2">
+                  <Label htmlFor="role">บทบาท</Label>
+                  <Select defaultValue={selectedUser?.role}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="เลือกบทบาท" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-popover">
+                      <SelectItem value="Admin">ผู้ดูแลระบบ</SelectItem>
+                      <SelectItem value="Manager">ผู้จัดการ</SelectItem>
+                      <SelectItem value="User">ผู้ใช้งาน</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label>สิทธิ์พิเศษ</Label>
+                  <div className="space-y-2">
+                    <div className="flex items-center space-x-2">
+                      <input type="checkbox" id="manage-users" className="rounded" />
+                      <Label htmlFor="manage-users">จัดการผู้ใช้งาน</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <input type="checkbox" id="manage-system" className="rounded" />
+                      <Label htmlFor="manage-system">จัดการระบบ</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <input type="checkbox" id="view-reports" className="rounded" />
+                      <Label htmlFor="view-reports">ดูรายงาน</Label>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div className="flex justify-end space-x-2">
+                <Button variant="outline" onClick={() => setIsAssignRoleOpen(false)}>ยกเลิก</Button>
+                <Button onClick={() => setIsAssignRoleOpen(false)}>บันทึก</Button>
+              </div>
+            </DialogContent>
+          </Dialog>
+
+          {/* Send Email Dialog */}
+          <Dialog open={isSendEmailOpen} onOpenChange={setIsSendEmailOpen}>
+            <DialogContent className="sm:max-w-[500px] bg-card">
+              <DialogHeader>
+                <DialogTitle>ส่งอีเมล</DialogTitle>
+                <DialogDescription>
+                  ส่งอีเมลถึง {selectedUser?.name} ({selectedUser?.email})
+                </DialogDescription>
+              </DialogHeader>
+              <div className="grid gap-4 py-4">
+                <div className="space-y-2">
+                  <Label htmlFor="subject">หัวข้อ</Label>
+                  <Input id="subject" placeholder="กรอกหัวข้ออีเมล" />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="message">ข้อความ</Label>
+                  <textarea 
+                    id="message" 
+                    className="w-full p-3 border rounded-md min-h-[120px]" 
+                    placeholder="กรอกข้อความที่ต้องการส่ง"
+                  />
+                </div>
+                <div className="flex items-center space-x-2">
+                  <input type="checkbox" id="urgent" className="rounded" />
+                  <Label htmlFor="urgent">อีเมลด่วน</Label>
+                </div>
+              </div>
+              <div className="flex justify-end space-x-2">
+                <Button variant="outline" onClick={() => setIsSendEmailOpen(false)}>ยกเลิก</Button>
+                <Button onClick={() => setIsSendEmailOpen(false)}>ส่งอีเมล</Button>
+              </div>
+            </DialogContent>
+          </Dialog>
         </div>
       </div>
 
@@ -576,6 +715,22 @@ const UserManagement = () => {
                           <DropdownMenuItem onClick={() => openEditDialog(user)}>
                             <Edit className="mr-2 h-4 w-4" />
                             แก้ไข
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => openResetPasswordDialog(user)}>
+                            <Shield className="mr-2 h-4 w-4" />
+                            รีเซ็ตรหัสผ่าน
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handleSuspendUser(user.id)}>
+                            <Shield className="mr-2 h-4 w-4" />
+                            {user.status === 'active' ? 'ระงับใช้งาน' : 'เปิดใช้งาน'}
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => openAssignRoleDialog(user)}>
+                            <Shield className="mr-2 h-4 w-4" />
+                            มอบสิทธิ์
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => openSendEmailDialog(user)}>
+                            <Mail className="mr-2 h-4 w-4" />
+                            ส่งอีเมล
                           </DropdownMenuItem>
                           <DropdownMenuItem 
                             className="text-destructive"
