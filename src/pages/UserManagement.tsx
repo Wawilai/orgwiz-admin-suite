@@ -1,8 +1,10 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 import {
   Table,
   TableBody,
@@ -101,6 +103,9 @@ const users = [
 
 const UserManagement = () => {
   const { getActiveItems } = useMasterData();
+  const { isAuthenticated } = useAuth();
+  const [usersData, setUsersData] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedFilter, setSelectedFilter] = useState("all");
   const [isAddUserOpen, setIsAddUserOpen] = useState(false);
@@ -110,7 +115,46 @@ const UserManagement = () => {
   const [isSendEmailOpen, setIsSendEmailOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<any>(null);
   const [selectedUser, setSelectedUser] = useState<any>(null);
-  const [usersData, setUsersData] = useState(users);
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      fetchUsers();
+    }
+  }, [isAuthenticated]);
+
+  const fetchUsers = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select(`
+          *,
+          organizations!profiles_organization_id_fkey (name),
+          organization_units!profiles_organization_unit_id_fkey (name)
+        `)
+        .order('created_at', { ascending: false });
+      
+      if (error) throw error;
+      
+      const formattedUsers = (data || []).map(profile => ({
+        id: profile.id,
+        name: `${profile.first_name} ${profile.last_name}`,
+        email: profile.email,
+        phone: profile.phone || profile.phone_mobile,
+        organization: profile.organizations?.name || 'ไม่ระบุ',
+        organizationUnit: profile.organization_units?.name || 'ไม่ระบุ',
+        role: profile.user_type || 'user',
+        status: profile.status,
+        lastLogin: profile.last_login ? new Date(profile.last_login).toLocaleString('th-TH') : 'ยังไม่เคยเข้าสู่ระบบ',
+        avatar: profile.avatar_url
+      }));
+      
+      setUsersData(formattedUsers);
+    } catch (error) {
+      console.error('Error fetching users:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // Confirmation dialogs
   const { showDeleteConfirmation, DeleteConfirmationDialog } = useDeleteConfirmation();

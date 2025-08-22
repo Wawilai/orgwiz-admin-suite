@@ -1,8 +1,10 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 import {
   Table,
   TableBody,
@@ -101,7 +103,10 @@ const mockOrganizations = [
 
 const OrganizationManagement = () => {
   const { getActiveItems } = useMasterData();
-  const [organizations, setOrganizations] = useState(mockOrganizations);
+  const { isAuthenticated } = useAuth();
+  const [organizations, setOrganizations] = useState<any[]>([]);
+  const [tenants, setTenants] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedFilter, setSelectedFilter] = useState("all");
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
@@ -114,8 +119,47 @@ const OrganizationManagement = () => {
     phone: "",
     address: "",
     admin: "",
-    adminEmail: ""
+    adminEmail: "",
+    tenant_id: ""
   });
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      fetchOrganizations();
+      fetchTenants();
+    }
+  }, [isAuthenticated]);
+
+  const fetchOrganizations = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('organizations')
+        .select('*')
+        .order('created_at', { ascending: false });
+      
+      if (error) throw error;
+      setOrganizations(data || []);
+    } catch (error) {
+      console.error('Error fetching organizations:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchTenants = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('tenants')
+        .select('*')
+        .eq('status', 'active')
+        .order('name');
+      
+      if (error) throw error;
+      setTenants(data || []);
+    } catch (error) {
+      console.error('Error fetching tenants:', error);
+    }
+  };
 
   // Get master data
   const organizationTypes = getActiveItems('organizationTypes');
@@ -167,7 +211,8 @@ const OrganizationManagement = () => {
         phone: "",
         address: "",
         admin: "",
-        adminEmail: ""
+        adminEmail: "",
+        tenant_id: ""
       });
       setIsAddDialogOpen(false);
     }
@@ -196,7 +241,8 @@ const OrganizationManagement = () => {
       phone: org.phone,
       address: org.address,
       admin: org.admin,
-      adminEmail: org.adminEmail
+      adminEmail: org.adminEmail,
+      tenant_id: org.tenant_id || ""
     });
     setIsEditDialogOpen(true);
   };

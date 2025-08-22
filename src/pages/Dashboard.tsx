@@ -1,8 +1,11 @@
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 import {
   Building2,
   Users,
@@ -20,46 +23,76 @@ import {
 } from "lucide-react";
 
 const Dashboard = () => {
+  const { isAuthenticated } = useAuth();
+  const [orgStats, setOrgStats] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      fetchOrganizationStats();
+    }
+  }, [isAuthenticated]);
+
+  const fetchOrganizationStats = async () => {
+    try {
+      const { data, error } = await supabase.rpc('get_organization_stats', {
+        org_id: await getCurrentUserOrgId()
+      });
+      
+      if (error) throw error;
+      setOrgStats(data);
+    } catch (error) {
+      console.error('Error fetching organization stats:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getCurrentUserOrgId = async () => {
+    const { data } = await supabase.rpc('get_current_user_organization_id');
+    return data;
+  };
+
   const stats = [
     {
-      title: "Daily Active Users (DAU)",
-      value: "1,247",
-      subtitle: "จาก 90 วันที่ผ่านมา",
+      title: "ผู้ใช้งานทั้งหมด",
+      value: orgStats?.total_users || "0",
+      subtitle: "ในองค์กร",
       change: "+12.5%",
-      changeText: "วันที่ผ่านมา", 
+      changeText: "เดือนที่ผ่านมา", 
       trend: "up",
       icon: Users,
       bgColor: "bg-gradient-to-br from-blue-500 to-blue-600",
       textColor: "text-white"
     },
     {
-      title: "Total Services",
-      value: "3",
-      subtitle: "จาก 90 วันที่ผ่านมา", 
-      change: "+40%",
-      changeText: "วันที่ผ่านมา",
+      title: "โดเมนทั้งหมด",
+      value: orgStats?.total_domains || "0",
+      subtitle: "ในองค์กร", 
+      change: "+5%",
+      changeText: "เดือนที่ผ่านมา",
       trend: "up",
       icon: Building2,
       bgColor: "bg-gradient-to-br from-green-500 to-green-600",
       textColor: "text-white"
     },
     {
-      title: "License Usage",
-      value: "78%",
-      subtitle: "จาก 90 วันที่ผ่านมา",
-      change: "+25%", 
-      changeText: "วันที่ผ่านมา",
+      title: "ใบอนุญาตใช้งาน",
+      value: orgStats?.active_licenses || "0",
+      subtitle: "ใช้งานอยู่",
+      change: "+10%", 
+      changeText: "เดือนที่ผ่านมา",
       trend: "up",
       icon: CheckCircle,
       bgColor: "bg-gradient-to-br from-purple-500 to-purple-600",
       textColor: "text-white"
     },
     {
-      title: "Growth Trend",
-      value: "+15.2%",
-      subtitle: "จาก 90 วันที่ผ่านมา",
-      change: "+15.2%",
-      changeText: "วันที่ผ่านมา",
+      title: "ผู้ใช้ที่ใช้งาน",
+      value: orgStats?.active_users || "0",
+      subtitle: "ใช้งานปัจจุบัน",
+      change: "+8.2%",
+      changeText: "เดือนที่ผ่านมา",
       trend: "up", 
       icon: TrendingUp,
       bgColor: "bg-gradient-to-br from-orange-500 to-orange-600",
