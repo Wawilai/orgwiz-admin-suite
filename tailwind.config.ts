@@ -74,8 +74,8 @@ export default {
 				}
 			},
 			fontFamily: {
-				sans: ['Inter', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'Helvetica Neue', 'Arial', 'sans-serif'],
-				inter: ['Inter', 'sans-serif'],
+				sans: ['Kanit', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'Helvetica Neue', 'Arial', 'sans-serif'],
+				kanit: ['Kanit', 'sans-serif'],
 			},
 			backgroundImage: {
 				'gradient-primary': 'var(--gradient-primary)',
