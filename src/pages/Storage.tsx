@@ -144,6 +144,25 @@ const mockUsageLogs: UsageLog[] = [
   }
 ];
 
+const mockDepartments = [
+  'ฝ่ายไอที',
+  'ฝ่ายขาย',
+  'ฝ่ายการตลาด',
+  'ฝ่ายบุคคล',
+  'ฝ่ายบัญชี',
+  'ฝ่ายผลิต',
+  'ฝ่ายคุณภาพ',
+  'ฝ่ายธุรการ'
+];
+
+const mockOrganizations = [
+  'บริษัท เทคโนโลยี จำกัด',
+  'บริษัท นวัตกรรม จำกัด',
+  'บริษัท ดิจิทัล จำกัด',
+  'บริษัท อนาคต จำกัด',
+  'บริษัท สมาร์ท จำกัด'
+];
+
 export default function Storage() {
   const [quotas, setQuotas] = useState<StorageQuota[]>(mockQuotas);
   const [usageLogs] = useState<UsageLog[]>(mockUsageLogs);
@@ -426,21 +445,39 @@ export default function Storage() {
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label htmlFor="department">แผนก</Label>
-                      <Input
-                        id="department"
+                      <Select
                         value={formData.department}
-                        onChange={(e) => setFormData({ ...formData, department: e.target.value })}
-                        placeholder="กรอกแผนก"
-                      />
+                        onValueChange={(value) => setFormData({ ...formData, department: value })}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="เลือกแผนก" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {mockDepartments.map((dept) => (
+                            <SelectItem key={dept} value={dept}>
+                              {dept}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="organization">องค์กร</Label>
-                      <Input
-                        id="organization"
+                      <Select
                         value={formData.organization}
-                        onChange={(e) => setFormData({ ...formData, organization: e.target.value })}
-                        placeholder="กรอกองค์กร"
-                      />
+                        onValueChange={(value) => setFormData({ ...formData, organization: value })}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="เลือกองค์กร" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {mockOrganizations.map((org) => (
+                            <SelectItem key={org} value={org}>
+                              {org}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     </div>
                   </div>
                 )}
@@ -789,21 +826,39 @@ export default function Storage() {
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="edit-department">แผนก</Label>
-                  <Input
-                    id="edit-department"
+                  <Select
                     value={formData.department}
-                    onChange={(e) => setFormData({ ...formData, department: e.target.value })}
-                    placeholder="กรอกแผนก"
-                  />
+                    onValueChange={(value) => setFormData({ ...formData, department: value })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="เลือกแผนก" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {mockDepartments.map((dept) => (
+                        <SelectItem key={dept} value={dept}>
+                          {dept}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="edit-organization">องค์กร</Label>
-                  <Input
-                    id="edit-organization"
+                  <Select
                     value={formData.organization}
-                    onChange={(e) => setFormData({ ...formData, organization: e.target.value })}
-                    placeholder="กรอกองค์กร"
-                  />
+                    onValueChange={(value) => setFormData({ ...formData, organization: value })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="เลือกองค์กร" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {mockOrganizations.map((org) => (
+                        <SelectItem key={org} value={org}>
+                          {org}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
             )}
