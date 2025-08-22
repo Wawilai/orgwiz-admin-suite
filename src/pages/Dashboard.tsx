@@ -1,6 +1,8 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   Building2,
   Users,
@@ -11,41 +13,57 @@ import {
   CheckCircle,
   Clock,
   Activity,
+  RefreshCw,
+  Download,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 
 const Dashboard = () => {
   const stats = [
     {
-      title: "องค์กรทั้งหมด",
-      value: "127",
-      change: "+12%",
-      trend: "up",
-      icon: Building2,
-      color: "text-primary"
-    },
-    {
-      title: "ผู้ใช้งานทั้งหมด",
-      value: "2,847",
-      change: "+5.2%",
+      title: "Daily Active Users (DAU)",
+      value: "1,247",
+      subtitle: "จาก 90 วันที่ผ่านมา",
+      change: "+12.5%",
+      changeText: "วันที่ผ่านมา", 
       trend: "up",
       icon: Users,
-      color: "text-accent"
+      bgColor: "bg-gradient-to-br from-blue-500 to-blue-600",
+      textColor: "text-white"
     },
     {
-      title: "อีเมลที่ส่งวันนี้",
-      value: "15,842",
-      change: "-2.1%",
-      trend: "down",
-      icon: Mail,
-      color: "text-warning"
-    },
-    {
-      title: "พื้นที่จัดเก็บใช้งาน",
-      value: "847 GB",
-      change: "+18.3%",
+      title: "Total Services",
+      value: "3",
+      subtitle: "จาก 90 วันที่ผ่านมา", 
+      change: "+40%",
+      changeText: "วันที่ผ่านมา",
       trend: "up",
-      icon: HardDrive,
-      color: "text-success"
+      icon: Building2,
+      bgColor: "bg-gradient-to-br from-green-500 to-green-600",
+      textColor: "text-white"
+    },
+    {
+      title: "License Usage",
+      value: "78%",
+      subtitle: "จาก 90 วันที่ผ่านมา",
+      change: "+25%", 
+      changeText: "วันที่ผ่านมา",
+      trend: "up",
+      icon: CheckCircle,
+      bgColor: "bg-gradient-to-br from-purple-500 to-purple-600",
+      textColor: "text-white"
+    },
+    {
+      title: "Growth Trend",
+      value: "+15.2%",
+      subtitle: "จาก 90 วันที่ผ่านมา",
+      change: "+15.2%",
+      changeText: "วันที่ผ่านมา",
+      trend: "up", 
+      icon: TrendingUp,
+      bgColor: "bg-gradient-to-br from-orange-500 to-orange-600",
+      textColor: "text-white"
     },
   ];
 
@@ -110,39 +128,137 @@ const Dashboard = () => {
       {/* Page Header */}
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold text-foreground">แดชบอร์ด</h1>
+          <h1 className="text-3xl font-bold text-foreground">รายงานและการวิเคราะห์</h1>
           <p className="text-muted-foreground mt-1">
-            ภาพรวมของระบบจัดการองค์กร
+            ติดตามประสิทธิภาพการใช้งานระบบ
           </p>
         </div>
-        <Button variant="gradient">
-          <TrendingUp className="w-4 h-4 mr-2" />
-          ดูรายงานแบบเต็ม
-        </Button>
+        <div className="flex items-center gap-3">
+          <Select defaultValue="7">
+            <SelectTrigger className="w-32">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="7">7 วัน</SelectItem>
+              <SelectItem value="30">30 วัน</SelectItem>
+              <SelectItem value="90">90 วัน</SelectItem>
+            </SelectContent>
+          </Select>
+          <Button variant="outline" size="icon">
+            <RefreshCw className="h-4 w-4" />
+          </Button>
+          <Button variant="gradient">
+            <Download className="w-4 h-4 mr-2" />
+            ส่งออกรายงาน
+          </Button>
+        </div>
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
-        {stats.map((stat) => (
-          <Card key={stat.title} className="hover:shadow-lg transition-all duration-200">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">
-                {stat.title}
-              </CardTitle>
-              <stat.icon className={`h-4 w-4 ${stat.color}`} />
+      {/* Report Tabs */}
+      <Tabs defaultValue="executive" className="w-full">
+        <div className="flex items-center justify-between">
+          <TabsList className="grid w-full grid-cols-5 lg:w-fit">
+            <TabsTrigger value="executive">Executive Overview</TabsTrigger>
+            <TabsTrigger value="license">License & Quota</TabsTrigger>
+            <TabsTrigger value="service">Service Usage</TabsTrigger>
+            <TabsTrigger value="mail">Mail Relay</TabsTrigger>
+            <TabsTrigger value="inactive">Inactive Accounts</TabsTrigger>
+          </TabsList>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="icon">
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            <Button variant="outline" size="icon">
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+
+        <TabsContent value="executive" className="space-y-6">
+          {/* Enhanced Stats Cards */}
+          <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
+            {stats.map((stat, index) => (
+              <Card key={stat.title} className={`${stat.bgColor} ${stat.textColor} border-0 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105`}>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className={`text-sm font-medium ${stat.textColor} opacity-90`}>
+                    {stat.title}
+                  </CardTitle>
+                  <stat.icon className={`h-6 w-6 ${stat.textColor} opacity-80`} />
+                </CardHeader>
+                <CardContent className="space-y-2">
+                  <div className={`text-3xl font-bold ${stat.textColor}`}>
+                    {stat.value}
+                  </div>
+                  <div className={`text-xs ${stat.textColor} opacity-75`}>
+                    {stat.subtitle}
+                  </div>
+                  <div className={`text-sm ${stat.textColor} opacity-90 flex items-center gap-1`}>
+                    <TrendingUp className="h-3 w-3" />
+                    <span className="font-medium">{stat.change}</span>
+                    <span className="opacity-75">{stat.changeText}</span>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </TabsContent>
+
+        <TabsContent value="license" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>License & Quota Usage</CardTitle>
+              <CardDescription>การใช้งานใบอนุญาตและโควต้า</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-foreground">{stat.value}</div>
-              <p className="text-xs text-muted-foreground mt-1">
-                <span className={stat.trend === 'up' ? 'text-success' : 'text-destructive'}>
-                  {stat.change}
-                </span>{' '}
-                จากเดือนที่แล้ว
-              </p>
+              <div className="text-center py-8 text-muted-foreground">
+                ข้อมูลการใช้งานใบอนุญาตและโควต้า
+              </div>
             </CardContent>
           </Card>
-        ))}
-      </div>
+        </TabsContent>
+
+        <TabsContent value="service" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Service Usage</CardTitle>
+              <CardDescription>การใช้งานบริการต่างๆ ในระบบ</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="text-center py-8 text-muted-foreground">
+                ข้อมูลการใช้งานบริการ
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="mail" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Mail Relay Statistics</CardTitle>
+              <CardDescription>สถิติการส่งอีเมลผ่านระบบ</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="text-center py-8 text-muted-foreground">
+                ข้อมูลการส่งอีเมล
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="inactive" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Inactive Accounts</CardTitle>
+              <CardDescription>บัญชีผู้ใช้ที่ไม่ได้ใช้งาน</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="text-center py-8 text-muted-foreground">
+                ข้อมูลบัญชีที่ไม่ได้ใช้งาน
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
 
       <div className="grid gap-6 grid-cols-1 lg:grid-cols-2">
         {/* Recent Activities */}
