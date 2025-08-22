@@ -5,6 +5,7 @@ export interface MasterDataItem {
   id: number;
   code: string;
   name: string;
+  nameEn?: string;
   description?: string;
   isActive: boolean;
   order: number;
@@ -16,7 +17,6 @@ export interface MasterDataItem {
 interface MasterDataContextType {
   organizationTypes: MasterDataItem[];
   departments: MasterDataItem[];
-  departmentsEn: MasterDataItem[];
   positions: MasterDataItem[];
   userRoles: MasterDataItem[];
   countries: MasterDataItem[];
@@ -31,19 +31,11 @@ const initialOrganizationTypes: MasterDataItem[] = [
 ];
 
 const initialDepartments: MasterDataItem[] = [
-  { id: 1, code: "IT", name: "แผนกเทคโนโลยีสารสนเทศ", description: "จัดการระบบและเทคโนโลยี", isActive: true, order: 1, createdAt: "2024-01-01", updatedAt: "2024-01-01" },
-  { id: 2, code: "HR", name: "แผนกทรัพยากรบุคคล", description: "จัดการบุคลากรและสวัสดิการ", isActive: true, order: 2, createdAt: "2024-01-01", updatedAt: "2024-01-01" },
-  { id: 3, code: "FINANCE", name: "แผนกการเงิน", description: "จัดการเงินและบัญชี", isActive: true, order: 3, createdAt: "2024-01-01", updatedAt: "2024-01-01" },
-  { id: 4, code: "MARKETING", name: "แผนกการตลาด", description: "จัดการการตลาดและประชาสัมพันธ์", isActive: true, order: 4, createdAt: "2024-01-01", updatedAt: "2024-01-01" },
-  { id: 5, code: "SALES", name: "แผนกขาย", description: "จัดการการขายและบริการลูกค้า", isActive: true, order: 5, createdAt: "2024-01-01", updatedAt: "2024-01-01" },
-];
-
-const initialDepartmentsEn: MasterDataItem[] = [
-  { id: 1, code: "IT", name: "Information Technology Department", description: "Manages systems and technology", isActive: true, order: 1, createdAt: "2024-01-01", updatedAt: "2024-01-01" },
-  { id: 2, code: "HR", name: "Human Resources Department", description: "Manages personnel and welfare", isActive: true, order: 2, createdAt: "2024-01-01", updatedAt: "2024-01-01" },
-  { id: 3, code: "FINANCE", name: "Finance Department", description: "Manages finance and accounting", isActive: true, order: 3, createdAt: "2024-01-01", updatedAt: "2024-01-01" },
-  { id: 4, code: "MARKETING", name: "Marketing Department", description: "Manages marketing and public relations", isActive: true, order: 4, createdAt: "2024-01-01", updatedAt: "2024-01-01" },
-  { id: 5, code: "SALES", name: "Sales Department", description: "Manages sales and customer service", isActive: true, order: 5, createdAt: "2024-01-01", updatedAt: "2024-01-01" },
+  { id: 1, code: "IT", name: "แผนกเทคโนโลยีสารสนเทศ", nameEn: "Information Technology Department", description: "จัดการระบบและเทคโนโลยี", isActive: true, order: 1, createdAt: "2024-01-01", updatedAt: "2024-01-01" },
+  { id: 2, code: "HR", name: "แผนกทรัพยากรบุคคล", nameEn: "Human Resources Department", description: "จัดการบุคลากรและสวัสดิการ", isActive: true, order: 2, createdAt: "2024-01-01", updatedAt: "2024-01-01" },
+  { id: 3, code: "FINANCE", name: "แผนกการเงิน", nameEn: "Finance Department", description: "จัดการเงินและบัญชี", isActive: true, order: 3, createdAt: "2024-01-01", updatedAt: "2024-01-01" },
+  { id: 4, code: "MARKETING", name: "แผนกการตลาด", nameEn: "Marketing Department", description: "จัดการการตลาดและประชาสัมพันธ์", isActive: true, order: 4, createdAt: "2024-01-01", updatedAt: "2024-01-01" },
+  { id: 5, code: "SALES", name: "แผนกขาย", nameEn: "Sales Department", description: "จัดการการขายและบริการลูกค้า", isActive: true, order: 5, createdAt: "2024-01-01", updatedAt: "2024-01-01" },
 ];
 
 const initialPositions: MasterDataItem[] = [
@@ -75,7 +67,6 @@ const MasterDataContext = createContext<MasterDataContextType | undefined>(undef
 export const MasterDataProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [organizationTypes] = useState<MasterDataItem[]>(initialOrganizationTypes);
   const [departments] = useState<MasterDataItem[]>(initialDepartments);
-  const [departmentsEn] = useState<MasterDataItem[]>(initialDepartmentsEn);
   const [positions] = useState<MasterDataItem[]>(initialPositions);
   const [userRoles] = useState<MasterDataItem[]>(initialUserRoles);
   const [countries] = useState<MasterDataItem[]>(initialCountries);
@@ -89,9 +80,6 @@ export const MasterDataProvider: React.FC<{ children: ReactNode }> = ({ children
         break;
       case 'departments':
         items = departments;
-        break;
-      case 'departmentsEn':
-        items = departmentsEn;
         break;
       case 'positions':
         items = positions;
@@ -112,7 +100,6 @@ export const MasterDataProvider: React.FC<{ children: ReactNode }> = ({ children
   const value: MasterDataContextType = {
     organizationTypes,
     departments,
-    departmentsEn,
     positions,
     userRoles,
     countries,

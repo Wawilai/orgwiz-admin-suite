@@ -674,6 +674,7 @@ export type Database = {
           id: string
           manager_user_id: string | null
           name: string
+          name_en: string | null
           organization_id: string
           parent_unit_id: string | null
           status: string
@@ -686,6 +687,7 @@ export type Database = {
           id?: string
           manager_user_id?: string | null
           name: string
+          name_en?: string | null
           organization_id: string
           parent_unit_id?: string | null
           status?: string
@@ -698,6 +700,7 @@ export type Database = {
           id?: string
           manager_user_id?: string | null
           name?: string
+          name_en?: string | null
           organization_id?: string
           parent_unit_id?: string | null
           status?: string

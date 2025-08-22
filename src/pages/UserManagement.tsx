@@ -189,7 +189,6 @@ const UserManagement = () => {
   // Get master data
   const organizationTypes = getActiveItems('organizationTypes');
   const departments = getActiveItems('departments');
-  const departmentsEn = getActiveItems('departmentsEn');
   const positions = getActiveItems('positions');
   const userRoles = getActiveItems('userRoles');
 
@@ -585,8 +584,29 @@ const UserManagement = () => {
                         ))}
                       </SelectContent>
                     </Select>
-                  </FormFieldWrapper>
+                   </FormFieldWrapper>
                 </div>
+
+                <FormFieldWrapper
+                  label="แผนก (อังกฤษ)"
+                  error={addUserValidation.errors.departmentEn}
+                >
+                  <Select 
+                    value={addUserValidation.values.departmentEn}
+                    onValueChange={(value) => addUserValidation.setValue('departmentEn', value)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select Department" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-popover">
+                      {departments.map((dept) => (
+                        <SelectItem key={dept.id} value={dept.code}>
+                          {dept.nameEn || dept.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </FormFieldWrapper>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <FormFieldWrapper
@@ -766,9 +786,9 @@ const UserManagement = () => {
                         <SelectValue placeholder="Select Department" />
                       </SelectTrigger>
                       <SelectContent className="bg-popover">
-                        {departmentsEn.map((dept) => (
+                        {departments.map((dept) => (
                           <SelectItem key={dept.id} value={dept.code}>
-                            {dept.name}
+                            {dept.nameEn || dept.name}
                           </SelectItem>
                         ))}
                       </SelectContent>
