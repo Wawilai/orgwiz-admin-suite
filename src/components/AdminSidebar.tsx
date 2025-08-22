@@ -33,7 +33,8 @@ import {
   Settings,
   User,
   ChevronDown,
-  ChevronRight
+  ChevronRight,
+  ShieldCheck
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -91,6 +92,7 @@ const menuItems = [
     items: [
       { title: "จัดการข้อมูลหลัก", url: "/master-data", icon: Database },
       { title: "จัดการเซิร์ฟเวอร์", url: "/system-settings", icon: Settings },
+      { title: "ความปลอดภัย MFA", url: "/mfa-settings", icon: ShieldCheck },
       { title: "ตั้งค่าบัญชี", url: "/account-settings", icon: User }
     ]
   }

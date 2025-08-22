@@ -36,6 +36,7 @@ import AdminContactsDetail from "./pages/reports/AdminContactsDetail";
 import SystemSettings from "./pages/SystemSettings";
 import AccountSettings from "./pages/AccountSettings";
 import MasterDataManagement from "./pages/MasterDataManagement";
+import MFASettings from "./pages/MFASettings";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -79,6 +80,7 @@ const App = () => (
           <Route path="/master-data" element={<Layout><MasterDataManagement /></Layout>} />
           <Route path="/system-settings" element={<Layout><SystemSettings /></Layout>} />
           <Route path="/account-settings" element={<Layout><AccountSettings /></Layout>} />
+          <Route path="/mfa-settings" element={<Layout><MFASettings /></Layout>} />
           <Route path="*" element={<NotFound />} />
         </Routes>
         </BrowserRouter>
