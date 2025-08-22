@@ -12,6 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Separator } from '@/components/ui/separator';
 import { toast } from '@/hooks/use-toast';
+import { useLanguage } from '@/contexts/LanguageContext';
 import { 
   User, 
   Mail, 
@@ -174,6 +175,7 @@ const mockNotificationSettings: NotificationSettings = {
 };
 
 export default function AccountSettings() {
+  const { t } = useLanguage();
   const [profile, setProfile] = useState<UserProfile>(mockProfile);
   const [securitySettings, setSecuritySettings] = useState<SecuritySettings>(mockSecuritySettings);
   const [notificationSettings, setNotificationSettings] = useState<NotificationSettings>(mockNotificationSettings);
@@ -273,16 +275,16 @@ export default function AccountSettings() {
       <Tabs value={currentTab} onValueChange={setCurrentTab} className="space-y-6">
         <div className="flex justify-between items-center">
           <div>
-            <h1 className="text-3xl font-bold">ตั้งค่าบัญชี</h1>
+            <h1 className="text-3xl font-bold">{t('account.title')}</h1>
             <p className="text-muted-foreground">จัดการข้อมูลส่วนตัว ความปลอดภัย และการแจ้งเตือน</p>
           </div>
         </div>
 
         <TabsList>
-          <TabsTrigger value="profile">โปรไฟล์</TabsTrigger>
-          <TabsTrigger value="security">ความปลอดภัย</TabsTrigger>
-          <TabsTrigger value="notifications">การแจ้งเตือน</TabsTrigger>
-          <TabsTrigger value="preferences">การตั้งค่า</TabsTrigger>
+          <TabsTrigger value="profile">{t('account.profile')}</TabsTrigger>
+          <TabsTrigger value="security">{t('account.security')}</TabsTrigger>
+          <TabsTrigger value="notifications">{t('account.notifications')}</TabsTrigger>
+          <TabsTrigger value="preferences">{t('account.preferences')}</TabsTrigger>
         </TabsList>
 
         <TabsContent value="profile" className="space-y-6">
@@ -290,7 +292,7 @@ export default function AccountSettings() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <User className="h-5 w-5" />
-                ข้อมูลส่วนตัว
+                {t('profile.personalInfo')}
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">

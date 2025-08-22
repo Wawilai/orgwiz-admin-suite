@@ -13,6 +13,8 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
 import { useNavigate } from "react-router-dom";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { LanguageToggle } from "@/components/LanguageToggle";
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -20,6 +22,7 @@ interface LayoutProps {
 
 export function Layout({ children }: LayoutProps) {
   const navigate = useNavigate();
+  const { t } = useLanguage();
 
   return (
     <SidebarProvider 
@@ -34,7 +37,7 @@ export function Layout({ children }: LayoutProps) {
             <div className="flex items-center space-x-2 md:space-x-4 min-w-0 flex-1">
               <SidebarTrigger className="flex-shrink-0" />
               <h1 className="text-lg md:text-xl font-semibold text-foreground truncate">
-                Enterprise Management System
+                {t('header.title')}
               </h1>
             </div>
             
@@ -43,10 +46,12 @@ export function Layout({ children }: LayoutProps) {
               <div className="relative hidden lg:block">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
                 <Input
-                  placeholder="ค้นหา..."
+                  placeholder={t('header.search')}
                   className="pl-10 w-48 xl:w-64"
                 />
               </div>
+              
+              <LanguageToggle />
               
               <Button variant="ghost" size="icon" className="relative flex-shrink-0">
                 <Bell className="h-4 w-4 md:h-5 md:w-5" />
@@ -74,11 +79,11 @@ export function Layout({ children }: LayoutProps) {
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={() => navigate('/account-settings')}>
                     <User className="mr-2 h-4 w-4" />
-                    <span>โปรไฟล์</span>
+                    <span>{t('header.profile')}</span>
                   </DropdownMenuItem>
                   <DropdownMenuItem>
                     <LogOut className="mr-2 h-4 w-4" />
-                    <span>ออกจากระบบ</span>
+                    <span>{t('header.logout')}</span>
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
