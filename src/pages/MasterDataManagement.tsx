@@ -133,6 +133,37 @@ const mockDropdownCategories: DropdownCategory[] = [
     ]
   }
 ];
+
+const mockServerLocations: MasterDataItem[] = [
+  { id: 1, code: "DC_A", name: "Data Center A", description: "ศูนย์ข้อมูลหลัก", isActive: true, order: 1, createdAt: "2024-01-01", updatedAt: "2024-01-01" },
+  { id: 2, code: "DC_B", name: "Data Center B", description: "ศูนย์ข้อมูลสำรอง", isActive: true, order: 2, createdAt: "2024-01-01", updatedAt: "2024-01-01" },
+  { id: 3, code: "DC_C", name: "Data Center C", description: "ศูนย์ข้อมูลระยะไกล", isActive: true, order: 3, createdAt: "2024-01-01", updatedAt: "2024-01-01" },
+  { id: 4, code: "CLOUD_1", name: "Cloud Region 1", description: "คลาวด์ภูมิภาคที่ 1", isActive: true, order: 4, createdAt: "2024-01-01", updatedAt: "2024-01-01" },
+  { id: 5, code: "CLOUD_2", name: "Cloud Region 2", description: "คลาวด์ภูมิภาคที่ 2", isActive: false, order: 5, createdAt: "2024-01-01", updatedAt: "2024-01-01" },
+];
+
+const mockServerTypes: MasterDataItem[] = [
+  { id: 1, code: "WEB", name: "เว็บเซิร์ฟเวอร์", description: "เซิร์ฟเวอร์สำหรับเว็บแอปพลิเคชัน", isActive: true, order: 1, createdAt: "2024-01-01", updatedAt: "2024-01-01" },
+  { id: 2, code: "DB", name: "ฐานข้อมูล", description: "เซิร์ฟเวอร์ฐานข้อมูล", isActive: true, order: 2, createdAt: "2024-01-01", updatedAt: "2024-01-01" },
+  { id: 3, code: "MAIL", name: "เมลเซิร์ฟเวอร์", description: "เซิร์ฟเวอร์จดหมายอิเล็กทรอนิกส์", isActive: true, order: 3, createdAt: "2024-01-01", updatedAt: "2024-01-01" },
+  { id: 4, code: "FILE", name: "ไฟล์เซิร์ฟเวอร์", description: "เซิร์ฟเวอร์จัดเก็บไฟล์", isActive: true, order: 4, createdAt: "2024-01-01", updatedAt: "2024-01-01" },
+  { id: 5, code: "LB", name: "โหลดบาลานเซอร์", description: "เซิร์ฟเวอร์กระจายโหลด", isActive: true, order: 5, createdAt: "2024-01-01", updatedAt: "2024-01-01" },
+];
+
+const mockBackupTypes: MasterDataItem[] = [
+  { id: 1, code: "FULL", name: "สำรองข้อมูลแบบเต็ม", description: "สำรองข้อมูลทั้งหมด", isActive: true, order: 1, createdAt: "2024-01-01", updatedAt: "2024-01-01" },
+  { id: 2, code: "INCREMENTAL", name: "สำรองข้อมูลแบบเพิ่มเติม", description: "สำรองข้อมูลส่วนที่เปลี่ยนแปลง", isActive: true, order: 2, createdAt: "2024-01-01", updatedAt: "2024-01-01" },
+  { id: 3, code: "DIFFERENTIAL", name: "สำรองข้อมูลแบบต่าง", description: "สำรองข้อมูลที่แตกต่างจากครั้งล่าสุด", isActive: true, order: 3, createdAt: "2024-01-01", updatedAt: "2024-01-01" },
+  { id: 4, code: "MIRROR", name: "สำรองข้อมูลแบบมิเรอร์", description: "สำรองข้อมูลแบบสะท้อน", isActive: true, order: 4, createdAt: "2024-01-01", updatedAt: "2024-01-01" },
+];
+
+const mockCertificateTypes: MasterDataItem[] = [
+  { id: 1, code: "SSL_TLS", name: "SSL/TLS Certificate", description: "ใบรับรองการเข้ารหัสเว็บไซต์", isActive: true, order: 1, createdAt: "2024-01-01", updatedAt: "2024-01-01" },
+  { id: 2, code: "CODE_SIGN", name: "Code Signing Certificate", description: "ใบรับรองสำหรับลงนามโค้ด", isActive: true, order: 2, createdAt: "2024-01-01", updatedAt: "2024-01-01" },
+  { id: 3, code: "CLIENT_CERT", name: "Client Certificate", description: "ใบรับรองสำหรับลูกค้า", isActive: true, order: 3, createdAt: "2024-01-01", updatedAt: "2024-01-01" },
+  { id: 4, code: "DOC_SIGN", name: "Document Signing Certificate", description: "ใบรับรองสำหรับลงนามเอกสาร", isActive: true, order: 4, createdAt: "2024-01-01", updatedAt: "2024-01-01" },
+];
+
 const mockOrganizationTypes: MasterDataItem[] = [
   { id: 1, code: "PUBLIC", name: "บริษัทมหาชน", description: "บริษัทจดทะเบียนในตลาดหลักทรัพย์", isActive: true, order: 1, createdAt: "2024-01-01", updatedAt: "2024-01-01" },
   { id: 2, code: "LIMITED", name: "บริษัทจำกัด", description: "บริษัทจำกัดทั่วไป", isActive: true, order: 2, createdAt: "2024-01-01", updatedAt: "2024-01-01" },
@@ -209,6 +240,34 @@ const masterDataTypes = [
     icon: List,
     data: [] // ใช้ข้อมูลแยกต่างหาก
   },
+  { 
+    key: "server-locations", 
+    name: "สถานที่เซิร์ฟเวอร์", 
+    description: "จัดการสถานที่ตั้งเซิร์ฟเวอร์ต่างๆ",
+    icon: Database,
+    data: mockServerLocations 
+  },
+  { 
+    key: "server-types", 
+    name: "ประเภทเซิร์ฟเวอร์", 
+    description: "จัดการประเภทของเซิร์ฟเวอร์",
+    icon: Database,
+    data: mockServerTypes 
+  },
+  { 
+    key: "backup-types", 
+    name: "ประเภทการสำรอง", 
+    description: "จัดการประเภทการสำรองข้อมูล",
+    icon: Database,
+    data: mockBackupTypes 
+  },
+  { 
+    key: "certificate-types", 
+    name: "ประเภทใบรับรอง", 
+    description: "จัดการประเภทใบรับรองดิจิทัล",
+    icon: Database,
+    data: mockCertificateTypes 
+  },
 ];
 
 const MasterDataManagement = () => {
@@ -225,11 +284,10 @@ const MasterDataManagement = () => {
     order: 0,
   });
 
-  // Dropdown Management State
+  // Dropdown Management State (ลบส่วนที่ไม่ใช้)
   const [dropdownCategories] = useState<DropdownCategory[]>(mockDropdownCategories);
   const [selectedDropdownCategory, setSelectedDropdownCategory] = useState<DropdownCategory | null>(null);
   const [selectedDropdownItem, setSelectedDropdownItem] = useState<DropdownItem | null>(null);
-  const [isAddCategoryDialogOpen, setIsAddCategoryDialogOpen] = useState(false);
   const [isEditCategoryDialogOpen, setIsEditCategoryDialogOpen] = useState(false);
   const [isAddItemDialogOpen, setIsAddItemDialogOpen] = useState(false);
   const [isEditItemDialogOpen, setIsEditItemDialogOpen] = useState(false);
@@ -302,16 +360,10 @@ const MasterDataManagement = () => {
     setSearchTerm("");
   };
 
-  // Dropdown Management Functions
+  // Dropdown Management Functions (ลบส่วนที่ไม่ใช้)
   const handleEditCategory = (category: DropdownCategory) => {
     setSelectedDropdownCategory(category);
     setIsEditCategoryDialogOpen(true);
-  };
-
-  const handleDeleteCategory = (categoryId: string) => {
-    toast.success("ลบหมวดหมู่สำเร็จ", {
-      description: "ลบหมวดหมู่ Dropdown แล้ว",
-    });
   };
 
   const handleAddItem = (category: DropdownCategory) => {
@@ -455,14 +507,14 @@ const MasterDataManagement = () => {
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">ไม่ใช้งาน</CardTitle>
-            <Badge variant="secondary" className="h-4 w-4 p-0" />
+            <CardTitle className="text-sm font-medium">ข้อมูลระบบ</CardTitle>
+            <Database className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {currentData.filter(item => !item.isActive).length}
+              {mockServerLocations.length + mockServerTypes.length + mockBackupTypes.length + mockCertificateTypes.length}
             </div>
-            <p className="text-xs text-muted-foreground">ใน {currentType?.name}</p>
+            <p className="text-xs text-muted-foreground">รายการสำหรับระบบ</p>
           </CardContent>
         </Card>
       </div>
@@ -475,7 +527,7 @@ const MasterDataManagement = () => {
         </CardHeader>
         <CardContent>
           <Tabs value={selectedType} onValueChange={handleTypeChange} className="space-y-4">
-            <TabsList className="grid w-full grid-cols-6">
+            <TabsList className="grid w-full grid-cols-4 lg:grid-cols-5 xl:grid-cols-10">
               {masterDataTypes.map((type) => (
                 <TabsTrigger key={type.key} value={type.key} className="text-xs">
                   {type.name}
@@ -537,41 +589,7 @@ const MasterDataManagement = () => {
                     {/* Categories Management */}
                     <Card>
                       <CardHeader>
-                        <div className="flex justify-between items-center">
-                          <CardTitle>จัดการหมวดหมู่ Dropdown</CardTitle>
-                          <Dialog open={isAddCategoryDialogOpen} onOpenChange={setIsAddCategoryDialogOpen}>
-                            <DialogTrigger asChild>
-                              <Button>
-                                <Plus className="h-4 w-4 mr-2" />
-                                เพิ่มหมวดหมู่
-                              </Button>
-                            </DialogTrigger>
-                            <DialogContent className="bg-card">
-                              <DialogHeader>
-                                <DialogTitle>เพิ่มหมวดหมู่ใหม่</DialogTitle>
-                              </DialogHeader>
-                              <div className="space-y-4">
-                                <div className="space-y-2">
-                                  <Label>ชื่อหมวดหมู่</Label>
-                                  <Input placeholder="เช่น Server Locations" />
-                                </div>
-                                <div className="space-y-2">
-                                  <Label>คำอธิบาย</Label>
-                                  <Textarea placeholder="อธิบายหมวดหมู่นี้" />
-                                </div>
-                              </div>
-                              <div className="flex justify-end gap-2">
-                                <Button variant="outline" onClick={() => setIsAddCategoryDialogOpen(false)}>
-                                  ยกเลิก
-                                </Button>
-                                <Button onClick={() => {
-                                  setIsAddCategoryDialogOpen(false);
-                                  toast.success("เพิ่มหมวดหมู่สำเร็จ");
-                                }}>เพิ่มหมวดหมู่</Button>
-                              </div>
-                            </DialogContent>
-                          </Dialog>
-                        </div>
+                        <CardTitle>จัดการหมวดหมู่ Dropdown</CardTitle>
                       </CardHeader>
                       <CardContent>
                         <div className="space-y-4">
@@ -598,10 +616,6 @@ const MasterDataManagement = () => {
                                         <DropdownMenuItem onClick={() => handleEditCategory(category)}>
                                           <Edit2 className="mr-2 h-4 w-4" />
                                           แก้ไขหมวดหมู่
-                                        </DropdownMenuItem>
-                                        <DropdownMenuItem onClick={() => handleDeleteCategory(category.id)} className="text-destructive">
-                                          <Trash2 className="mr-2 h-4 w-4" />
-                                          ลบหมวดหมู่
                                         </DropdownMenuItem>
                                       </DropdownMenuContent>
                                     </DropdownMenu>
@@ -843,7 +857,7 @@ const MasterDataManagement = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Dropdown Management Dialogs */}
+      {/* Dropdown Management Dialogs - ลบ Add Category Dialog */}
       {/* Edit Category Dialog */}
       <Dialog open={isEditCategoryDialogOpen} onOpenChange={setIsEditCategoryDialogOpen}>
         <DialogContent className="bg-card">
