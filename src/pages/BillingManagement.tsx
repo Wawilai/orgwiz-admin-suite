@@ -173,6 +173,11 @@ export default function BillingManagement() {
   const [isGenerateInvoiceDialogOpen, setIsGenerateInvoiceDialogOpen] = useState(false);
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
   const [currentTab, setCurrentTab] = useState('invoices');
+  const [isEditPaymentMethodOpen, setIsEditPaymentMethodOpen] = useState(false);
+  const [isEditBillingInfoOpen, setIsEditBillingInfoOpen] = useState(false);
+  const [selectedPaymentSetting, setSelectedPaymentSetting] = useState<PaymentSetting | null>(null);
+  const [editingPaymentMethod, setEditingPaymentMethod] = useState<string>('CreditCard');
+  const [editingBillingData, setEditingBillingData] = useState<Partial<PaymentSetting>>({});
 
   const filteredInvoices = invoices.filter(invoice => {
     const matchesSearch = invoice.invoiceNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -236,6 +241,98 @@ export default function BillingManagement() {
     toast({
       title: "ยกเลิกใบแจ้งหนี้สำเร็จ",
       description: "ยกเลิกใบแจ้งหนี้เรียบร้อยแล้ว",
+    });
+  };
+
+  const handleDownloadInvoice = (invoice: Invoice) => {
+    // Simulate PDF download
+    const element = document.createElement('a');
+    const file = new Blob(['PDF content would be generated here'], { type: 'application/pdf' });
+    element.href = URL.createObjectURL(file);
+    element.download = `${invoice.invoiceNumber}.pdf`;
+    document.body.appendChild(element);
+    element.click();
+    document.body.removeChild(element);
+    toast({
+      title: "ดาวน์โหลดสำเร็จ",
+      description: `ดาวน์โหลดใบแจ้งหนี้ ${invoice.invoiceNumber} เรียบร้อยแล้ว`,
+    });
+  };
+
+  const handleSendInvoiceEmail = (invoice: Invoice) => {
+    toast({
+      title: "ส่งอีเมลสำเร็จ",
+      description: `ส่งใบแจ้งหนี้ ${invoice.invoiceNumber} ทางอีเมลเรียบร้อยแล้ว`,
+    });
+  };
+
+  const handlePrintInvoice = (invoice: Invoice) => {
+    window.print();
+    toast({
+      title: "พิมพ์ใบแจ้งหนี้",
+      description: "เปิดหน้าต่างการพิมพ์แล้ว",
+    });
+  };
+
+  const openEditPaymentMethodDialog = (setting: PaymentSetting) => {
+    setSelectedPaymentSetting(setting);
+    setEditingPaymentMethod(setting.paymentMethod);
+    setIsEditPaymentMethodOpen(true);
+  };
+
+  const openEditBillingInfoDialog = (setting: PaymentSetting) => {
+    setSelectedPaymentSetting(setting);
+    setEditingBillingData({
+      billingEmail: setting.billingEmail,
+      billingAddress: setting.billingAddress,
+      taxId: setting.taxId
+    });
+    setIsEditBillingInfoOpen(true);
+  };
+
+  const handleSavePaymentMethod = () => {
+    if (!selectedPaymentSetting) return;
+    
+    setPaymentSettings(paymentSettings.map(setting =>
+      setting.id === selectedPaymentSetting.id
+        ? { ...setting, paymentMethod: editingPaymentMethod as any }
+        : setting
+    ));
+    
+    setIsEditPaymentMethodOpen(false);
+    setSelectedPaymentSetting(null);
+    toast({
+      title: "แก้ไขสำเร็จ",
+      description: "แก้ไขวิธีการชำระเงินเรียบร้อยแล้ว",
+    });
+  };
+
+  const handleSaveBillingInfo = () => {
+    if (!selectedPaymentSetting) return;
+    
+    setPaymentSettings(paymentSettings.map(setting =>
+      setting.id === selectedPaymentSetting.id
+        ? { ...setting, ...editingBillingData }
+        : setting
+    ));
+    
+    setIsEditBillingInfoOpen(false);
+    setSelectedPaymentSetting(null);
+    toast({
+      title: "แก้ไขสำเร็จ",
+      description: "แก้ไขข้อมูลการเรียกเก็บเงินเรียบร้อยแล้ว",
+    });
+  };
+
+  const handleToggleAutoPayment = (settingId: string) => {
+    setPaymentSettings(paymentSettings.map(setting =>
+      setting.id === settingId
+        ? { ...setting, autoPayment: !setting.autoPayment }
+        : setting
+    ));
+    toast({
+      title: "อัปเดตสำเร็จ",
+      description: "เปลี่ยนการตั้งค่าการชำระอัตโนมัติเรียบร้อยแล้ว",
     });
   };
 
@@ -460,9 +557,17 @@ export default function BillingManagement() {
                               <Eye className="mr-2 h-4 w-4" />
                               ดูรายละเอียด
                             </DropdownMenuItem>
-                            <DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleDownloadInvoice(invoice)}>
                               <Download className="mr-2 h-4 w-4" />
                               ดาวน์โหลด PDF
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleSendInvoiceEmail(invoice)}>
+                              <FileText className="mr-2 h-4 w-4" />
+                              ส่งทางอีเมล
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handlePrintInvoice(invoice)}>
+                              <Calculator className="mr-2 h-4 w-4" />
+                              พิมพ์ใบแจ้งหนี้
                             </DropdownMenuItem>
                             {invoice.status === 'Pending' && (
                               <DropdownMenuItem onClick={() => handleMarkAsPaid(invoice.id)}>
@@ -599,13 +704,34 @@ export default function BillingManagement() {
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
-                            <DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => openEditPaymentMethodDialog(setting)}>
                               <CreditCard className="mr-2 h-4 w-4" />
                               แก้ไขการชำระเงิน
                             </DropdownMenuItem>
-                            <DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => openEditBillingInfoDialog(setting)}>
                               <FileText className="mr-2 h-4 w-4" />
                               แก้ไขข้อมูลเรียกเก็บ
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleToggleAutoPayment(setting.id)}>
+                              {setting.autoPayment ? (
+                                <>
+                                  <XCircle className="mr-2 h-4 w-4" />
+                                  ปิดการชำระอัตโนมัติ
+                                </>
+                              ) : (
+                                <>
+                                  <CheckCircle className="mr-2 h-4 w-4" />
+                                  เปิดการชำระอัตโนมัติ
+                                </>
+                              )}
+                            </DropdownMenuItem>
+                            <DropdownMenuItem>
+                              <Eye className="mr-2 h-4 w-4" />
+                              ดูประวัติการชำระ
+                            </DropdownMenuItem>
+                            <DropdownMenuItem>
+                              <Download className="mr-2 h-4 w-4" />
+                              ส่งออกรายงาน
                             </DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
@@ -709,6 +835,110 @@ export default function BillingManagement() {
               </div>
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Payment Method Dialog */}
+      <Dialog open={isEditPaymentMethodOpen} onOpenChange={setIsEditPaymentMethodOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>แก้ไขวิธีการชำระเงิน</DialogTitle>
+            <DialogDescription>
+              เปลี่ยนวิธีการชำระเงินสำหรับ {selectedPaymentSetting?.organizationName}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="payment-method">วิธีการชำระเงิน</Label>
+              <Select value={editingPaymentMethod} onValueChange={setEditingPaymentMethod}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="CreditCard">บัตรเครดิต</SelectItem>
+                  <SelectItem value="BankTransfer">โอนผ่านธนาคาร</SelectItem>
+                  <SelectItem value="PayPal">PayPal</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            {editingPaymentMethod === 'CreditCard' && (
+              <div className="space-y-2">
+                <Label htmlFor="card-number">หมายเลขบัตร</Label>
+                <Input
+                  id="card-number"
+                  placeholder="**** **** **** 1234"
+                  className="font-mono"
+                />
+              </div>
+            )}
+            {editingPaymentMethod === 'BankTransfer' && (
+              <div className="space-y-2">
+                <Label htmlFor="bank-account">หมายเลขบัญชี</Label>
+                <Input
+                  id="bank-account"
+                  placeholder="SCB-1234567890"
+                />
+              </div>
+            )}
+          </div>
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" onClick={() => setIsEditPaymentMethodOpen(false)}>
+              ยกเลิก
+            </Button>
+            <Button onClick={handleSavePaymentMethod}>
+              บันทึก
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Billing Info Dialog */}
+      <Dialog open={isEditBillingInfoOpen} onOpenChange={setIsEditBillingInfoOpen}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle>แก้ไขข้อมูลการเรียกเก็บเงิน</DialogTitle>
+            <DialogDescription>
+              แก้ไขข้อมูลการเรียกเก็บเงินสำหรับ {selectedPaymentSetting?.organizationName}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="billing-email">อีเมลใบแจ้งหนี้</Label>
+              <Input
+                id="billing-email"
+                type="email"
+                value={editingBillingData.billingEmail || ''}
+                onChange={(e) => setEditingBillingData({ ...editingBillingData, billingEmail: e.target.value })}
+                placeholder="billing@company.com"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="billing-address">ที่อยู่เรียกเก็บเงิน</Label>
+              <Input
+                id="billing-address"
+                value={editingBillingData.billingAddress || ''}
+                onChange={(e) => setEditingBillingData({ ...editingBillingData, billingAddress: e.target.value })}
+                placeholder="123 ถนนสุขุมวิท กรุงเทพฯ 10110"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="tax-id">เลขประจำตัวผู้เสียภาษี</Label>
+              <Input
+                id="tax-id"
+                value={editingBillingData.taxId || ''}
+                onChange={(e) => setEditingBillingData({ ...editingBillingData, taxId: e.target.value })}
+                placeholder="0105558001234"
+              />
+            </div>
+          </div>
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" onClick={() => setIsEditBillingInfoOpen(false)}>
+              ยกเลิก
+            </Button>
+            <Button onClick={handleSaveBillingInfo}>
+              บันทึก
+            </Button>
+          </div>
         </DialogContent>
       </Dialog>
     </div>
