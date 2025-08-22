@@ -228,6 +228,7 @@ const MasterDataManagement = () => {
   const addItemValidation = useFormValidation({
     code: "",
     name: "",
+    nameEn: "",
     description: "",
     isActive: true,
     order: 0,
@@ -255,6 +256,7 @@ const MasterDataManagement = () => {
         "ชื่อ"
       )
     },
+    nameEn: { maxLength: 100 },
     description: { maxLength: 255 },
   });
 
@@ -262,6 +264,7 @@ const MasterDataManagement = () => {
   const editItemValidation = useFormValidation({
     code: "",
     name: "",
+    nameEn: "",
     description: "",
     isActive: true,
     order: 0,
@@ -289,6 +292,7 @@ const MasterDataManagement = () => {
         "ชื่อ"
       )
     },
+    nameEn: { maxLength: 100 },
     description: { maxLength: 255 },
   });
 
@@ -364,6 +368,7 @@ const MasterDataManagement = () => {
     editItemValidation.setValues({
       code: item.code,
       name: item.name,
+      nameEn: item.nameEn || "",
       description: item.description || "",
       isActive: item.isActive,
       order: item.order,
@@ -484,6 +489,13 @@ const MasterDataManagement = () => {
                       placeholder="ชื่อ"
                       value={addItemValidation.values.name}
                       onChange={(e) => addItemValidation.setValue('name', e.target.value)}
+                    />
+                  </FormFieldWrapper>
+                  <FormFieldWrapper label="ชื่อ (ภาษาอังกฤษ)" error={addItemValidation.errors.nameEn}>
+                    <Input
+                      placeholder="English Name (Optional)"
+                      value={addItemValidation.values.nameEn}
+                      onChange={(e) => addItemValidation.setValue('nameEn', e.target.value)}
                     />
                   </FormFieldWrapper>
                   <FormFieldWrapper label="คำอธิบาย" error={addItemValidation.errors.description}>
@@ -609,6 +621,7 @@ const MasterDataManagement = () => {
                     <TableRow>
                       <TableHead>รหัส</TableHead>
                       <TableHead>ชื่อ</TableHead>
+                      <TableHead>ชื่อ (EN)</TableHead>
                       <TableHead>คำอธิบาย</TableHead>
                       <TableHead className="text-center">ลำดับ</TableHead>
                       <TableHead className="text-center">สถานะ</TableHead>
@@ -621,6 +634,11 @@ const MasterDataManagement = () => {
                       <TableRow key={item.id}>
                         <TableCell className="font-medium">{item.code}</TableCell>
                         <TableCell>{item.name}</TableCell>
+                        <TableCell>
+                          <span className="text-muted-foreground text-sm">
+                            {item.nameEn || "-"}
+                          </span>
+                        </TableCell>
                         <TableCell>
                           <div className="max-w-xs">
                             <p className="text-sm line-clamp-2">{item.description || "-"}</p>
@@ -701,6 +719,13 @@ const MasterDataManagement = () => {
                 placeholder="ชื่อ"
                 value={editItemValidation.values.name}
                 onChange={(e) => editItemValidation.setValue('name', e.target.value)}
+              />
+            </FormFieldWrapper>
+            <FormFieldWrapper label="ชื่อ (ภาษาอังกฤษ)" error={editItemValidation.errors.nameEn}>
+              <Input
+                placeholder="English Name (Optional)"
+                value={editItemValidation.values.nameEn}
+                onChange={(e) => editItemValidation.setValue('nameEn', e.target.value)}
               />
             </FormFieldWrapper>
             <FormFieldWrapper label="คำอธิบาย" error={editItemValidation.errors.description}>
