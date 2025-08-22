@@ -121,7 +121,7 @@ export function AdminSidebar() {
   const getNavClass = (path: string) => {
     return cn(
       "flex items-center transition-colors rounded-md",
-      collapsed ? "justify-center py-2.5 px-1" : "px-3 py-1.5",
+      collapsed ? "justify-center py-2 px-1" : "px-3 py-1",
       isActive(path)
         ? "bg-sidebar-accent text-sidebar-primary font-medium"
         : "hover:bg-sidebar-accent/50 text-sidebar-foreground"
@@ -130,7 +130,7 @@ export function AdminSidebar() {
 
   const getGroupHeaderClass = (groupTitle: string, hasActiveItem: boolean) => {
     return cn(
-      "flex items-center justify-between w-full px-3 py-1.5 text-sm font-medium transition-colors rounded-md",
+      "flex items-center justify-between w-full px-3 py-1 text-sm font-medium transition-colors rounded-md",
       "hover:bg-sidebar-accent/30",
       hasActiveItem 
         ? "text-sidebar-primary bg-sidebar-accent/20" 
@@ -153,12 +153,12 @@ export function AdminSidebar() {
         <SidebarTrigger className="hover:bg-sidebar-accent/50" />
       </div>
 
-      <SidebarContent className={collapsed ? "px-1 py-2" : "px-3 py-2"}>
+      <SidebarContent className={collapsed ? "px-1 py-1" : "px-3 py-1"}>
         {menuItems.map((group) => {
           // Handle standalone items (like Dashboard)
           if (group.standalone) {
             return (
-              <div key={group.title} className="mb-1">
+              <div key={group.title} className="mb-0.5">
                 <SidebarMenuButton asChild>
                   <NavLink
                     to={group.url!}
@@ -169,7 +169,7 @@ export function AdminSidebar() {
                       "h-5 w-5",
                       collapsed ? "mx-auto" : "mr-3"
                     )} />
-                    {!collapsed && <span>{group.title}</span>}
+                    {!collapsed && <span className="text-sm">{group.title}</span>}
                   </NavLink>
                 </SidebarMenuButton>
               </div>
@@ -181,7 +181,7 @@ export function AdminSidebar() {
           const hasActiveItem = group.items?.some(item => isActive(item.url));
 
           return (
-            <SidebarGroup key={group.title} className={collapsed ? "mb-1" : "mb-2"}>
+            <SidebarGroup key={group.title} className={collapsed ? "mb-0.5" : "mb-1"}>
               {/* Group Header */}
               {!collapsed && (
                 <button
@@ -190,7 +190,7 @@ export function AdminSidebar() {
                 >
                   <div className="flex items-center">
                     <group.icon className="h-4 w-4 mr-2" />
-                    <SidebarGroupLabel className="text-xs font-semibold uppercase tracking-wider">
+                    <SidebarGroupLabel className="text-xs font-semibold uppercase tracking-wide">
                       {group.title}
                     </SidebarGroupLabel>
                   </div>
@@ -205,10 +205,10 @@ export function AdminSidebar() {
               {/* Group Items */}
               <SidebarGroupContent className={cn(
                 "transition-all duration-300 ease-in-out overflow-hidden",
-                !collapsed && isExpanded ? "max-h-96 opacity-100 mt-0.5" : "max-h-0 opacity-0",
+                !collapsed && isExpanded ? "max-h-96 opacity-100" : "max-h-0 opacity-0",
                 collapsed ? "max-h-96 opacity-100" : ""
               )}>
-                <SidebarMenu className={collapsed ? "space-y-0.5" : "space-y-0.5"}>
+                <SidebarMenu className="space-y-0">
                   {group.items?.map((item) => (
                     <SidebarMenuItem key={item.title}>
                       <SidebarMenuButton asChild>
@@ -221,7 +221,7 @@ export function AdminSidebar() {
                             "h-4 w-4",
                             collapsed ? "mx-auto" : "mr-3"
                           )} />
-                          {!collapsed && <span>{item.title}</span>}
+                          {!collapsed && <span className="text-sm">{item.title}</span>}
                         </NavLink>
                       </SidebarMenuButton>
                     </SidebarMenuItem>
@@ -231,7 +231,7 @@ export function AdminSidebar() {
 
               {/* Show icons only when collapsed */}
               {collapsed && group.items && (
-                <div className="space-y-0.5">
+                <div className="space-y-0">
                   {group.items.map((item) => (
                     <SidebarMenuButton key={item.title} asChild>
                       <NavLink
