@@ -156,73 +156,135 @@ const UserManagement = () => {
                 เพิ่มผู้ใช้งาน
               </Button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-[425px] bg-card">
+            <DialogContent className="bg-card overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>เพิ่มผู้ใช้งานใหม่</DialogTitle>
                 <DialogDescription>
                   กรอกข้อมูลผู้ใช้งานใหม่ที่ต้องการเพิ่มเข้าระบบ
                 </DialogDescription>
               </DialogHeader>
-              <div className="grid gap-4 py-4">
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="name" className="text-right">
-                    ชื่อ-นามสกุล
-                  </Label>
+              <div className="grid gap-6 py-4 max-h-[60vh] overflow-y-auto">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="name">ชื่อ-นามสกุล *</Label>
+                    <Input
+                      id="name"
+                      placeholder="กรอกชื่อ-นามสกุล"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="email">อีเมล *</Label>
+                    <Input
+                      id="email"
+                      type="email"
+                      placeholder="user@company.com"
+                    />
+                  </div>
+                </div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="phone">เบอร์โทร</Label>
+                    <Input
+                      id="phone"
+                      placeholder="081-234-5678"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="employee-id">รหัสพนักงาน</Label>
+                    <Input
+                      id="employee-id"
+                      placeholder="EMP001"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="organization">องค์กร *</Label>
+                    <Select>
+                      <SelectTrigger>
+                        <SelectValue placeholder="เลือกองค์กร" />
+                      </SelectTrigger>
+                      <SelectContent className="bg-popover">
+                        <SelectItem value="abc-corp">ABC Corp</SelectItem>
+                        <SelectItem value="xyz-ltd">XYZ Ltd</SelectItem>
+                        <SelectItem value="def-co">DEF Co</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="department">หน่วยงาน</Label>
+                    <Select>
+                      <SelectTrigger>
+                        <SelectValue placeholder="เลือกหน่วยงาน" />
+                      </SelectTrigger>
+                      <SelectContent className="bg-popover">
+                        <SelectItem value="it">IT Department</SelectItem>
+                        <SelectItem value="hr">HR Department</SelectItem>
+                        <SelectItem value="finance">Finance Department</SelectItem>
+                        <SelectItem value="marketing">Marketing Department</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="role">บทบาท *</Label>
+                    <Select>
+                      <SelectTrigger>
+                        <SelectValue placeholder="เลือกบทบาท" />
+                      </SelectTrigger>
+                      <SelectContent className="bg-popover">
+                        <SelectItem value="admin">ผู้ดูแลระบบ</SelectItem>
+                        <SelectItem value="manager">ผู้จัดการ</SelectItem>
+                        <SelectItem value="supervisor">หัวหน้างาน</SelectItem>
+                        <SelectItem value="user">ผู้ใช้งาน</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="position">ตำแหน่ง</Label>
+                    <Input
+                      id="position"
+                      placeholder="Software Engineer"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="start-date">วันที่เริ่มงาน</Label>
+                    <Input
+                      id="start-date"
+                      type="date"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="manager">ผู้บังคับบัญชา</Label>
+                    <Select>
+                      <SelectTrigger>
+                        <SelectValue placeholder="เลือกผู้บังคับบัญชา" />
+                      </SelectTrigger>
+                      <SelectContent className="bg-popover">
+                        <SelectItem value="manager1">นายสมชาย ใจดี</SelectItem>
+                        <SelectItem value="manager2">นางสาววิชาญ เก่งกาจ</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="temp-password">รหัสผ่านชั่วคราว</Label>
                   <Input
-                    id="name"
-                    placeholder="กรอกชื่อ-นามสกุล"
-                    className="col-span-3"
+                    id="temp-password"
+                    type="password"
+                    placeholder="อย่างน้อย 8 ตัวอักษร"
                   />
-                </div>
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="email" className="text-right">
-                    อีเมล
-                  </Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    placeholder="user@company.com"
-                    className="col-span-3"
-                  />
-                </div>
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="phone" className="text-right">
-                    เบอร์โทร
-                  </Label>
-                  <Input
-                    id="phone"
-                    placeholder="081-234-5678"
-                    className="col-span-3"
-                  />
-                </div>
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="organization" className="text-right">
-                    องค์กร
-                  </Label>
-                  <Select>
-                    <SelectTrigger className="col-span-3">
-                      <SelectValue placeholder="เลือกองค์กร" />
-                    </SelectTrigger>
-                    <SelectContent className="bg-popover">
-                      <SelectItem value="abc-corp">ABC Corp</SelectItem>
-                      <SelectItem value="xyz-ltd">XYZ Ltd</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="role" className="text-right">
-                    บทบาท
-                  </Label>
-                  <Select>
-                    <SelectTrigger className="col-span-3">
-                      <SelectValue placeholder="เลือกบทบาท" />
-                    </SelectTrigger>
-                    <SelectContent className="bg-popover">
-                      <SelectItem value="admin">ผู้ดูแลระบบ</SelectItem>
-                      <SelectItem value="manager">ผู้จัดการ</SelectItem>
-                      <SelectItem value="user">ผู้ใช้งาน</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <p className="text-sm text-muted-foreground">
+                    ผู้ใช้จะต้องเปลี่ยนรหัสผ่านในการเข้าใช้งานครั้งแรก
+                  </p>
                 </div>
               </div>
               <div className="flex justify-end space-x-2">

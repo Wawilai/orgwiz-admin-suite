@@ -221,7 +221,7 @@ const OrganizationManagement = () => {
                 เพิ่มองค์กร
               </Button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-[500px] bg-card">
+            <DialogContent className="bg-card overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>เพิ่มองค์กรใหม่</DialogTitle>
                 <DialogDescription>

@@ -1,0 +1,377 @@
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Progress } from '@/components/ui/progress';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import {
+  Users,
+  Building,
+  Mail,
+  MessageSquare,
+  Calendar,
+  Database,
+  Activity,
+  TrendingUp,
+  TrendingDown,
+  Clock,
+  Shield,
+  Server,
+  AlertTriangle,
+  CheckCircle,
+  ArrowRight
+} from 'lucide-react';
+
+interface SystemStats {
+  totalUsers: number;
+  activeUsers: number;
+  totalOrganizations: number;
+  activeOrganizations: number;
+  totalEmails: number;
+  totalMessages: number;
+  totalMeetings: number;
+  storageUsed: number;
+  storageTotal: number;
+  uptime: number;
+}
+
+interface Activity {
+  id: string;
+  type: 'user' | 'organization' | 'email' | 'meeting' | 'system';
+  title: string;
+  description: string;
+  timestamp: string;
+  user?: string;
+  status: 'success' | 'warning' | 'error' | 'info';
+}
+
+const mockStats: SystemStats = {
+  totalUsers: 2847,
+  activeUsers: 1234,
+  totalOrganizations: 23,
+  activeOrganizations: 21,
+  totalEmails: 45623,
+  totalMessages: 12456,
+  totalMeetings: 234,
+  storageUsed: 750,
+  storageTotal: 1000,
+  uptime: 99.9
+};
+
+const mockActivities: Activity[] = [
+  {
+    id: '1',
+    type: 'user',
+    title: 'ผู้ใช้ใหม่ลงทะเบียน',
+    description: 'นายสมชาย ใจดี ได้ลงทะเบียนเข้าใช้งานระบบ',
+    timestamp: '2 นาทีที่แล้ว',
+    user: 'สมชาย ใจดี',
+    status: 'success'
+  },
+  {
+    id: '2',
+    type: 'organization',
+    title: 'เพิ่มองค์กรใหม่',
+    description: 'บริษัท เทคโนโลยี ABC จำกัด ได้รับการอนุมัติเข้าระบบ',
+    timestamp: '15 นาทีที่แล้ว',
+    status: 'info'
+  },
+  {
+    id: '3',
+    type: 'system',
+    title: 'การบำรุงรักษาระบบ',
+    description: 'อัปเดตระบบความปลอดภัยเสร็จสิ้น',
+    timestamp: '1 ชั่วโมงที่แล้ว',
+    status: 'success'
+  },
+  {
+    id: '4',
+    type: 'email',
+    title: 'ปริมาณอีเมลสูง',
+    description: 'มีการส่งอีเมลเกิน 1000 ฉบับในชั่วโมงนี้',
+    timestamp: '2 ชั่วโมงที่แล้ว',
+    status: 'warning'
+  },
+  {
+    id: '5',
+    type: 'meeting',
+    title: 'ห้องประชุมใหม่',
+    description: 'สร้างห้องประชุมออนไลน์จำนวน 12 ห้อง',
+    timestamp: '3 ชั่วโมงที่แล้ว',
+    status: 'info'
+  }
+];
+
+export default function EnhancedDashboard() {
+  const getActivityIcon = (type: string) => {
+    switch (type) {
+      case 'user': return <Users className="h-4 w-4" />;
+      case 'organization': return <Building className="h-4 w-4" />;
+      case 'email': return <Mail className="h-4 w-4" />;
+      case 'meeting': return <MessageSquare className="h-4 w-4" />;
+      case 'system': return <Server className="h-4 w-4" />;
+      default: return <Activity className="h-4 w-4" />;
+    }
+  };
+
+  const getActivityStatusColor = (status: string) => {
+    switch (status) {
+      case 'success': return 'text-green-500';
+      case 'warning': return 'text-yellow-500';
+      case 'error': return 'text-red-500';
+      case 'info': return 'text-blue-500';
+      default: return 'text-muted-foreground';
+    }
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="flex justify-between items-center">
+        <div>
+          <h1 className="text-3xl font-bold text-foreground">แดชบอร์ดระบบ</h1>
+          <p className="text-muted-foreground mt-1">
+            ภาพรวมการใช้งานและสถานะระบบ Enterprise Management
+          </p>
+        </div>
+        <div className="flex items-center space-x-2">
+          <Badge className="bg-green-100 text-green-800">
+            <CheckCircle className="w-3 h-3 mr-1" />
+            ระบบพร้อมใช้งาน
+          </Badge>
+          <Badge variant="outline">
+            <Clock className="w-3 h-3 mr-1" />
+            อัปเดตล่าสุด: ตอนนี้
+          </Badge>
+        </div>
+      </div>
+
+      {/* System Overview Cards */}
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">ผู้ใช้งานทั้งหมด</CardTitle>
+            <Users className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{mockStats.totalUsers.toLocaleString()}</div>
+            <p className="text-xs text-muted-foreground">
+              <span className="text-green-600 flex items-center">
+                <TrendingUp className="w-3 h-3 mr-1" />
+                +12% จากเดือนที่แล้ว
+              </span>
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">องค์กรที่ใช้งาน</CardTitle>
+            <Building className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{mockStats.activeOrganizations}</div>
+            <p className="text-xs text-muted-foreground">
+              จาก {mockStats.totalOrganizations} องค์กรทั้งหมด
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">อีเมลวันนี้</CardTitle>
+            <Mail className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{mockStats.totalEmails.toLocaleString()}</div>
+            <p className="text-xs text-muted-foreground">
+              <span className="text-green-600 flex items-center">
+                <TrendingUp className="w-3 h-3 mr-1" />
+                +8% จากเมื่อวาน
+              </span>
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">ห้องประชุมกำลังใช้งาน</CardTitle>
+            <MessageSquare className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{mockStats.totalMeetings}</div>
+            <p className="text-xs text-muted-foreground">
+              ห้องประชุมที่เปิดอยู่ในขณะนี้
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* System Health and Storage */}
+      <div className="grid gap-6 md:grid-cols-2">
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center space-x-2">
+              <Server className="h-5 w-5" />
+              <span>สถานะระบบ</span>
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <div className="flex justify-between items-center">
+                <span className="text-sm font-medium">ประสิทธิภาพระบบ</span>
+                <span className="text-sm text-muted-foreground">{mockStats.uptime}%</span>
+              </div>
+              <Progress value={mockStats.uptime} className="w-full" />
+            </div>
+            
+            <div className="space-y-2">
+              <div className="flex justify-between items-center">
+                <span className="text-sm font-medium">ผู้ใช้งานออนไลน์</span>
+                <span className="text-sm text-muted-foreground">
+                  {mockStats.activeUsers}/{mockStats.totalUsers}
+                </span>
+              </div>
+              <Progress value={(mockStats.activeUsers / mockStats.totalUsers) * 100} className="w-full" />
+            </div>
+
+            <div className="flex items-center justify-between pt-2">
+              <div className="flex items-center space-x-2">
+                <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                <span className="text-sm">ระบบทำงานปกติ</span>
+              </div>
+              <Button variant="outline" size="sm">
+                ดูรายละเอียด
+                <ArrowRight className="w-4 h-4 ml-2" />
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center space-x-2">
+              <Database className="h-5 w-5" />
+              <span>พื้นที่จัดเก็บข้อมูล</span>
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <div className="flex justify-between items-center">
+                <span className="text-sm font-medium">พื้นที่ใช้งาน</span>
+                <span className="text-sm text-muted-foreground">
+                  {mockStats.storageUsed} GB / {mockStats.storageTotal} GB
+                </span>
+              </div>
+              <Progress value={(mockStats.storageUsed / mockStats.storageTotal) * 100} className="w-full" />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4 pt-2">
+              <div className="text-center">
+                <div className="text-2xl font-bold text-primary">{mockStats.storageUsed}</div>
+                <div className="text-xs text-muted-foreground">GB ใช้งาน</div>
+              </div>
+              <div className="text-center">
+                <div className="text-2xl font-bold text-muted-foreground">
+                  {mockStats.storageTotal - mockStats.storageUsed}
+                </div>
+                <div className="text-xs text-muted-foreground">GB ว่าง</div>
+              </div>
+            </div>
+
+            <Button variant="outline" size="sm" className="w-full">
+              จัดการพื้นที่จัดเก็บ
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Recent Activities and Quick Actions */}
+      <div className="grid gap-6 lg:grid-cols-3">
+        <Card className="lg:col-span-2">
+          <CardHeader>
+            <CardTitle className="flex items-center space-x-2">
+              <Activity className="h-5 w-5" />
+              <span>กิจกรรมล่าสุด</span>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ScrollArea className="h-[300px]">
+              <div className="space-y-4">
+                {mockActivities.map((activity) => (
+                  <div key={activity.id} className="flex items-start space-x-4">
+                    <div className={`p-2 rounded-full bg-muted ${getActivityStatusColor(activity.status)}`}>
+                      {getActivityIcon(activity.type)}
+                    </div>
+                    <div className="flex-1 space-y-1">
+                      <div className="flex items-center justify-between">
+                        <h4 className="text-sm font-medium">{activity.title}</h4>
+                        <span className="text-xs text-muted-foreground">{activity.timestamp}</span>
+                      </div>
+                      <p className="text-sm text-muted-foreground">{activity.description}</p>
+                      {activity.user && (
+                        <div className="flex items-center space-x-2 pt-1">
+                          <Avatar className="w-4 h-4">
+                            <AvatarFallback className="text-xs">
+                              {activity.user.charAt(0)}
+                            </AvatarFallback>
+                          </Avatar>
+                          <span className="text-xs text-muted-foreground">{activity.user}</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </ScrollArea>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center space-x-2">
+              <Shield className="h-5 w-5" />
+              <span>การดำเนินการด่วน</span>
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <Button className="w-full justify-start" variant="outline">
+              <Users className="w-4 h-4 mr-2" />
+              จัดการผู้ใช้งาน
+            </Button>
+            <Button className="w-full justify-start" variant="outline">
+              <Building className="w-4 h-4 mr-2" />
+              เพิ่มองค์กรใหม่
+            </Button>
+            <Button className="w-full justify-start" variant="outline">
+              <Mail className="w-4 h-4 mr-2" />
+              ตรวจสอบอีเมล
+            </Button>
+            <Button className="w-full justify-start" variant="outline">
+              <Calendar className="w-4 h-4 mr-2" />
+              จัดการปฏิทิน
+            </Button>
+            <Button className="w-full justify-start" variant="outline">
+              <MessageSquare className="w-4 h-4 mr-2" />
+              ห้องประชุม
+            </Button>
+            
+            <div className="pt-4 border-t">
+              <h4 className="text-sm font-medium mb-3 flex items-center">
+                <AlertTriangle className="w-4 h-4 mr-2 text-yellow-500" />
+                การแจ้งเตือน
+              </h4>
+              <div className="space-y-2">
+                <div className="p-2 bg-yellow-50 border border-yellow-200 rounded text-xs">
+                  <span className="font-medium">การบำรุงรักษา:</span> วันอาทิตย์ 02:00-06:00
+                </div>
+                <div className="p-2 bg-blue-50 border border-blue-200 rounded text-xs">
+                  <span className="font-medium">อัปเดต:</span> ฟีเจอร์ใหม่พร้อมใช้งาน
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  );
+}
