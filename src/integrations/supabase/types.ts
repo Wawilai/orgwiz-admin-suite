@@ -1032,9 +1032,28 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_current_user_organization_id: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
       get_full_email_address: {
         Args: { domain_id: string; local_part: string }
         Returns: string
+      }
+      has_role: {
+        Args: {
+          _role_type: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
+      is_organization_admin: {
+        Args: { _org_id: string; _user_id: string }
+        Returns: boolean
+      }
+      is_super_admin: {
+        Args: { _user_id?: string }
+        Returns: boolean
       }
     }
     Enums: {
