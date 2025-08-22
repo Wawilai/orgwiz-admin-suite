@@ -630,6 +630,13 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "fk_master_data_items_type_id"
+            columns: ["type_id"]
+            isOneToOne: false
+            referencedRelation: "master_data_types"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "master_data_items_organization_id_fkey"
             columns: ["organization_id"]
             isOneToOne: false
@@ -885,6 +892,13 @@ export type Database = {
           username?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "fk_profiles_organization_unit_id"
+            columns: ["organization_unit_id"]
+            isOneToOne: false
+            referencedRelation: "organization_units"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "profiles_manager_id_fkey"
             columns: ["manager_id"]
