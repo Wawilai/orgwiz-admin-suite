@@ -219,6 +219,15 @@ export default function SystemSettings() {
   const [currentTab, setCurrentTab] = useState('servers');
   const [isAddServerDialogOpen, setIsAddServerDialogOpen] = useState(false);
   const [isAddBackupDialogOpen, setIsAddBackupDialogOpen] = useState(false);
+  const [isServerDetailDialogOpen, setIsServerDetailDialogOpen] = useState(false);
+  const [isEditServerDialogOpen, setIsEditServerDialogOpen] = useState(false);
+  const [isBackupLogDialogOpen, setIsBackupLogDialogOpen] = useState(false);
+  const [isPolicyEditDialogOpen, setIsPolicyEditDialogOpen] = useState(false);
+  const [isCertRenewDialogOpen, setIsCertRenewDialogOpen] = useState(false);
+  const [selectedServer, setSelectedServer] = useState<ServerInfo | null>(null);
+  const [selectedBackup, setSelectedBackup] = useState<BackupSchedule | null>(null);
+  const [selectedPolicy, setSelectedPolicy] = useState<SecurityPolicy | null>(null);
+  const [selectedCertificate, setSelectedCertificate] = useState<Certificate | null>(null);
 
   const handleRunBackup = (backupId: string) => {
     setBackups(backups.map(backup => 
@@ -241,6 +250,171 @@ export default function SystemSettings() {
     toast({
       title: "หยุด Backup สำเร็จ",
       description: "หยุดกำหนดการสำรองข้อมูลชั่วคราว",
+    });
+  };
+
+  // Server Management Functions
+  const handleViewServerDetail = (server: ServerInfo) => {
+    setSelectedServer(server);
+    setIsServerDetailDialogOpen(true);
+  };
+
+  const handleEditServer = (server: ServerInfo) => {
+    setSelectedServer(server);
+    setIsEditServerDialogOpen(true);
+  };
+
+  const handleRebootServer = (serverId: string) => {
+    toast({
+      title: "รีบูตเซิร์ฟเวอร์",
+      description: "กำลังดำเนินการรีบูตเซิร์ฟเวอร์",
+    });
+  };
+
+  const handleDeleteServer = (serverId: string) => {
+    toast({
+      title: "ลบเซิร์ฟเวอร์สำเร็จ",
+      description: "ลบเซิร์ฟเวอร์ออกจากระบบแล้ว",
+    });
+  };
+
+  const handleStartMaintenance = (serverId: string) => {
+    toast({
+      title: "เข้าสู่โหมดซ่อมบำรุง",
+      description: "เปลี่ยนสถานะเซิร์ฟเวอร์เป็นโหมดซ่อมบำรุง",
+    });
+  };
+
+  const handleMonitorServer = (serverId: string) => {
+    toast({
+      title: "เปิดการติดตาม",
+      description: "เปิดหน้าต่างการติดตามเซิร์ฟเวอร์แบบเรียลไทม์",
+    });
+  };
+
+  // Backup Management Functions  
+  const handleEditBackup = (backup: BackupSchedule) => {
+    setSelectedBackup(backup);
+    toast({
+      title: "แก้ไขกำหนดการ",
+      description: "เปิดหน้าต่างแก้ไขกำหนดการสำรองข้อมูล",
+    });
+  };
+
+  const handleViewBackupLog = (backup: BackupSchedule) => {
+    setSelectedBackup(backup);
+    setIsBackupLogDialogOpen(true);
+  };
+
+  const handleDeleteBackup = (backupId: string) => {
+    setBackups(backups.filter(b => b.id !== backupId));
+    toast({
+      title: "ลบกำหนดการสำเร็จ",
+      description: "ลบกำหนดการสำรองข้อมูลแล้ว",
+    });
+  };
+
+  const handleRestoreBackup = (backupId: string) => {
+    toast({
+      title: "เริ่มการคืนข้อมูล",
+      description: "กำลังดำเนินการคืนข้อมูลจากการสำรอง",
+    });
+  };
+
+  const handleCloneBackup = (backup: BackupSchedule) => {
+    const clonedBackup = {
+      ...backup,
+      id: Date.now().toString(),
+      name: `${backup.name} (สำเนา)`,
+      status: 'Paused' as const
+    };
+    setBackups([...backups, clonedBackup]);
+    toast({
+      title: "ทำสำเนาสำเร็จ",
+      description: "ทำสำเนากำหนดการสำรองข้อมูลแล้ว",
+    });
+  };
+
+  // Security Policy Functions
+  const handleEditPolicy = (policy: SecurityPolicy) => {
+    setSelectedPolicy(policy);
+    setIsPolicyEditDialogOpen(true);
+  };
+
+  const handleTogglePolicy = (policyId: string) => {
+    toast({
+      title: "เปลี่ยนสถานะนโยบาย",
+      description: "เปลี่ยนสถานะการใช้งานนโยบายความปลอดภัย",
+    });
+  };
+
+  const handleDeletePolicy = (policyId: string) => {
+    toast({
+      title: "ลบนโยบายสำเร็จ",
+      description: "ลบนโยบายความปลอดภัยแล้ว",
+    });
+  };
+
+  const handleClonePolicy = (policy: SecurityPolicy) => {
+    toast({
+      title: "ทำสำเนานโยบาย",
+      description: "ทำสำเนานโยบายความปลอดภัยแล้ว",
+    });
+  };
+
+  const handleExportPolicy = (policyId: string) => {
+    toast({
+      title: "ส่งออกนโยบาย",
+      description: "ส่งออกการตั้งค่านโยบายความปลอดภัยแล้ว",
+    });
+  };
+
+  const handleViewPolicyLog = (policyId: string) => {
+    toast({
+      title: "ดูบันทึกนโยบาย",
+      description: "เปิดหน้าต่างบันทึกการใช้งานนโยบาย",
+    });
+  };
+
+  // Certificate Management Functions
+  const handleDownloadCertificate = (certId: string) => {
+    toast({
+      title: "ดาวน์โหลดใบรับรอง",
+      description: "ดาวน์โหลดไฟล์ใบรับรองแล้ว",
+    });
+  };
+
+  const handleRenewCertificate = (certificate: Certificate) => {
+    setSelectedCertificate(certificate);
+    setIsCertRenewDialogOpen(true);
+  };
+
+  const handleRevokeCertificate = (certId: string) => {
+    toast({
+      title: "เพิกถอนใบรับรอง",
+      description: "ดำเนินการเพิกถอนใบรับรองแล้ว",
+    });
+  };
+
+  const handleExportCertificate = (certId: string) => {
+    toast({
+      title: "ส่งออกใบรับรอง",
+      description: "ส่งออกใบรับรองในรูปแบบ PEM แล้ว",
+    });
+  };
+
+  const handleViewCertificateDetail = (certificate: Certificate) => {
+    setSelectedCertificate(certificate);
+    toast({
+      title: "รายละเอียดใบรับรอง",
+      description: "เปิดหน้าต่างแสดงรายละเอียดใบรับรอง",
+    });
+  };
+
+  const handleInstallCertificate = (certId: string) => {
+    toast({
+      title: "ติดตั้งใบรับรอง",
+      description: "ติดตั้งใบรับรองลงในเซิร์ฟเวอร์แล้ว",
     });
   };
 
@@ -521,19 +695,27 @@ export default function SystemSettings() {
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
-                            <DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleViewServerDetail(server)}>
                               <Activity className="mr-2 h-4 w-4" />
                               ดูรายละเอียด
                             </DropdownMenuItem>
-                            <DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleEditServer(server)}>
                               <Edit2 className="mr-2 h-4 w-4" />
                               แก้ไขการตั้งค่า
                             </DropdownMenuItem>
-                            <DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleMonitorServer(server.id)}>
+                              <Activity className="mr-2 h-4 w-4" />
+                              ติดตามแบบเรียลไทม์
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleStartMaintenance(server.id)}>
+                              <Settings className="mr-2 h-4 w-4" />
+                              โหมดซ่อมบำรุง
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleRebootServer(server.id)}>
                               <RefreshCw className="mr-2 h-4 w-4" />
                               รีบูต
                             </DropdownMenuItem>
-                            <DropdownMenuItem className="text-red-600">
+                            <DropdownMenuItem onClick={() => handleDeleteServer(server.id)} className="text-red-600">
                               <Trash2 className="mr-2 h-4 w-4" />
                               ลบเซิร์ฟเวอร์
                             </DropdownMenuItem>
@@ -732,15 +914,23 @@ export default function SystemSettings() {
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
-                              <DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => handleEditBackup(backup)}>
                                 <Edit2 className="mr-2 h-4 w-4" />
                                 แก้ไข
                               </DropdownMenuItem>
-                              <DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => handleViewBackupLog(backup)}>
                                 <FileText className="mr-2 h-4 w-4" />
                                 ดูล็อก
                               </DropdownMenuItem>
-                              <DropdownMenuItem className="text-red-600">
+                              <DropdownMenuItem onClick={() => handleRestoreBackup(backup.id)}>
+                                <RefreshCw className="mr-2 h-4 w-4" />
+                                คืนข้อมูล
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => handleCloneBackup(backup)}>
+                                <FileText className="mr-2 h-4 w-4" />
+                                ทำสำเนากำหนดการ
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => handleDeleteBackup(backup.id)} className="text-red-600">
                                 <Trash2 className="mr-2 h-4 w-4" />
                                 ลบ
                               </DropdownMenuItem>
@@ -809,15 +999,27 @@ export default function SystemSettings() {
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
-                            <DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleEditPolicy(policy)}>
                               <Edit2 className="mr-2 h-4 w-4" />
                               แก้ไขนโยบาย
                             </DropdownMenuItem>
-                            <DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleTogglePolicy(policy.id)}>
                               <Settings className="mr-2 h-4 w-4" />
-                              ตั้งค่าขั้นสูง
+                              เปิด/ปิดการใช้งาน
                             </DropdownMenuItem>
-                            <DropdownMenuItem className="text-red-600">
+                            <DropdownMenuItem onClick={() => handleClonePolicy(policy)}>
+                              <FileText className="mr-2 h-4 w-4" />
+                              ทำสำเนานโยบาย
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleExportPolicy(policy.id)}>
+                              <Download className="mr-2 h-4 w-4" />
+                              ส่งออกการตั้งค่า
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleViewPolicyLog(policy.id)}>
+                              <Activity className="mr-2 h-4 w-4" />
+                              ดูบันทึกการใช้งาน
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleDeletePolicy(policy.id)} className="text-red-600">
                               <Trash2 className="mr-2 h-4 w-4" />
                               ลบนโยบาย
                             </DropdownMenuItem>
@@ -891,15 +1093,27 @@ export default function SystemSettings() {
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
-                              <DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => handleViewCertificateDetail(cert)}>
+                                <FileText className="mr-2 h-4 w-4" />
+                                ดูรายละเอียด
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => handleDownloadCertificate(cert.id)}>
                                 <Download className="mr-2 h-4 w-4" />
                                 ดาวน์โหลดใบรับรอง
                               </DropdownMenuItem>
-                              <DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => handleExportCertificate(cert.id)}>
+                                <Download className="mr-2 h-4 w-4" />
+                                ส่งออก PEM
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => handleInstallCertificate(cert.id)}>
+                                <Settings className="mr-2 h-4 w-4" />
+                                ติดตั้งใบรับรอง
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => handleRenewCertificate(cert)}>
                                 <RefreshCw className="mr-2 h-4 w-4" />
                                 ต่ออายุ
                               </DropdownMenuItem>
-                              <DropdownMenuItem className="text-red-600">
+                              <DropdownMenuItem onClick={() => handleRevokeCertificate(cert.id)} className="text-red-600">
                                 <Trash2 className="mr-2 h-4 w-4" />
                                 เพิกถอน
                               </DropdownMenuItem>
@@ -915,6 +1129,146 @@ export default function SystemSettings() {
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* Server Detail Dialog */}
+      <Dialog open={isServerDetailDialogOpen} onOpenChange={setIsServerDetailDialogOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>รายละเอียดเซิร์ฟเวอร์</DialogTitle>
+          </DialogHeader>
+          {selectedServer && (
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label>ชื่อเซิร์ฟเวอร์</Label>
+                  <p className="font-medium">{selectedServer.name}</p>
+                </div>
+                <div>
+                  <Label>ประเภท</Label>
+                  <p>{selectedServer.type}</p>
+                </div>
+                <div>
+                  <Label>IP Address</Label>
+                  <p className="font-mono">{selectedServer.ipAddress}</p>
+                </div>
+                <div>
+                  <Label>สถานที่</Label>
+                  <p>{selectedServer.location}</p>
+                </div>
+                <div>
+                  <Label>เวอร์ชัน</Label>
+                  <p>{selectedServer.version}</p>
+                </div>
+                <div>
+                  <Label>อัปไทม์</Label>
+                  <p>{selectedServer.uptime}%</p>
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label>การใช้งานทรัพยากร</Label>
+                <div className="space-y-3">
+                  <div>
+                    <div className="flex justify-between text-sm">
+                      <span>CPU</span>
+                      <span>{selectedServer.cpuUsage}%</span>
+                    </div>
+                    <Progress value={selectedServer.cpuUsage} className="h-2" />
+                  </div>
+                  <div>
+                    <div className="flex justify-between text-sm">
+                      <span>RAM</span>
+                      <span>{selectedServer.memoryUsage}%</span>
+                    </div>
+                    <Progress value={selectedServer.memoryUsage} className="h-2" />
+                  </div>
+                  <div>
+                    <div className="flex justify-between text-sm">
+                      <span>Disk</span>
+                      <span>{selectedServer.diskUsage}%</span>
+                    </div>
+                    <Progress value={selectedServer.diskUsage} className="h-2" />
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Backup Log Dialog */}
+      <Dialog open={isBackupLogDialogOpen} onOpenChange={setIsBackupLogDialogOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>บันทึกการสำรอง</DialogTitle>
+          </DialogHeader>
+          {selectedBackup && (
+            <div className="space-y-4">
+              <div>
+                <Label>กำหนดการ: {selectedBackup.name}</Label>
+              </div>
+              <div className="space-y-2">
+                <div className="text-sm font-mono bg-gray-100 p-4 rounded max-h-60 overflow-y-auto">
+                  <div>2024-01-25 02:00:00 - เริ่มการสำรองข้อมูล</div>
+                  <div>2024-01-25 02:00:15 - ตรวจสอบเซิร์ฟเวอร์เป้าหมาย</div>
+                  <div>2024-01-25 02:00:30 - เริ่มการสำรองฐานข้อมูล</div>
+                  <div>2024-01-25 02:15:45 - การสำรองเสร็จสิ้น</div>
+                  <div>2024-01-25 02:16:00 - ตรวจสอบความสมบูรณ์</div>
+                  <div>2024-01-25 02:16:15 - สำรองข้อมูลสำเร็จ</div>
+                </div>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Certificate Renewal Dialog */}
+      <Dialog open={isCertRenewDialogOpen} onOpenChange={setIsCertRenewDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>ต่ออายุใบรับรอง</DialogTitle>
+          </DialogHeader>
+          {selectedCertificate && (
+            <div className="space-y-4">
+              <div>
+                <Label>โดเมน</Label>
+                <p className="font-medium">{selectedCertificate.domain}</p>
+              </div>
+              <div>
+                <Label>วันหมดอายุปัจจุบัน</Label>
+                <p>{selectedCertificate.validTo}</p>
+              </div>
+              <div className="space-y-2">
+                <Label>ระยะเวลาต่ออายุ</Label>
+                <Select defaultValue="1year">
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="3months">3 เดือน</SelectItem>
+                    <SelectItem value="6months">6 เดือน</SelectItem>
+                    <SelectItem value="1year">1 ปี</SelectItem>
+                    <SelectItem value="2years">2 ปี</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="flex justify-end gap-2">
+                <Button variant="outline" onClick={() => setIsCertRenewDialogOpen(false)}>
+                  ยกเลิก
+                </Button>
+                <Button onClick={() => {
+                  setIsCertRenewDialogOpen(false);
+                  toast({
+                    title: "ส่งคำขอต่ออายุ",
+                    description: "ส่งคำขอต่ออายุใบรับรองแล้ว",
+                  });
+                }}>
+                  ต่ออายุ
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
