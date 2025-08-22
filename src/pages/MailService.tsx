@@ -128,6 +128,8 @@ const MailService = () => {
   const [selectedFilter, setSelectedFilter] = useState("all");
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isResetPasswordDialogOpen, setIsResetPasswordDialogOpen] = useState(false);
+  const [isAssignOwnerDialogOpen, setIsAssignOwnerDialogOpen] = useState(false);
   const [selectedMailbox, setSelectedMailbox] = useState<any>(null);
   const [formData, setFormData] = useState({
     email: "",
@@ -241,6 +243,16 @@ const MailService = () => {
     setIsEditDialogOpen(true);
   };
 
+  const openResetPasswordDialog = (mailbox: any) => {
+    setSelectedMailbox(mailbox);
+    setIsResetPasswordDialogOpen(true);
+  };
+
+  const openAssignOwnerDialog = (mailbox: any) => {
+    setSelectedMailbox(mailbox);
+    setIsAssignOwnerDialogOpen(true);
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -261,7 +273,7 @@ const MailService = () => {
             นำเข้า
           </Button>
           {/* Reset Password Dialog */}
-          <Dialog>
+          <Dialog open={isResetPasswordDialogOpen} onOpenChange={setIsResetPasswordDialogOpen}>
             <DialogTrigger asChild>
               <Button variant="outline">
                 <Key className="w-4 h-4 mr-2" />
@@ -320,7 +332,7 @@ const MailService = () => {
           </Dialog>
 
           {/* Assign Owner Dialog */}
-          <Dialog>
+          <Dialog open={isAssignOwnerDialogOpen} onOpenChange={setIsAssignOwnerDialogOpen}>
             <DialogTrigger asChild>
               <Button variant="outline">
                 <UserCheck className="w-4 h-4 mr-2" />
@@ -689,11 +701,11 @@ const MailService = () => {
                             <Edit className="mr-2 h-4 w-4" />
                             แก้ไข
                           </DropdownMenuItem>
-                          <DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => openResetPasswordDialog(mailbox)}>
                             <Key className="mr-2 h-4 w-4" />
                             รีเซ็ตรหัสผ่าน
                           </DropdownMenuItem>
-                          <DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => openAssignOwnerDialog(mailbox)}>
                             <UserCheck className="mr-2 h-4 w-4" />
                             กำหนดเจ้าของ
                           </DropdownMenuItem>
