@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -366,9 +366,12 @@ export default function LicenseManagement() {
                   เพิ่มลิขสิทธิ์
                 </Button>
               </DialogTrigger>
-              <DialogContent className="max-w-2xl">
+              <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
                   <DialogTitle>เพิ่มลิขสิทธิ์ใหม่</DialogTitle>
+                  <DialogDescription>
+                    เพิ่มลิขสิทธิ์ใหม่เข้าสู่ระบบ
+                  </DialogDescription>
                 </DialogHeader>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="col-span-2 space-y-2">
@@ -803,9 +806,12 @@ export default function LicenseManagement() {
 
       {/* Edit Dialog */}
       <Dialog open={editingLicense !== null} onOpenChange={() => setEditingLicense(null)}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>แก้ไขลิขสิทธิ์</DialogTitle>
+            <DialogDescription>
+              แก้ไขรายละเอียดลิขสิทธิ์ที่เลือก
+            </DialogDescription>
           </DialogHeader>
           <div className="grid grid-cols-2 gap-4">
             <div className="col-span-2 space-y-2">
@@ -908,9 +914,12 @@ export default function LicenseManagement() {
 
       {/* Assign Users Dialog */}
       <Dialog open={isAssignDialogOpen} onOpenChange={setIsAssignDialogOpen}>
-        <DialogContent>
+        <DialogContent className="max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>กำหนดผู้ใช้ลิขสิทธิ์</DialogTitle>
+            <DialogDescription>
+              จัดการการกำหนดผู้ใช้สำหรับลิขสิทธิ์
+            </DialogDescription>
           </DialogHeader>
           {selectedLicense && (
             <div className="space-y-4">

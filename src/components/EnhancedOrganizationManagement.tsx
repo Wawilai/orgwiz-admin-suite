@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from '@/components/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { toast } from '@/hooks/use-toast';
@@ -180,9 +180,12 @@ export default function EnhancedOrganizationManagement() {
                 เพิ่มองค์กร
               </Button>
             </DialogTrigger>
-            <DialogContent className="bg-card overflow-y-auto">
+            <DialogContent className="bg-card overflow-y-auto max-h-[90vh]">
               <DialogHeader>
                 <DialogTitle>เพิ่มองค์กรใหม่</DialogTitle>
+                <DialogDescription>
+                  กรอกข้อมูลสำหรับเพิ่มองค์กรใหม่เข้าสู่ระบบ
+                </DialogDescription>
               </DialogHeader>
               <div className="grid gap-6 py-4 max-h-[70vh] overflow-y-auto">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -502,9 +505,12 @@ export default function EnhancedOrganizationManagement() {
       {/* Edit Dialog */}
       {selectedOrg && (
         <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-          <DialogContent className="bg-card overflow-y-auto">
+          <DialogContent className="bg-card overflow-y-auto max-h-[90vh]">
             <DialogHeader>
               <DialogTitle>แก้ไขข้อมูลองค์กร</DialogTitle>
+              <DialogDescription>
+                แก้ไขข้อมูลรายละเอียดขององค์กร
+              </DialogDescription>
             </DialogHeader>
             <div className="grid gap-6 py-4 max-h-[70vh] overflow-y-auto">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

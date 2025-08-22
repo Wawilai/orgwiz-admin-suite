@@ -14,6 +14,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Separator } from '@/components/ui/separator';
 import { DatePicker } from '@/components/ui/date-picker';
+import { DialogDescription } from '@/components/ui/dialog';
 import { toast } from '@/hooks/use-toast';
 import { 
   Video, 
@@ -329,24 +330,31 @@ export default function Meeting() {
                   สร้างห้องประชุม
                 </Button>
               </DialogTrigger>
-              <DialogContent className="max-w-2xl">
+              <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
                   <DialogTitle>สร้างห้องประชุมใหม่</DialogTitle>
+                  <DialogDescription>
+                    กรอกข้อมูลสำหรับสร้างห้องประชุมออนไลน์ใหม่
+                  </DialogDescription>
                 </DialogHeader>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="col-span-2 space-y-2">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-1">
+                  <div className="col-span-full space-y-2">
                     <Label htmlFor="title">หัวข้อการประชุม *</Label>
                     <Input
                       id="title"
                       value={formData.title}
                       onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                       placeholder="กรอกหัวข้อการประชุม"
+                      required
                     />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="scheduledDate">วันที่</Label>
-                    <DatePicker
-                      placeholder="เลือกวันที่ประชุม"
+                    <Input
+                      id="scheduledDate"
+                      type="date"
+                      value={formData.scheduledDate}
+                      onChange={(e) => setFormData({ ...formData, scheduledDate: e.target.value })}
                     />
                   </div>
                   <div className="space-y-2">
@@ -389,7 +397,7 @@ export default function Meeting() {
                       placeholder="กรอกรหัสผ่าน"
                     />
                   </div>
-                  <div className="col-span-2 space-y-2">
+                  <div className="col-span-full space-y-2">
                     <Label htmlFor="description">รายละเอียด</Label>
                     <Textarea
                       id="description"
@@ -397,9 +405,10 @@ export default function Meeting() {
                       onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                       placeholder="กรอกรายละเอียดการประชุม"
                       rows={3}
+                      className="min-h-[80px]"
                     />
                   </div>
-                  <div className="col-span-2 space-y-4">
+                  <div className="col-span-full space-y-4">
                     <div className="flex items-center space-x-2">
                       <Switch
                         id="waitingRoom"
@@ -410,11 +419,14 @@ export default function Meeting() {
                     </div>
                   </div>
                 </div>
-                <div className="flex justify-end gap-2">
+                <div className="flex justify-end gap-2 pt-4 border-t mt-6">
                   <Button variant="outline" onClick={() => setIsCreateDialogOpen(false)}>
                     ยกเลิก
                   </Button>
-                  <Button onClick={handleCreateMeeting}>
+                  <Button 
+                    onClick={handleCreateMeeting}
+                    disabled={!formData.title?.trim()}
+                  >
                     สร้างห้องประชุม
                   </Button>
                 </div>
@@ -618,9 +630,12 @@ export default function Meeting() {
                               Poll
                             </Button>
                           </DialogTrigger>
-                          <DialogContent>
+                          <DialogContent className="max-w-md">
                             <DialogHeader>
                               <DialogTitle>สร้าง Poll</DialogTitle>
+                              <DialogDescription>
+                                สร้างการโหวตสำหรับผู้เข้าร่วมประชุม
+                              </DialogDescription>
                             </DialogHeader>
                             <div className="space-y-4">
                               <div className="space-y-2">
@@ -658,11 +673,14 @@ export default function Meeting() {
                                 </Button>
                               </div>
                             </div>
-                            <div className="flex justify-end gap-2">
+                            <div className="flex justify-end gap-2 pt-4 border-t mt-4">
                               <Button variant="outline" onClick={() => setIsPollDialogOpen(false)}>
                                 ยกเลิก
                               </Button>
-                              <Button onClick={handleCreatePoll}>
+                              <Button 
+                                onClick={handleCreatePoll}
+                                disabled={!pollData.question.trim() || pollData.options.filter(o => o.trim()).length < 2}
+                              >
                                 สร้าง Poll
                               </Button>
                             </div>
