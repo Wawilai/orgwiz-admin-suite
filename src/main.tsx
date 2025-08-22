@@ -2,17 +2,31 @@ import { createRoot } from 'react-dom/client'
 import App from './App.tsx'
 import './index.css'
 
-console.log('Starting application...');
+// Create a simple fallback component
+const FallbackApp = () => (
+  <div style={{ 
+    display: 'flex', 
+    justifyContent: 'center', 
+    alignItems: 'center', 
+    height: '100vh',
+    fontFamily: 'system-ui',
+    backgroundColor: '#f8fafc'
+  }}>
+    <div style={{ textAlign: 'center' }}>
+      <h1 style={{ color: '#334155', marginBottom: '10px' }}>Enterprise Management System</h1>
+      <p style={{ color: '#64748b' }}>กำลังโหลด...</p>
+    </div>
+  </div>
+);
 
 const rootElement = document.getElementById("root");
-if (!rootElement) {
-  console.error('Root element not found!');
-} else {
-  console.log('Root element found, creating app...');
+if (rootElement) {
   try {
+    // Try loading the full app first
     createRoot(rootElement).render(<App />);
-    console.log('App rendered successfully');
   } catch (error) {
-    console.error('Error rendering app:', error);
+    console.error('Error loading full app, using fallback:', error);
+    // If full app fails, use fallback
+    createRoot(rootElement).render(<FallbackApp />);
   }
 }
