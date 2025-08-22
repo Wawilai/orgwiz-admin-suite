@@ -22,7 +22,10 @@ import {
   Square,
   Activity,
   FileText,
-  Download
+  Download,
+  Save,
+  Copy,
+  RefreshCw
 } from 'lucide-react';
 
 interface BackupSchedule {
@@ -71,6 +74,9 @@ const mockBackups: BackupSchedule[] = [
 export function BackupManagement() {
   const [backups, setBackups] = useState<BackupSchedule[]>(mockBackups);
   const [isAddBackupDialogOpen, setIsAddBackupDialogOpen] = useState(false);
+  const [isEditBackupDialogOpen, setIsEditBackupDialogOpen] = useState(false);
+  const [isRestoreDialogOpen, setIsRestoreDialogOpen] = useState(false);
+  const [isCloneDialogOpen, setIsCloneDialogOpen] = useState(false);
   const [isBackupLogDialogOpen, setIsBackupLogDialogOpen] = useState(false);
   const [selectedBackup, setSelectedBackup] = useState<BackupSchedule | null>(null);
 
@@ -100,10 +106,7 @@ export function BackupManagement() {
 
   const handleEditBackup = (backup: BackupSchedule) => {
     setSelectedBackup(backup);
-    toast({
-      title: "แก้ไขกำหนดการ",
-      description: "เปิดหน้าต่างแก้ไขกำหนดการสำรองข้อมูล",
-    });
+    setIsEditBackupDialogOpen(true);
   };
 
   const handleViewBackupLog = (backup: BackupSchedule) => {
@@ -119,25 +122,14 @@ export function BackupManagement() {
     });
   };
 
-  const handleRestoreBackup = (backupId: string) => {
-    toast({
-      title: "เริ่มการคืนข้อมูล",
-      description: "กำลังดำเนินการคืนข้อมูลจากการสำรอง",
-    });
+  const handleRestoreBackup = (backup: BackupSchedule) => {
+    setSelectedBackup(backup);
+    setIsRestoreDialogOpen(true);
   };
 
   const handleCloneBackup = (backup: BackupSchedule) => {
-    const clonedBackup = {
-      ...backup,
-      id: Date.now().toString(),
-      name: `${backup.name} (สำเนา)`,
-      status: 'Paused' as const
-    };
-    setBackups([...backups, clonedBackup]);
-    toast({
-      title: "ทำสำเนาสำเร็จ",
-      description: "ทำสำเนากำหนดการสำรองข้อมูลแล้ว",
-    });
+    setSelectedBackup(backup);
+    setIsCloneDialogOpen(true);
   };
 
   const getStatusBadge = (status: string) => {
@@ -340,10 +332,10 @@ export function BackupManagement() {
                           <Activity className="mr-2 h-4 w-4" />
                           ดูล็อกการสำรอง
                         </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => handleRestoreBackup(backup.id)}>
-                          <Download className="mr-2 h-4 w-4" />
-                          คืนข้อมูล
-                        </DropdownMenuItem>
+                         <DropdownMenuItem onClick={() => handleRestoreBackup(backup)}>
+                           <Download className="mr-2 h-4 w-4" />
+                           คืนข้อมูล
+                         </DropdownMenuItem>
                         <DropdownMenuItem onClick={() => handleCloneBackup(backup)}>
                           <FileText className="mr-2 h-4 w-4" />
                           ทำสำเนา
@@ -393,6 +385,314 @@ export function BackupManagement() {
                   <div>2024-01-25 02:16:00 - ตรวจสอบความสมบูรณ์</div>
                   <div>2024-01-25 02:16:15 - สำรองข้อมูลสำเร็จ</div>
                 </div>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Backup Dialog */}
+      <Dialog open={isEditBackupDialogOpen} onOpenChange={setIsEditBackupDialogOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>แก้ไขกำหนดการสำรองข้อมูล</DialogTitle>
+          </DialogHeader>
+          {selectedBackup && (
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label>ชื่อกำหนดการ</Label>
+                <Input defaultValue={selectedBackup.name} />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>ประเภท Backup</Label>
+                  <Select defaultValue={selectedBackup.type}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Full">Full Backup</SelectItem>
+                      <SelectItem value="Incremental">Incremental Backup</SelectItem>
+                      <SelectItem value="Differential">Differential Backup</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label>ความถี่</Label>
+                  <Select defaultValue={selectedBackup.frequency}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Daily">รายวัน</SelectItem>
+                      <SelectItem value="Weekly">รายสัปดาห์</SelectItem>
+                      <SelectItem value="Monthly">รายเดือน</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>เซิร์ฟเวอร์เป้าหมาย</Label>
+                  <Select defaultValue={selectedBackup.targetServers[0]}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="WEB-SRV-01">WEB-SRV-01</SelectItem>
+                      <SelectItem value="DB-SRV-01">DB-SRV-01</SelectItem>
+                      <SelectItem value="MAIL-SRV-01">MAIL-SRV-01</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label>สถานะ</Label>
+                  <Select defaultValue={selectedBackup.status}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Active">ใช้งาน</SelectItem>
+                      <SelectItem value="Paused">หยุดชั่วคราว</SelectItem>
+                      <SelectItem value="Failed">ล้มเหลว</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>ปลายทางการจัดเก็บ</Label>
+                  <Input defaultValue={selectedBackup.destination} />
+                </div>
+                <div className="space-y-2">
+                  <Label>เก็บไว้ (วัน)</Label>
+                  <Input type="number" defaultValue={selectedBackup.retention} />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label>เวลาที่ทำการสำรอง</Label>
+                <Input type="time" defaultValue="02:00" />
+              </div>
+              <div className="flex justify-end gap-2">
+                <Button variant="outline" onClick={() => setIsEditBackupDialogOpen(false)}>
+                  ยกเลิก
+                </Button>
+                <Button onClick={() => {
+                  toast({
+                    title: "บันทึกการตั้งค่าสำเร็จ",
+                    description: "แก้ไขกำหนดการสำรองข้อมูลเรียบร้อยแล้ว",
+                  });
+                  setIsEditBackupDialogOpen(false);
+                }}>
+                  <Save className="h-4 w-4 mr-2" />
+                  บันทึกการตั้งค่า
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Restore Backup Dialog */}
+      <Dialog open={isRestoreDialogOpen} onOpenChange={setIsRestoreDialogOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>คืนข้อมูลจากการสำรอง</DialogTitle>
+          </DialogHeader>
+          {selectedBackup && (
+            <div className="space-y-4">
+              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                <div className="flex items-center gap-2 text-yellow-800">
+                  <AlertTriangle className="h-4 w-4" />
+                  <span className="font-medium">คำเตือน</span>
+                </div>
+                <p className="text-yellow-700 mt-1">
+                  การคืนข้อมูลจะเขียนทับข้อมูลปัจจุบัน กรุณาตรวจสอบข้อมูลให้แน่ใจ
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <Label>ข้อมูลการสำรอง</Label>
+                <div className="bg-muted p-3 rounded-lg">
+                  <div className="grid grid-cols-2 gap-4 text-sm">
+                    <div>
+                      <span className="font-medium">ชื่อกำหนดการ:</span>
+                      <p>{selectedBackup.name}</p>
+                    </div>
+                    <div>
+                      <span className="font-medium">ประเภท:</span>
+                      <p>{selectedBackup.type}</p>
+                    </div>
+                    <div>
+                      <span className="font-medium">การสำรองล่าสุด:</span>
+                      <p>{new Date(selectedBackup.lastBackup).toLocaleString('th-TH')}</p>
+                    </div>
+                    <div>
+                      <span className="font-medium">ขนาดไฟล์:</span>
+                      <p>{selectedBackup.size}</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label>เลือกจุดคืนข้อมูล</Label>
+                <Select>
+                  <SelectTrigger>
+                    <SelectValue placeholder="เลือกจุดคืนข้อมูล" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="latest">การสำรองล่าสุด - {new Date(selectedBackup.lastBackup).toLocaleString('th-TH')}</SelectItem>
+                    <SelectItem value="previous">การสำรองก่อนหน้า - 2024-01-24 02:00:00</SelectItem>
+                    <SelectItem value="week">การสำรองสัปดาห์ที่แล้ว - 2024-01-21 02:00:00</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label>ตัวเลือกการคืนข้อมูล</Label>
+                <div className="space-y-2">
+                  <Label className="flex items-center gap-2">
+                    <input type="checkbox" className="rounded" defaultChecked />
+                    คืนข้อมูลไฟล์ระบบ
+                  </Label>
+                  <Label className="flex items-center gap-2">
+                    <input type="checkbox" className="rounded" defaultChecked />
+                    คืนข้อมูลฐานข้อมูล
+                  </Label>
+                  <Label className="flex items-center gap-2">
+                    <input type="checkbox" className="rounded" />
+                    คืนข้อมูลการตั้งค่า
+                  </Label>
+                  <Label className="flex items-center gap-2">
+                    <input type="checkbox" className="rounded" />
+                    สร้างสำเนาสำรองก่อนคืนข้อมูล
+                  </Label>
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-2">
+                <Button variant="outline" onClick={() => setIsRestoreDialogOpen(false)}>
+                  ยกเลิก
+                </Button>
+                <Button onClick={() => {
+                  toast({
+                    title: "เริ่มการคืนข้อมูลสำเร็จ",
+                    description: "กำลังดำเนินการคืนข้อมูลจากการสำรอง",
+                  });
+                  setIsRestoreDialogOpen(false);
+                }}>
+                  <RefreshCw className="h-4 w-4 mr-2" />
+                  เริ่มคืนข้อมูล
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Clone Backup Dialog */}
+      <Dialog open={isCloneDialogOpen} onOpenChange={setIsCloneDialogOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>ทำสำเนากำหนดการสำรองข้อมูล</DialogTitle>
+          </DialogHeader>
+          {selectedBackup && (
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label>ชื่อกำหนดการใหม่</Label>
+                <Input defaultValue={`${selectedBackup.name} (สำเนา)`} />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>ประเภท Backup</Label>
+                  <Select defaultValue={selectedBackup.type}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Full">Full Backup</SelectItem>
+                      <SelectItem value="Incremental">Incremental Backup</SelectItem>
+                      <SelectItem value="Differential">Differential Backup</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label>ความถี่</Label>
+                  <Select defaultValue={selectedBackup.frequency}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Daily">รายวัน</SelectItem>
+                      <SelectItem value="Weekly">รายสัปดาห์</SelectItem>
+                      <SelectItem value="Monthly">รายเดือน</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>เซิร์ฟเวอร์เป้าหมาย</Label>
+                  <Select>
+                    <SelectTrigger>
+                      <SelectValue placeholder="เลือกเซิร์ฟเวอร์ใหม่" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="WEB-SRV-01">WEB-SRV-01</SelectItem>
+                      <SelectItem value="DB-SRV-01">DB-SRV-01</SelectItem>
+                      <SelectItem value="MAIL-SRV-01">MAIL-SRV-01</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label>สถานะเริ่มต้น</Label>
+                  <Select defaultValue="Paused">
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Active">ใช้งานทันที</SelectItem>
+                      <SelectItem value="Paused">หยุดชั่วคราว</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>ปลายทางการจัดเก็บ</Label>
+                  <Input defaultValue={selectedBackup.destination.replace('/', '/clone/')} />
+                </div>
+                <div className="space-y-2">
+                  <Label>เก็บไว้ (วัน)</Label>
+                  <Input type="number" defaultValue={selectedBackup.retention} />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label>เวลาที่ทำการสำรอง</Label>
+                <Input type="time" defaultValue="03:00" />
+              </div>
+              <div className="flex justify-end gap-2">
+                <Button variant="outline" onClick={() => setIsCloneDialogOpen(false)}>
+                  ยกเลิก
+                </Button>
+                <Button onClick={() => {
+                  const clonedBackup = {
+                    ...selectedBackup,
+                    id: Date.now().toString(),
+                    name: `${selectedBackup.name} (สำเนา)`,
+                    status: 'Paused' as const
+                  };
+                  setBackups([...backups, clonedBackup]);
+                  toast({
+                    title: "ทำสำเนาสำเร็จ",
+                    description: "ทำสำเนากำหนดการสำรองข้อมูลแล้ว",
+                  });
+                  setIsCloneDialogOpen(false);
+                }}>
+                  <Copy className="h-4 w-4 mr-2" />
+                  ทำสำเนา
+                </Button>
               </div>
             </div>
           )}
