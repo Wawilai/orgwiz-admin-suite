@@ -81,7 +81,7 @@ const mockDomainStatistics = [
   { domain: 'rd.go.th', accepted: 4567, rejected: 234, success_rate: 95.1, volume_trend: 8.7 },
   { domain: 'customs.go.th', accepted: 3456, rejected: 189, success_rate: 94.8, volume_trend: 15.2 },
   { domain: 'dld.go.th', accepted: 2789, rejected: 145, success_rate: 95.1, volume_trend: 5.4 },
-  { domain: 'dnp.go.th', replaced: 2134, rejected: 298, success_rate: 87.7, volume_trend: -2.1 },
+  { domain: 'dnp.go.th', accepted: 2134, rejected: 298, success_rate: 87.7, volume_trend: -2.1 },
   { domain: 'doh.go.th', accepted: 1789, rejected: 234, success_rate: 88.4, volume_trend: 3.8 }
 ];
 
