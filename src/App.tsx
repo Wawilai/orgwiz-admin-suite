@@ -20,6 +20,7 @@ import Calendar from "./pages/Calendar";
 import Chat from "./pages/Chat";
 import Meeting from "./pages/Meeting";
 import Storage from "./pages/Storage";
+import StorageReports from "./pages/StorageReports";
 import PackageManagement from "./pages/PackageManagement";
 import BillingManagement from "./pages/BillingManagement";
 import LicenseManagement from "./pages/LicenseManagement";
@@ -59,6 +60,7 @@ const App = () => (
           <Route path="/chat" element={<Layout><Chat /></Layout>} />
           <Route path="/meetings" element={<Layout><Meeting /></Layout>} />
           <Route path="/storage" element={<Layout><Storage /></Layout>} />
+          <Route path="/storage/reports" element={<Layout><StorageReports onBack={() => window.history.back()} /></Layout>} />
           <Route path="/packages" element={<Layout><PackageManagement /></Layout>} />
           <Route path="/billing" element={<Layout><BillingManagement /></Layout>} />
           <Route path="/licenses" element={<Layout><LicenseManagement /></Layout>} />

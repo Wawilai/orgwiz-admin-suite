@@ -685,7 +685,7 @@ export default function Storage() {
                             <Activity className="mr-2 h-4 w-4" />
                             ดูประวัติ
                           </DropdownMenuItem>
-                          <DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => window.location.href = '/storage/reports'}>
                             <FileText className="mr-2 h-4 w-4" />
                             ดูรายงาน
                           </DropdownMenuItem>
