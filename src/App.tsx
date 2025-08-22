@@ -10,6 +10,10 @@ import UserManagement from "./pages/UserManagement";
 import OrganizationManagement from "./pages/OrganizationManagement";
 import OrganizationUnits from "./pages/OrganizationUnits";
 import DomainManagement from "./pages/DomainManagement";
+import RoleManagement from "./pages/RoleManagement";
+import QuotaManagement from "./pages/QuotaManagement";
+import MailService from "./pages/MailService";
+import MailRelay from "./pages/MailRelay";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -27,10 +31,10 @@ const App = () => (
           <Route path="/organizations" element={<Layout><OrganizationManagement /></Layout>} />
           <Route path="/organization-units" element={<Layout><OrganizationUnits /></Layout>} />
           <Route path="/domains" element={<Layout><DomainManagement /></Layout>} />
-          <Route path="/roles" element={<Layout><Index /></Layout>} />
-          <Route path="/quotas" element={<Layout><Index /></Layout>} />
-          <Route path="/mail-service" element={<Layout><Index /></Layout>} />
-          <Route path="/mail-relay" element={<Layout><Index /></Layout>} />
+          <Route path="/roles" element={<Layout><RoleManagement /></Layout>} />
+          <Route path="/quotas" element={<Layout><QuotaManagement /></Layout>} />
+          <Route path="/mail-service" element={<Layout><MailService /></Layout>} />
+          <Route path="/mail-relay" element={<Layout><MailRelay /></Layout>} />
           <Route path="/address-book" element={<Layout><Index /></Layout>} />
           <Route path="/calendar" element={<Layout><Index /></Layout>} />
           <Route path="/chat" element={<Layout><Index /></Layout>} />
