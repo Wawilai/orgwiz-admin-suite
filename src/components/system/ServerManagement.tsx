@@ -26,7 +26,13 @@ import {
   Settings,
   Database,
   HardDrive,
-  Network
+  Network,
+  BarChart3,
+  Calendar,
+  Save,
+  Monitor,
+  TrendingUp,
+  Wrench
 } from 'lucide-react';
 
 interface ServerInfo {
@@ -93,6 +99,9 @@ export function ServerManagement() {
   const [servers] = useState<ServerInfo[]>(mockServers);
   const [isAddServerDialogOpen, setIsAddServerDialogOpen] = useState(false);
   const [isServerDetailDialogOpen, setIsServerDetailDialogOpen] = useState(false);
+  const [isEditServerDialogOpen, setIsEditServerDialogOpen] = useState(false);
+  const [isMonitorDialogOpen, setIsMonitorDialogOpen] = useState(false);
+  const [isMaintenanceDialogOpen, setIsMaintenanceDialogOpen] = useState(false);
   const [selectedServer, setSelectedServer] = useState<ServerInfo | null>(null);
 
   const handleViewServerDetail = (server: ServerInfo) => {
@@ -101,10 +110,8 @@ export function ServerManagement() {
   };
 
   const handleEditServer = (server: ServerInfo) => {
-    toast({
-      title: "แก้ไขเซิร์ฟเวอร์",
-      description: "เปิดหน้าต่างแก้ไขการตั้งค่าเซิร์ฟเวอร์",
-    });
+    setSelectedServer(server);
+    setIsEditServerDialogOpen(true);
   };
 
   const handleRebootServer = (serverId: string) => {
@@ -122,17 +129,15 @@ export function ServerManagement() {
   };
 
   const handleStartMaintenance = (serverId: string) => {
-    toast({
-      title: "เข้าสู่โหมดซ่อมบำรุง",
-      description: "เปลี่ยนสถานะเซิร์ฟเวอร์เป็นโหมดซ่อมบำรุง",
-    });
+    const server = servers.find(s => s.id === serverId);
+    setSelectedServer(server || null);
+    setIsMaintenanceDialogOpen(true);
   };
 
   const handleMonitorServer = (serverId: string) => {
-    toast({
-      title: "เปิดการติดตาม",
-      description: "เปิดหน้าต่างการติดตามเซิร์ฟเวอร์แบบเรียลไทม์",
-    });
+    const server = servers.find(s => s.id === serverId);
+    setSelectedServer(server || null);
+    setIsMonitorDialogOpen(true);
   };
 
   const getStatusBadge = (status: string) => {
@@ -437,6 +442,276 @@ export function ServerManagement() {
                     <Progress value={selectedServer.diskUsage} className="h-2" />
                   </div>
                 </div>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Server Dialog */}
+      <Dialog open={isEditServerDialogOpen} onOpenChange={setIsEditServerDialogOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>แก้ไขการตั้งค่าเซิร์ฟเวอร์</DialogTitle>
+          </DialogHeader>
+          {selectedServer && (
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>ชื่อเซิร์ฟเวอร์</Label>
+                  <Input defaultValue={selectedServer.name} />
+                </div>
+                <div className="space-y-2">
+                  <Label>ประเภท</Label>
+                  <Select defaultValue={selectedServer.type}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Web Server">Web Server</SelectItem>
+                      <SelectItem value="Database">Database</SelectItem>
+                      <SelectItem value="Mail Server">Mail Server</SelectItem>
+                      <SelectItem value="File Server">File Server</SelectItem>
+                      <SelectItem value="Load Balancer">Load Balancer</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label>IP Address</Label>
+                  <Input defaultValue={selectedServer.ipAddress} />
+                </div>
+                <div className="space-y-2">
+                  <Label>สถานที่</Label>
+                  <Input defaultValue={selectedServer.location} />
+                </div>
+                <div className="space-y-2">
+                  <Label>เวอร์ชัน</Label>
+                  <Input defaultValue={selectedServer.version} />
+                </div>
+                <div className="space-y-2">
+                  <Label>สถานะ</Label>
+                  <Select defaultValue={selectedServer.status}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Online">Online</SelectItem>
+                      <SelectItem value="Offline">Offline</SelectItem>
+                      <SelectItem value="Maintenance">Maintenance</SelectItem>
+                      <SelectItem value="Warning">Warning</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label>หมายเหตุ</Label>
+                <Textarea placeholder="รายละเอียดเพิ่มเติมหรือการตั้งค่าพิเศษ" />
+              </div>
+              <div className="flex justify-end gap-2">
+                <Button variant="outline" onClick={() => setIsEditServerDialogOpen(false)}>
+                  ยกเลิก
+                </Button>
+                <Button onClick={() => {
+                  toast({
+                    title: "บันทึกการตั้งค่าสำเร็จ",
+                    description: "บันทึกการตั้งค่าเซิร์ฟเวอร์เรียบร้อยแล้ว",
+                  });
+                  setIsEditServerDialogOpen(false);
+                }}>
+                  <Save className="h-4 w-4 mr-2" />
+                  บันทึกการตั้งค่า
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Real-time Monitoring Dialog */}
+      <Dialog open={isMonitorDialogOpen} onOpenChange={setIsMonitorDialogOpen}>
+        <DialogContent className="max-w-4xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Monitor className="h-5 w-5" />
+              การติดตามแบบเรียลไทม์ - {selectedServer?.name}
+            </DialogTitle>
+          </DialogHeader>
+          {selectedServer && (
+            <div className="space-y-6">
+              {/* Real-time Stats */}
+              <div className="grid grid-cols-3 gap-4">
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm">CPU Usage</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">{selectedServer.cpuUsage}%</div>
+                    <Progress value={selectedServer.cpuUsage} className="h-2 mt-2" />
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm">RAM Usage</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">{selectedServer.memoryUsage}%</div>
+                    <Progress value={selectedServer.memoryUsage} className="h-2 mt-2" />
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm">Disk Usage</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">{selectedServer.diskUsage}%</div>
+                    <Progress value={selectedServer.diskUsage} className="h-2 mt-2" />
+                  </CardContent>
+                </Card>
+              </div>
+              
+              {/* Mock Real-time Chart */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <TrendingUp className="h-4 w-4" />
+                    ประสิทธิภาพระบบ (24 ชั่วโมงที่ผ่านมา)
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="h-64 bg-muted rounded-lg flex items-center justify-center">
+                    <div className="text-center text-muted-foreground">
+                      <BarChart3 className="h-12 w-12 mx-auto mb-2" />
+                      <p>กราฟการใช้งานแบบเรียลไทม์</p>
+                      <p className="text-sm">CPU, RAM, Disk และ Network</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* System Information */}
+              <div className="grid grid-cols-2 gap-4">
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-sm">ข้อมูลระบบ</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-2">
+                    <div className="flex justify-between">
+                      <span>Uptime:</span>
+                      <span>{selectedServer.uptime}%</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Last Reboot:</span>
+                      <span>{new Date(selectedServer.lastReboot).toLocaleDateString('th-TH')}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Version:</span>
+                      <span>{selectedServer.version}</span>
+                    </div>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-sm">Network</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-2">
+                    <div className="flex justify-between">
+                      <span>Incoming:</span>
+                      <span>125.4 MB/s</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Outgoing:</span>
+                      <span>89.2 MB/s</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Connections:</span>
+                      <span>1,234</span>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Maintenance Mode Dialog */}
+      <Dialog open={isMaintenanceDialogOpen} onOpenChange={setIsMaintenanceDialogOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Wrench className="h-5 w-5" />
+              โหมดซ่อมบำรุง - {selectedServer?.name}
+            </DialogTitle>
+          </DialogHeader>
+          {selectedServer && (
+            <div className="space-y-4">
+              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                <div className="flex items-center gap-2 text-yellow-800">
+                  <AlertTriangle className="h-4 w-4" />
+                  <span className="font-medium">คำเตือน</span>
+                </div>
+                <p className="text-yellow-700 mt-1">
+                  การเข้าสู่โหมดซ่อมบำรุงจะทำให้เซิร์ฟเวอร์หยุดให้บริการชั่วคราว
+                </p>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>วันที่เริ่มต้น</Label>
+                  <Input type="datetime-local" />
+                </div>
+                <div className="space-y-2">
+                  <Label>วันที่สิ้นสุด</Label>
+                  <Input type="datetime-local" />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label>เหตุผลในการซ่อมบำรุง</Label>
+                <Select>
+                  <SelectTrigger>
+                    <SelectValue placeholder="เลือกเหตุผล" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="scheduled">การบำรุงรักษาตามกำหนด</SelectItem>
+                    <SelectItem value="security">อัปเดตด้านความปลอดภัย</SelectItem>
+                    <SelectItem value="hardware">ซ่อมแซมฮาร์ดแวร์</SelectItem>
+                    <SelectItem value="software">อัปเดตซอฟต์แวร์</SelectItem>
+                    <SelectItem value="emergency">เหตุฉุกเฉิน</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label>รายละเอียดการซ่อมบำรุง</Label>
+                <Textarea placeholder="อธิบายรายละเอียดการซ่อมบำรุงที่จะดำเนินการ..." />
+              </div>
+
+              <div className="space-y-2">
+                <Label className="flex items-center gap-2">
+                  <input type="checkbox" className="rounded" />
+                  แจ้งเตือนผู้ใช้งานล่วงหน้า
+                </Label>
+                <Label className="flex items-center gap-2">
+                  <input type="checkbox" className="rounded" />
+                  สำรองข้อมูลก่อนเข้าสู่โหมดซ่อมบำรุง
+                </Label>
+              </div>
+
+              <div className="flex justify-end gap-2">
+                <Button variant="outline" onClick={() => setIsMaintenanceDialogOpen(false)}>
+                  ยกเลิก
+                </Button>
+                <Button onClick={() => {
+                  toast({
+                    title: "เข้าสู่โหมดซ่อมบำรุงสำเร็จ",
+                    description: "เซิร์ฟเวอร์ได้เข้าสู่โหมดซ่อมบำรุงแล้ว",
+                  });
+                  setIsMaintenanceDialogOpen(false);
+                }}>
+                  <Calendar className="h-4 w-4 mr-2" />
+                  กำหนดการซ่อมบำรุง
+                </Button>
               </div>
             </div>
           )}
