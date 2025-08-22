@@ -10,6 +10,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { toast } from '@/hooks/use-toast';
+import { useMasterData } from '@/contexts/MasterDataContext';
 import { 
   Search, 
   Plus, 
@@ -27,7 +28,8 @@ import {
 
 interface Contact {
   id: string;
-  name: string;
+  first_name: string;
+  last_name: string;
   email: string;
   phone: string;
   company: string;
@@ -35,7 +37,7 @@ interface Contact {
   position: string;
   tags: string[];
   notes: string;
-  type: 'Personal' | 'Business' | 'Emergency';
+  type: string;
   createdAt: string;
   lastContact: string;
 }
@@ -43,35 +45,38 @@ interface Contact {
 const mockContacts: Contact[] = [
   {
     id: '1',
-    name: 'สมชาย ใจดี',
+    first_name: 'สมชาย',
+    last_name: 'ใจดี',
     email: 'somchai@company.com',
     phone: '081-234-5678',
     company: 'บริษัท เทคโนโลยี จำกัด',
-    department: 'ฝ่ายไอที',
-    position: 'ผู้จัดการฝ่าย',
+    department: 'แผนกเทคโนโลยีสารสนเทศ',
+    position: 'ผู้จัดการ',
     tags: ['VIP', 'ไอที'],
     notes: 'ติดต่อเรื่องโครงการใหม่',
-    type: 'Business',
+    type: 'ธุรกิจ',
     createdAt: '2024-01-15',
     lastContact: '2024-01-20'
   },
   {
     id: '2',
-    name: 'นภา สว่างใส',
+    first_name: 'นภา',
+    last_name: 'สว่างใส',
     email: 'napa@email.com',
     phone: '082-345-6789',
     company: 'บริษัท การตลาด จำกัด',
-    department: 'ฝ่ายขาย',
-    position: 'หัวหน้าทีม',
+    department: 'แผนกการตลาด',
+    position: 'หัวหน้างาน',
     tags: ['ลูกค้า', 'ขาย'],
     notes: 'ลูกค้าสำคัญ ติดต่อประจำ',
-    type: 'Business',
+    type: 'ธุรกิจ',
     createdAt: '2024-01-10',
     lastContact: '2024-01-22'
   },
   {
     id: '3',
-    name: 'วิชัย เก่งกาจ',
+    first_name: 'วิชัย',
+    last_name: 'เก่งกาจ',
     email: 'wichai@personal.com',
     phone: '083-456-7890',
     company: '-',
@@ -79,20 +84,22 @@ const mockContacts: Contact[] = [
     position: '-',
     tags: ['เพื่อน'],
     notes: 'เพื่อนสนิท',
-    type: 'Personal',
+    type: 'ส่วนตัว',
     createdAt: '2024-01-05',
     lastContact: '2024-01-18'
   }
 ];
 
 export default function AddressBook() {
+  const masterData = useMasterData();
   const [contacts, setContacts] = useState<Contact[]>(mockContacts);
   const [searchTerm, setSearchTerm] = useState('');
   const [typeFilter, setTypeFilter] = useState<string>('all');
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [editingContact, setEditingContact] = useState<Contact | null>(null);
   const [formData, setFormData] = useState<Partial<Contact>>({
-    name: '',
+    first_name: '',
+    last_name: '',
     email: '',
     phone: '',
     company: '',
@@ -100,11 +107,12 @@ export default function AddressBook() {
     position: '',
     tags: [],
     notes: '',
-    type: 'Business'
+    type: 'ธุรกิจ'
   });
 
   const filteredContacts = contacts.filter(contact => {
-    const matchesSearch = contact.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    const fullName = `${contact.first_name} ${contact.last_name}`;
+    const matchesSearch = fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          contact.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          contact.company.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesType = typeFilter === 'all' || contact.type === typeFilter;
@@ -151,7 +159,8 @@ export default function AddressBook() {
 
   const resetForm = () => {
     setFormData({
-      name: '',
+      first_name: '',
+      last_name: '',
       email: '',
       phone: '',
       company: '',
@@ -159,7 +168,7 @@ export default function AddressBook() {
       position: '',
       tags: [],
       notes: '',
-      type: 'Business'
+      type: 'ธุรกิจ'
     });
   };
 
@@ -170,9 +179,9 @@ export default function AddressBook() {
 
   const getTypeBadge = (type: string) => {
     const variants: Record<string, "default" | "destructive" | "secondary" | "outline"> = {
-      Personal: "secondary",
-      Business: "default",
-      Emergency: "destructive"
+      'ส่วนตัว': "secondary",
+      'ธุรกิจ': "default",
+      'ฉุกเฉิน': "destructive"
     };
     return <Badge variant={variants[type] || "default"}>{type}</Badge>;
   };
@@ -210,12 +219,21 @@ export default function AddressBook() {
               </DialogHeader>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="name">ชื่อ-นามสกุล *</Label>
+                  <Label htmlFor="first_name">ชื่อ *</Label>
                   <Input
-                    id="name"
-                    value={formData.name}
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    placeholder="กรอกชื่อ-นามสกุล"
+                    id="first_name"
+                    value={formData.first_name}
+                    onChange={(e) => setFormData({ ...formData, first_name: e.target.value })}
+                    placeholder="กรอกชื่อ"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="last_name">นามสกุล *</Label>
+                  <Input
+                    id="last_name"
+                    value={formData.last_name}
+                    onChange={(e) => setFormData({ ...formData, last_name: e.target.value })}
+                    placeholder="กรอกนามสกุล"
                   />
                 </div>
                 <div className="space-y-2">
@@ -241,15 +259,15 @@ export default function AddressBook() {
                   <Label htmlFor="type">ประเภท</Label>
                   <Select
                     value={formData.type}
-                    onValueChange={(value) => setFormData({ ...formData, type: value as any })}
+                    onValueChange={(value) => setFormData({ ...formData, type: value })}
                   >
                     <SelectTrigger>
-                      <SelectValue />
+                      <SelectValue placeholder="ธุรกิจ" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="Personal">ส่วนตัว</SelectItem>
-                      <SelectItem value="Business">ธุรกิจ</SelectItem>
-                      <SelectItem value="Emergency">ฉุกเฉิน</SelectItem>
+                      <SelectItem value="ส่วนตัว">ส่วนตัว</SelectItem>
+                      <SelectItem value="ธุรกิจ">ธุรกิจ</SelectItem>
+                      <SelectItem value="ฉุกเฉิน">ฉุกเฉิน</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -264,21 +282,39 @@ export default function AddressBook() {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="department">แผนก</Label>
-                  <Input
-                    id="department"
+                  <Select
                     value={formData.department}
-                    onChange={(e) => setFormData({ ...formData, department: e.target.value })}
-                    placeholder="กรอกแผนก"
-                  />
+                    onValueChange={(value) => setFormData({ ...formData, department: value })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="เลือกแผนก" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {masterData.getActiveItems('departments').map((dept) => (
+                        <SelectItem key={dept.code} value={dept.name}>
+                          {dept.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
-                <div className="col-span-2 space-y-2">
+                <div className="space-y-2">
                   <Label htmlFor="position">ตำแหน่ง</Label>
-                  <Input
-                    id="position"
+                  <Select
                     value={formData.position}
-                    onChange={(e) => setFormData({ ...formData, position: e.target.value })}
-                    placeholder="กรอกตำแหน่ง"
-                  />
+                    onValueChange={(value) => setFormData({ ...formData, position: value })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="เลือกตำแหน่ง" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {masterData.getActiveItems('positions').map((pos) => (
+                        <SelectItem key={pos.code} value={pos.name}>
+                          {pos.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div className="col-span-2 space-y-2">
                   <Label htmlFor="notes">หมายเหตุ</Label>
@@ -322,7 +358,7 @@ export default function AddressBook() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {contacts.filter(c => c.type === 'Business').length}
+              {contacts.filter(c => c.type === 'ธุรกิจ').length}
             </div>
           </CardContent>
         </Card>
@@ -333,7 +369,7 @@ export default function AddressBook() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {contacts.filter(c => c.type === 'Personal').length}
+              {contacts.filter(c => c.type === 'ส่วนตัว').length}
             </div>
           </CardContent>
         </Card>
@@ -344,7 +380,7 @@ export default function AddressBook() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {contacts.filter(c => c.type === 'Emergency').length}
+              {contacts.filter(c => c.type === 'ฉุกเฉิน').length}
             </div>
           </CardContent>
         </Card>
@@ -370,9 +406,9 @@ export default function AddressBook() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">ทั้งหมด</SelectItem>
-                <SelectItem value="Personal">ส่วนตัว</SelectItem>
-                <SelectItem value="Business">ธุรกิจ</SelectItem>
-                <SelectItem value="Emergency">ฉุกเฉิน</SelectItem>
+                <SelectItem value="ส่วนตัว">ส่วนตัว</SelectItem>
+                <SelectItem value="ธุรกิจ">ธุรกิจ</SelectItem>
+                <SelectItem value="ฉุกเฉิน">ฉุกเฉิน</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -394,7 +430,7 @@ export default function AddressBook() {
             <TableBody>
               {filteredContacts.map((contact) => (
                 <TableRow key={contact.id}>
-                  <TableCell className="font-medium">{contact.name}</TableCell>
+                  <TableCell className="font-medium">{`${contact.first_name} ${contact.last_name}`}</TableCell>
                   <TableCell>{contact.email}</TableCell>
                   <TableCell>{contact.phone}</TableCell>
                   <TableCell>{contact.company}</TableCell>
@@ -454,12 +490,21 @@ export default function AddressBook() {
           </DialogHeader>
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="edit-name">ชื่อ-นามสกุล *</Label>
+              <Label htmlFor="edit-first_name">ชื่อ *</Label>
               <Input
-                id="edit-name"
-                value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                placeholder="กรอกชื่อ-นามสกุล"
+                id="edit-first_name"
+                value={formData.first_name}
+                onChange={(e) => setFormData({ ...formData, first_name: e.target.value })}
+                placeholder="กรอกชื่อ"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-last_name">นามสกุล *</Label>
+              <Input
+                id="edit-last_name"
+                value={formData.last_name}
+                onChange={(e) => setFormData({ ...formData, last_name: e.target.value })}
+                placeholder="กรอกนามสกุล"
               />
             </div>
             <div className="space-y-2">
@@ -485,15 +530,15 @@ export default function AddressBook() {
               <Label htmlFor="edit-type">ประเภท</Label>
               <Select
                 value={formData.type}
-                onValueChange={(value) => setFormData({ ...formData, type: value as any })}
+                onValueChange={(value) => setFormData({ ...formData, type: value })}
               >
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="Personal">ส่วนตัว</SelectItem>
-                  <SelectItem value="Business">ธุรกิจ</SelectItem>
-                  <SelectItem value="Emergency">ฉุกเฉิน</SelectItem>
+                  <SelectItem value="ส่วนตัว">ส่วนตัว</SelectItem>
+                  <SelectItem value="ธุรกิจ">ธุรกิจ</SelectItem>
+                  <SelectItem value="ฉุกเฉิน">ฉุกเฉิน</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -508,21 +553,39 @@ export default function AddressBook() {
             </div>
             <div className="space-y-2">
               <Label htmlFor="edit-department">แผนก</Label>
-              <Input
-                id="edit-department"
+              <Select
                 value={formData.department}
-                onChange={(e) => setFormData({ ...formData, department: e.target.value })}
-                placeholder="กรอกแผนก"
-              />
+                onValueChange={(value) => setFormData({ ...formData, department: value })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="เลือกแผนก" />
+                </SelectTrigger>
+                <SelectContent>
+                  {masterData.getActiveItems('departments').map((dept) => (
+                    <SelectItem key={dept.code} value={dept.name}>
+                      {dept.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
-            <div className="col-span-2 space-y-2">
+            <div className="space-y-2">
               <Label htmlFor="edit-position">ตำแหน่ง</Label>
-              <Input
-                id="edit-position"
+              <Select
                 value={formData.position}
-                onChange={(e) => setFormData({ ...formData, position: e.target.value })}
-                placeholder="กรอกตำแหน่ง"
-              />
+                onValueChange={(value) => setFormData({ ...formData, position: value })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="เลือกตำแหน่ง" />
+                </SelectTrigger>
+                <SelectContent>
+                  {masterData.getActiveItems('positions').map((pos) => (
+                    <SelectItem key={pos.code} value={pos.name}>
+                      {pos.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div className="col-span-2 space-y-2">
               <Label htmlFor="edit-notes">หมายเหตุ</Label>
