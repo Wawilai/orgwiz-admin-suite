@@ -476,40 +476,47 @@ export default function Reports() {
 
         {/* Executive Overview Tab */}
         <TabsContent value="executive" className="space-y-6">
-          {/* KPI Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            {mockKPIData.map((kpi, index) => {
-              const Icon = kpi.icon;
-              return (
-                <Card key={index}>
-                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">{kpi.title}</CardTitle>
-                    <Icon className="h-4 w-4 text-muted-foreground" />
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-bold">{kpi.value}</div>
-                    <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                      <TrendingUp className="h-4 w-4 text-green-600" />
-                      <span className="text-green-600">+{kpi.change}%</span>
-                      <span>จาก 90 วันที่ผ่านมา</span>
-                    </div>
-                  </CardContent>
-                </Card>
-              );
-            })}
-          </div>
+      {/* KPI Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        {mockKPIData.map((kpi, index) => {
+          const Icon = kpi.icon;
+          const gradients = [
+            'bg-gradient-to-br from-blue-500 to-blue-600',
+            'bg-gradient-to-br from-green-500 to-emerald-600', 
+            'bg-gradient-to-br from-purple-500 to-violet-600',
+            'bg-gradient-to-br from-orange-500 to-amber-600'
+          ];
+          return (
+            <Card key={index} className="overflow-hidden hover:shadow-lg transition-all duration-300 cursor-pointer group" onClick={() => handleCardClick('executive', 'Executive Overview')}>
+              <div className={`${gradients[index]} p-4 text-white relative`}>
+                <div className="absolute top-2 right-2 opacity-20">
+                  <Icon className="h-12 w-12" />
+                </div>
+                <CardTitle className="text-sm font-medium text-white/90">{kpi.title}</CardTitle>
+                <div className="text-2xl font-bold mt-2">{kpi.value}</div>
+                <div className="flex items-center gap-1 text-xs text-white/80 mt-2">
+                  <TrendingUp className="h-3 w-3" />
+                  <span>+{kpi.change}%</span>
+                  <span>จาก 90 วันที่ผ่านมา</span>
+                </div>
+              </div>
+            </Card>
+          );
+        })}
+      </div>
 
           {/* Visualizations */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Service Usage Donut Chart */}
-            <Card>
+            <Card className="overflow-hidden hover:shadow-xl transition-all duration-300 cursor-pointer group" onClick={() => handleCardClick('executive', 'Service Usage Breakdown')}>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <PieChart className="h-5 w-5" />
+                  <PieChart className="h-5 w-5 text-blue-600" />
                   การใช้งานแยกตามบริการ
                 </CardTitle>
               </CardHeader>
-              <CardContent>
+              <CardContent className="relative">
+                <div className="absolute inset-0 bg-gradient-to-br from-blue-50/50 to-purple-50/50 rounded-lg -z-10"></div>
                 <ChartContainer
                   config={{
                     email: { label: "อีเมล", color: "hsl(var(--chart-1))" },
@@ -520,21 +527,47 @@ export default function Reports() {
                 >
                   <ResponsiveContainer width="100%" height="100%">
                     <RechartsPieChart>
+                      <defs>
+                        <linearGradient id="colorEmail" x1="0" y1="0" x2="1" y2="1">
+                          <stop offset="0%" stopColor="hsl(214 84% 56%)" />
+                          <stop offset="100%" stopColor="hsl(214 84% 46%)" />
+                        </linearGradient>
+                        <linearGradient id="colorChat" x1="0" y1="0" x2="1" y2="1">
+                          <stop offset="0%" stopColor="hsl(142 76% 36%)" />
+                          <stop offset="100%" stopColor="hsl(142 76% 26%)" />
+                        </linearGradient>
+                        <linearGradient id="colorMeeting" x1="0" y1="0" x2="1" y2="1">
+                          <stop offset="0%" stopColor="hsl(262 83% 58%)" />
+                          <stop offset="100%" stopColor="hsl(262 83% 48%)" />
+                        </linearGradient>
+                      </defs>
                       <Pie
                         data={mockServiceUsageChart}
                         dataKey="value"
                         nameKey="name"
                         cx="50%"
                         cy="50%"
-                        innerRadius={60}
-                        outerRadius={120}
-                        fill="#8884d8"
+                        innerRadius={70}
+                        outerRadius={130}
+                        paddingAngle={3}
+                        strokeWidth={2}
+                        stroke="#ffffff"
                       >
-                        {mockServiceUsageChart.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                        ))}
+                        {mockServiceUsageChart.map((entry, index) => {
+                          const gradientIds = ['url(#colorEmail)', 'url(#colorChat)', 'url(#colorMeeting)'];
+                          return (
+                            <Cell key={`cell-${index}`} fill={gradientIds[index % gradientIds.length]} />
+                          );
+                        })}
                       </Pie>
-                      <Tooltip />
+                      <Tooltip 
+                        contentStyle={{ 
+                          backgroundColor: 'white', 
+                          border: 'none', 
+                          borderRadius: '8px', 
+                          boxShadow: '0 10px 25px rgba(0,0,0,0.1)' 
+                        }} 
+                      />
                       <Legend />
                     </RechartsPieChart>
                   </ResponsiveContainer>
@@ -543,14 +576,15 @@ export default function Reports() {
             </Card>
 
             {/* Growth Trend Chart */}
-            <Card>
+            <Card className="overflow-hidden hover:shadow-xl transition-all duration-300 cursor-pointer group" onClick={() => handleCardClick('executive', 'Growth Trends')}>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <LineChart className="h-5 w-5" />
+                  <LineChart className="h-5 w-5 text-green-600" />
                   แนวโน้มการใช้งาน 90 วัน
                 </CardTitle>
               </CardHeader>
-              <CardContent>
+              <CardContent className="relative">
+                <div className="absolute inset-0 bg-gradient-to-br from-green-50/50 to-blue-50/50 rounded-lg -z-10"></div>
                 <ChartContainer
                   config={{
                     users: { label: "ผู้ใช้งาน", color: "hsl(var(--chart-1))" },
@@ -559,16 +593,29 @@ export default function Reports() {
                 >
                   <ResponsiveContainer width="100%" height="100%">
                     <AreaChart data={mockUserActivity}>
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="date" />
-                      <YAxis />
-                      <Tooltip />
+                      <defs>
+                        <linearGradient id="areaGradient" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="0%" stopColor="hsl(214 84% 56%)" stopOpacity={0.6} />
+                          <stop offset="100%" stopColor="hsl(214 84% 56%)" stopOpacity={0.1} />
+                        </linearGradient>
+                      </defs>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                      <XAxis dataKey="date" stroke="#64748b" />
+                      <YAxis stroke="#64748b" />
+                      <Tooltip 
+                        contentStyle={{ 
+                          backgroundColor: 'white', 
+                          border: 'none', 
+                          borderRadius: '8px', 
+                          boxShadow: '0 10px 25px rgba(0,0,0,0.1)' 
+                        }} 
+                      />
                       <Area 
                         type="monotone" 
                         dataKey="activeUsers" 
-                        stroke="hsl(var(--chart-1))" 
-                        fill="hsl(var(--chart-1))" 
-                        fillOpacity={0.3}
+                        stroke="hsl(214 84% 56%)"
+                        strokeWidth={3}
+                        fill="url(#areaGradient)"
                       />
                     </AreaChart>
                   </ResponsiveContainer>
@@ -582,54 +629,47 @@ export default function Reports() {
         <TabsContent value="license" className="space-y-6">
           {/* License Overview Cards */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm">โควตารวม</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">4,500</div>
-                <p className="text-xs text-muted-foreground">ใบอนุญาต</p>
-              </CardContent>
+            <Card className="overflow-hidden hover:shadow-lg transition-all duration-300 cursor-pointer group" onClick={() => handleCardClick('license', 'License Overview')}>
+              <div className="bg-gradient-to-br from-indigo-500 to-indigo-600 p-4 text-white">
+                <CardTitle className="text-sm text-white/90">โควตารวม</CardTitle>
+                <div className="text-2xl font-bold mt-2">4,500</div>
+                <p className="text-xs text-white/80">ใบอนุญาต</p>
+              </div>
             </Card>
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm">โควตาที่ใช้</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-blue-600">3,380</div>
-                <p className="text-xs text-muted-foreground">ใบอนุญาต</p>
-              </CardContent>
+            <Card className="overflow-hidden hover:shadow-lg transition-all duration-300 cursor-pointer group" onClick={() => handleCardClick('license', 'License Usage')}>
+              <div className="bg-gradient-to-br from-blue-500 to-blue-600 p-4 text-white">
+                <CardTitle className="text-sm text-white/90">โควตาที่ใช้</CardTitle>
+                <div className="text-2xl font-bold mt-2">3,380</div>
+                <p className="text-xs text-white/80">ใบอนุญาต</p>
+              </div>
             </Card>
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm">อัตราการใช้งาน</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-orange-600">75.1%</div>
-                <Progress value={75.1} className="mt-2" />
-              </CardContent>
+            <Card className="overflow-hidden hover:shadow-lg transition-all duration-300 cursor-pointer group" onClick={() => handleCardClick('license', 'Utilization Rate')}>
+              <div className="bg-gradient-to-br from-orange-500 to-amber-600 p-4 text-white">
+                <CardTitle className="text-sm text-white/90">อัตราการใช้งาน</CardTitle>
+                <div className="text-2xl font-bold mt-2">75.1%</div>
+                <Progress value={75.1} className="mt-2 bg-white/20" />
+              </div>
             </Card>
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm">จำนวนองค์กร</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-green-600">45</div>
-                <p className="text-xs text-muted-foreground">องค์กร</p>
-              </CardContent>
+            <Card className="overflow-hidden hover:shadow-lg transition-all duration-300 cursor-pointer group" onClick={() => handleCardClick('license', 'Organizations')}>
+              <div className="bg-gradient-to-br from-green-500 to-emerald-600 p-4 text-white">
+                <CardTitle className="text-sm text-white/90">จำนวนองค์กร</CardTitle>
+                <div className="text-2xl font-bold mt-2">45</div>
+                <p className="text-xs text-white/80">องค์กร</p>
+              </div>
             </Card>
           </div>
 
           {/* License Allocation Chart */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <Card>
+            <Card className="overflow-hidden hover:shadow-xl transition-all duration-300">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <BarChart className="h-5 w-5" />
+                  <BarChart className="h-5 w-5 text-purple-600" />
                   การจัดสรรใบอนุญาตตามบริการ
                 </CardTitle>
               </CardHeader>
-              <CardContent>
+              <CardContent className="relative">
+                <div className="absolute inset-0 bg-gradient-to-br from-purple-50/50 to-pink-50/50 rounded-lg -z-10"></div>
                 <ChartContainer
                   config={{
                     used: { label: "ใช้งาน", color: "hsl(var(--chart-1))" },
@@ -639,13 +679,30 @@ export default function Reports() {
                 >
                   <ResponsiveContainer width="100%" height="100%">
                     <RechartsBarChart data={mockLicenseData}>
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="service" />
-                      <YAxis />
-                      <Tooltip />
+                      <defs>
+                        <linearGradient id="usedGradient" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="0%" stopColor="hsl(214 84% 56%)" />
+                          <stop offset="100%" stopColor="hsl(214 84% 46%)" />
+                        </linearGradient>
+                        <linearGradient id="availableGradient" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="0%" stopColor="hsl(142 76% 36%)" />
+                          <stop offset="100%" stopColor="hsl(142 76% 26%)" />
+                        </linearGradient>
+                      </defs>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                      <XAxis dataKey="service" stroke="#64748b" />
+                      <YAxis stroke="#64748b" />
+                      <Tooltip 
+                        contentStyle={{ 
+                          backgroundColor: 'white', 
+                          border: 'none', 
+                          borderRadius: '8px', 
+                          boxShadow: '0 10px 25px rgba(0,0,0,0.1)' 
+                        }} 
+                      />
                       <Legend />
-                      <Bar dataKey="used" fill="hsl(var(--chart-1))" />
-                      <Bar dataKey="available" fill="hsl(var(--chart-2))" />
+                      <Bar dataKey="used" fill="url(#usedGradient)" radius={[4, 4, 0, 0]} />
+                      <Bar dataKey="available" fill="url(#availableGradient)" radius={[4, 4, 0, 0]} />
                     </RechartsBarChart>
                   </ResponsiveContainer>
                 </ChartContainer>
@@ -653,11 +710,12 @@ export default function Reports() {
             </Card>
 
             {/* Top Organizations Table */}
-            <Card>
+            <Card className="overflow-hidden hover:shadow-xl transition-all duration-300">
               <CardHeader>
                 <CardTitle>องค์กรที่ใช้โควตาสูงสุด 5 อันดับ</CardTitle>
               </CardHeader>
-              <CardContent>
+              <CardContent className="relative">
+                <div className="absolute inset-0 bg-gradient-to-br from-blue-50/30 to-indigo-50/30 rounded-lg -z-10"></div>
                 <Table>
                   <TableHeader>
                     <TableRow>
@@ -668,7 +726,7 @@ export default function Reports() {
                   </TableHeader>
                   <TableBody>
                     {mockOrganizationData.slice(0, 5).map((org, index) => (
-                      <TableRow key={index}>
+                      <TableRow key={index} className="hover:bg-white/50 transition-colors">
                         <TableCell>
                           <div className="space-y-1">
                             <div className="font-medium">{org.name}</div>
@@ -676,14 +734,19 @@ export default function Reports() {
                           </div>
                         </TableCell>
                         <TableCell>
-                          <div className="text-sm">
+                          <div className="text-sm font-medium">
                             {org.licenses_used}/{org.total_licenses}
                           </div>
                         </TableCell>
                         <TableCell>
                           <div className="flex items-center space-x-2">
-                            <Progress value={(org.licenses_used / org.total_licenses) * 100} className="w-16" />
-                            <span className="text-sm">{Math.round((org.licenses_used / org.total_licenses) * 100)}%</span>
+                            <div className="w-16 bg-gray-200 rounded-full h-2">
+                              <div 
+                                className="bg-gradient-to-r from-blue-500 to-purple-600 h-2 rounded-full transition-all duration-500"
+                                style={{ width: `${(org.licenses_used / org.total_licenses) * 100}%` }}
+                              ></div>
+                            </div>
+                            <span className="text-sm font-medium">{Math.round((org.licenses_used / org.total_licenses) * 100)}%</span>
                           </div>
                         </TableCell>
                       </TableRow>
@@ -699,45 +762,45 @@ export default function Reports() {
         <TabsContent value="services" className="space-y-6">
           {/* Service Usage Overview Cards */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm">อีเมลส่ง</CardTitle>
-                <Mail className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">45,230</div>
-                <p className="text-xs text-muted-foreground">ฉบับ</p>
-              </CardContent>
+            <Card className="overflow-hidden hover:shadow-lg transition-all duration-300 cursor-pointer group" onClick={() => handleCardClick('services', 'Email Usage')}>
+              <div className="bg-gradient-to-br from-blue-500 to-cyan-600 p-4 text-white relative">
+                <div className="absolute top-2 right-2 opacity-20">
+                  <Mail className="h-8 w-8" />
+                </div>
+                <CardTitle className="text-sm text-white/90">อีเมลส่ง</CardTitle>
+                <div className="text-2xl font-bold mt-2">45,230</div>
+                <p className="text-xs text-white/80">ฉบับ</p>
+              </div>
             </Card>
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm">อีเมลรับ</CardTitle>
-                <Mail className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">52,890</div>
-                <p className="text-xs text-muted-foreground">ฉบับ</p>
-              </CardContent>
+            <Card className="overflow-hidden hover:shadow-lg transition-all duration-300 cursor-pointer group" onClick={() => handleCardClick('services', 'Email Received')}>
+              <div className="bg-gradient-to-br from-indigo-500 to-blue-600 p-4 text-white relative">
+                <div className="absolute top-2 right-2 opacity-20">
+                  <Mail className="h-8 w-8" />
+                </div>
+                <CardTitle className="text-sm text-white/90">อีเมลรับ</CardTitle>
+                <div className="text-2xl font-bold mt-2">52,890</div>
+                <p className="text-xs text-white/80">ฉบับ</p>
+              </div>
             </Card>
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm">ข้อความแชท</CardTitle>
-                <MessageSquare className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">89,450</div>
-                <p className="text-xs text-muted-foreground">ข้อความ</p>
-              </CardContent>
+            <Card className="overflow-hidden hover:shadow-lg transition-all duration-300 cursor-pointer group" onClick={() => handleCardClick('services', 'Chat Messages')}>
+              <div className="bg-gradient-to-br from-green-500 to-teal-600 p-4 text-white relative">
+                <div className="absolute top-2 right-2 opacity-20">
+                  <MessageSquare className="h-8 w-8" />
+                </div>
+                <CardTitle className="text-sm text-white/90">ข้อความแชท</CardTitle>
+                <div className="text-2xl font-bold mt-2">89,450</div>
+                <p className="text-xs text-white/80">ข้อความ</p>
+              </div>
             </Card>
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm">นาทีประชุม</CardTitle>
-                <Video className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">12,340</div>
-                <p className="text-xs text-muted-foreground">นาที</p>
-              </CardContent>
+            <Card className="overflow-hidden hover:shadow-lg transition-all duration-300 cursor-pointer group" onClick={() => handleCardClick('services', 'Meeting Minutes')}>
+              <div className="bg-gradient-to-br from-purple-500 to-pink-600 p-4 text-white relative">
+                <div className="absolute top-2 right-2 opacity-20">
+                  <Video className="h-8 w-8" />
+                </div>
+                <CardTitle className="text-sm text-white/90">นาทีประชุม</CardTitle>
+                <div className="text-2xl font-bold mt-2">12,340</div>
+                <p className="text-xs text-white/80">นาที</p>
+              </div>
             </Card>
           </div>
 
@@ -832,45 +895,47 @@ export default function Reports() {
         <TabsContent value="mail-relay" className="space-y-6">
           {/* Mail Relay Stats Cards */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm">Accepted</CardTitle>
-                <CheckCircle className="h-4 w-4 text-green-600" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-green-600">16,230</div>
-                <p className="text-xs text-muted-foreground">อีเมล</p>
-              </CardContent>
+            <Card className="overflow-hidden hover:shadow-lg transition-all duration-300 cursor-pointer group" onClick={() => handleCardClick('mail-relay', 'Accepted Emails')}>
+              <div className="bg-gradient-to-br from-green-500 to-emerald-600 p-4 text-white relative">
+                <div className="absolute top-2 right-2 opacity-20">
+                  <CheckCircle className="h-8 w-8" />
+                </div>
+                <CardTitle className="text-sm text-white/90">Accepted</CardTitle>
+                <div className="text-2xl font-bold mt-2">16,230</div>
+                <p className="text-xs text-white/80">อีเมล</p>
+              </div>
             </Card>
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm">Rejected</CardTitle>
-                <AlertCircle className="h-4 w-4 text-red-600" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-red-600">201</div>
-                <p className="text-xs text-muted-foreground">อีเมล</p>
-              </CardContent>
+            <Card className="overflow-hidden hover:shadow-lg transition-all duration-300 cursor-pointer group" onClick={() => handleCardClick('mail-relay', 'Rejected Emails')}>
+              <div className="bg-gradient-to-br from-red-500 to-rose-600 p-4 text-white relative">
+                <div className="absolute top-2 right-2 opacity-20">
+                  <AlertCircle className="h-8 w-8" />
+                </div>
+                <CardTitle className="text-sm text-white/90">Rejected</CardTitle>
+                <div className="text-2xl font-bold mt-2">201</div>
+                <p className="text-xs text-white/80">อีเมล</p>
+              </div>
             </Card>
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm">Success Rate</CardTitle>
-                <TrendingUp className="h-4 w-4 text-blue-600" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-blue-600">98.8%</div>
-                <Progress value={98.8} className="mt-2" />
-              </CardContent>
+            <Card className="overflow-hidden hover:shadow-lg transition-all duration-300 cursor-pointer group" onClick={() => handleCardClick('mail-relay', 'Success Rate')}>
+              <div className="bg-gradient-to-br from-blue-500 to-indigo-600 p-4 text-white relative">
+                <div className="absolute top-2 right-2 opacity-20">
+                  <TrendingUp className="h-8 w-8" />
+                </div>
+                <CardTitle className="text-sm text-white/90">Success Rate</CardTitle>
+                <div className="text-2xl font-bold mt-2">98.8%</div>
+                <div className="w-full bg-white/20 rounded-full h-2 mt-2">
+                  <div className="bg-white h-2 rounded-full transition-all duration-500" style={{ width: '98.8%' }}></div>
+                </div>
+              </div>
             </Card>
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm">Relay Systems</CardTitle>
-                <Activity className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">3</div>
-                <p className="text-xs text-muted-foreground">ระบบ</p>
-              </CardContent>
+            <Card className="overflow-hidden hover:shadow-lg transition-all duration-300 cursor-pointer group" onClick={() => handleCardClick('mail-relay', 'Relay Systems')}>
+              <div className="bg-gradient-to-br from-purple-500 to-violet-600 p-4 text-white relative">
+                <div className="absolute top-2 right-2 opacity-20">
+                  <Activity className="h-8 w-8" />
+                </div>
+                <CardTitle className="text-sm text-white/90">Relay Systems</CardTitle>
+                <div className="text-2xl font-bold mt-2">3</div>
+                <p className="text-xs text-white/80">ระบบ</p>
+              </div>
             </Card>
           </div>
 
@@ -1004,45 +1069,45 @@ export default function Reports() {
         <TabsContent value="inactive" className="space-y-6">
           {/* Inactive Stats Cards */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm">Inactive {'>'} 15 วัน</CardTitle>
-                <UserX className="h-4 w-4 text-yellow-600" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-yellow-600">28</div>
-                <p className="text-xs text-muted-foreground">บัญชี</p>
-              </CardContent>
+            <Card className="overflow-hidden hover:shadow-lg transition-all duration-300 cursor-pointer group" onClick={() => handleCardClick('inactive', 'Inactive 15 Days')}>
+              <div className="bg-gradient-to-br from-yellow-500 to-amber-600 p-4 text-white relative">
+                <div className="absolute top-2 right-2 opacity-20">
+                  <UserX className="h-8 w-8" />
+                </div>
+                <CardTitle className="text-sm text-white/90">Inactive {'>'} 15 วัน</CardTitle>
+                <div className="text-2xl font-bold mt-2">28</div>
+                <p className="text-xs text-white/80">บัญชี</p>
+              </div>
             </Card>
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm">Inactive {'>'} 30 วัน</CardTitle>
-                <UserX className="h-4 w-4 text-orange-600" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-orange-600">15</div>
-                <p className="text-xs text-muted-foreground">บัญชี</p>
-              </CardContent>
+            <Card className="overflow-hidden hover:shadow-lg transition-all duration-300 cursor-pointer group" onClick={() => handleCardClick('inactive', 'Inactive 30 Days')}>
+              <div className="bg-gradient-to-br from-orange-500 to-red-500 p-4 text-white relative">
+                <div className="absolute top-2 right-2 opacity-20">
+                  <UserX className="h-8 w-8" />
+                </div>
+                <CardTitle className="text-sm text-white/90">Inactive {'>'} 30 วัน</CardTitle>
+                <div className="text-2xl font-bold mt-2">15</div>
+                <p className="text-xs text-white/80">บัญชี</p>
+              </div>
             </Card>
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm">Inactive {'>'} 90 วัน</CardTitle>
-                <UserX className="h-4 w-4 text-red-600" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-red-600">8</div>
-                <p className="text-xs text-muted-foreground">บัญชี</p>
-              </CardContent>
+            <Card className="overflow-hidden hover:shadow-lg transition-all duration-300 cursor-pointer group" onClick={() => handleCardClick('inactive', 'Inactive 90 Days')}>
+              <div className="bg-gradient-to-br from-red-600 to-rose-700 p-4 text-white relative">
+                <div className="absolute top-2 right-2 opacity-20">
+                  <UserX className="h-8 w-8" />
+                </div>
+                <CardTitle className="text-sm text-white/90">Inactive {'>'} 90 วัน</CardTitle>
+                <div className="text-2xl font-bold mt-2">8</div>
+                <p className="text-xs text-white/80">บัญชี</p>
+              </div>
             </Card>
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm">รวมทั้งหมด</CardTitle>
-                <Users className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">51</div>
-                <p className="text-xs text-muted-foreground">บัญชี</p>
-              </CardContent>
+            <Card className="overflow-hidden hover:shadow-lg transition-all duration-300 cursor-pointer group" onClick={() => handleCardClick('inactive', 'Total Inactive')}>
+              <div className="bg-gradient-to-br from-gray-600 to-slate-700 p-4 text-white relative">
+                <div className="absolute top-2 right-2 opacity-20">
+                  <Users className="h-8 w-8" />
+                </div>
+                <CardTitle className="text-sm text-white/90">รวมทั้งหมด</CardTitle>
+                <div className="text-2xl font-bold mt-2">51</div>
+                <p className="text-xs text-white/80">บัญชี</p>
+              </div>
             </Card>
           </div>
 
@@ -1144,45 +1209,45 @@ export default function Reports() {
         <TabsContent value="contacts" className="space-y-6">
           {/* Admin Contact Stats Cards */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm">องค์กรทั้งหมด</CardTitle>
-                <Building className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">45</div>
-                <p className="text-xs text-muted-foreground">องค์กร</p>
-              </CardContent>
+            <Card className="overflow-hidden hover:shadow-lg transition-all duration-300 cursor-pointer group" onClick={() => handleCardClick('contacts', 'Total Organizations')}>
+              <div className="bg-gradient-to-br from-indigo-500 to-purple-600 p-4 text-white relative">
+                <div className="absolute top-2 right-2 opacity-20">
+                  <Building className="h-8 w-8" />
+                </div>
+                <CardTitle className="text-sm text-white/90">องค์กรทั้งหมด</CardTitle>
+                <div className="text-2xl font-bold mt-2">45</div>
+                <p className="text-xs text-white/80">องค์กร</p>
+              </div>
             </Card>
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm">ผู้ดูแลทั้งหมด</CardTitle>
-                <Users className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">52</div>
-                <p className="text-xs text-muted-foreground">คน</p>
-              </CardContent>
+            <Card className="overflow-hidden hover:shadow-lg transition-all duration-300 cursor-pointer group" onClick={() => handleCardClick('contacts', 'Total Admins')}>
+              <div className="bg-gradient-to-br from-blue-500 to-cyan-600 p-4 text-white relative">
+                <div className="absolute top-2 right-2 opacity-20">
+                  <Users className="h-8 w-8" />
+                </div>
+                <CardTitle className="text-sm text-white/90">ผู้ดูแลทั้งหมด</CardTitle>
+                <div className="text-2xl font-bold mt-2">52</div>
+                <p className="text-xs text-white/80">คน</p>
+              </div>
             </Card>
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm">ค่าเฉลี่ย</CardTitle>
-                <Users className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">1.16</div>
-                <p className="text-xs text-muted-foreground">ผู้ดูแลต่อองค์กร</p>
-              </CardContent>
+            <Card className="overflow-hidden hover:shadow-lg transition-all duration-300 cursor-pointer group" onClick={() => handleCardClick('contacts', 'Average Admins')}>
+              <div className="bg-gradient-to-br from-teal-500 to-green-600 p-4 text-white relative">
+                <div className="absolute top-2 right-2 opacity-20">
+                  <Users className="h-8 w-8" />
+                </div>
+                <CardTitle className="text-sm text-white/90">ค่าเฉลี่ย</CardTitle>
+                <div className="text-2xl font-bold mt-2">1.16</div>
+                <p className="text-xs text-white/80">ผู้ดูแลต่อองค์กร</p>
+              </div>
             </Card>
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm">ความครอบคลุม</CardTitle>
-                <CheckCircle className="h-4 w-4 text-green-600" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-green-600">100%</div>
-                <p className="text-xs text-muted-foreground">องค์กรมีผู้ดูแล</p>
-              </CardContent>
+            <Card className="overflow-hidden hover:shadow-lg transition-all duration-300 cursor-pointer group" onClick={() => handleCardClick('contacts', 'Coverage')}>
+              <div className="bg-gradient-to-br from-green-500 to-emerald-600 p-4 text-white relative">
+                <div className="absolute top-2 right-2 opacity-20">
+                  <CheckCircle className="h-8 w-8" />
+                </div>
+                <CardTitle className="text-sm text-white/90">ความครอบคลุม</CardTitle>
+                <div className="text-2xl font-bold mt-2">100%</div>
+                <p className="text-xs text-white/80">องค์กรมีผู้ดูแล</p>
+              </div>
             </Card>
           </div>
 
@@ -1267,6 +1332,14 @@ export default function Reports() {
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* Report Modal */}
+      <ReportModal
+        isOpen={modalData.isOpen}
+        onClose={closeModal}
+        reportType={modalData.reportType}
+        title={modalData.title}
+      />
     </div>
   );
 }

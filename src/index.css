@@ -18,7 +18,7 @@ All colors MUST be HSL.
     --popover: 0 0% 100%;
     --popover-foreground: 225 15% 20%;
 
-    /* Primary: Professional Blue */
+    /* Primary: Modern Blue */
     --primary: 214 84% 56%;
     --primary-foreground: 0 0% 100%;
     --primary-hover: 214 84% 46%;
@@ -31,7 +31,7 @@ All colors MUST be HSL.
     --muted: 220 14% 96%;
     --muted-foreground: 220 9% 46%;
 
-    /* Accent: Enterprise Teal */
+    /* Accent: Modern Teal */
     --accent: 173 58% 39%;
     --accent-foreground: 0 0% 100%;
     --accent-hover: 173 58% 29%;
@@ -55,6 +55,28 @@ All colors MUST be HSL.
 
     --radius: 0.75rem;
 
+    /* Chart Colors - Beautiful Modern Palette */
+    --chart-1: 214 84% 56%;  /* Modern Blue */
+    --chart-2: 142 76% 36%;  /* Emerald Green */
+    --chart-3: 262 83% 58%;  /* Purple */
+    --chart-4: 346 77% 49%;  /* Rose */
+    --chart-5: 31 81% 56%;   /* Orange */
+    --chart-6: 173 58% 39%;  /* Teal */
+    --chart-7: 280 100% 70%; /* Violet */
+    --chart-8: 24 70% 52%;   /* Amber */
+
+    /* Chart Gradients */
+    --chart-gradient-1: linear-gradient(135deg, hsl(214 84% 56%) 0%, hsl(214 84% 46%) 100%);
+    --chart-gradient-2: linear-gradient(135deg, hsl(142 76% 36%) 0%, hsl(142 76% 26%) 100%);
+    --chart-gradient-3: linear-gradient(135deg, hsl(262 83% 58%) 0%, hsl(262 83% 48%) 100%);
+    --chart-gradient-4: linear-gradient(135deg, hsl(346 77% 49%) 0%, hsl(346 77% 39%) 100%);
+    --chart-gradient-5: linear-gradient(135deg, hsl(31 81% 56%) 0%, hsl(31 81% 46%) 100%);
+
+    /* Area Chart Gradients (For filled areas) */
+    --area-gradient-1: linear-gradient(180deg, hsla(214 84% 56% / 0.3) 0%, hsla(214 84% 56% / 0.05) 100%);
+    --area-gradient-2: linear-gradient(180deg, hsla(142 76% 36% / 0.3) 0%, hsla(142 76% 36% / 0.05) 100%);
+    --area-gradient-3: linear-gradient(180deg, hsla(262 83% 58% / 0.3) 0%, hsla(262 83% 58% / 0.05) 100%);
+
     /* Sidebar Enterprise Theme */
     --sidebar-background: 225 25% 15%;
     --sidebar-foreground: 220 14% 96%;
@@ -65,18 +87,27 @@ All colors MUST be HSL.
     --sidebar-border: 225 20% 25%;
     --sidebar-ring: 214 84% 56%;
 
-    /* Professional Gradients */
+    /* Beautiful Gradients */
     --gradient-primary: linear-gradient(135deg, hsl(214 84% 56%), hsl(214 84% 46%));
     --gradient-secondary: linear-gradient(135deg, hsl(220 14% 96%), hsl(220 13% 91%));
     --gradient-accent: linear-gradient(135deg, hsl(173 58% 39%), hsl(173 58% 29%));
+    --gradient-success: linear-gradient(135deg, hsl(142 76% 36%), hsl(142 76% 26%));
+    --gradient-rainbow: linear-gradient(135deg, 
+      hsl(214 84% 56%) 0%, 
+      hsl(262 83% 58%) 25%, 
+      hsl(346 77% 49%) 50%, 
+      hsl(31 81% 56%) 75%, 
+      hsl(142 76% 36%) 100%
+    );
 
-    /* Enterprise Shadows */
+    /* Premium Shadows with Colors */
     --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
     --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
     --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
     --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+    --shadow-colored: 0 10px 25px -3px hsla(214 84% 56% / 0.15);
 
-    /* Professional Animations */
+    /* Smooth Animations */
     --transition-smooth: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
     --transition-bounce: all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
   }
