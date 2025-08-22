@@ -122,7 +122,7 @@ const Dashboard = () => {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
         {stats.map((stat) => (
           <Card key={stat.title} className="hover:shadow-lg transition-all duration-200">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -144,7 +144,7 @@ const Dashboard = () => {
         ))}
       </div>
 
-      <div className="grid gap-6 md:grid-cols-2">
+      <div className="grid gap-6 grid-cols-1 lg:grid-cols-2">
         {/* Recent Activities */}
         <Card>
           <CardHeader>
@@ -215,7 +215,7 @@ const Dashboard = () => {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid gap-4 md:grid-cols-4">
+          <div className="grid gap-4 grid-cols-2 sm:grid-cols-4">
             <Button variant="outline" className="h-20 flex flex-col space-y-2">
               <Users className="w-5 h-5" />
               <span className="text-sm">เพิ่มผู้ใช้</span>

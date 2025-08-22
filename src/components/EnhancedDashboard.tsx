@@ -146,7 +146,7 @@ export default function EnhancedDashboard() {
       </div>
 
       {/* System Overview Cards */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">ผู้ใช้งานทั้งหมด</CardTitle>
@@ -207,7 +207,7 @@ export default function EnhancedDashboard() {
       </div>
 
       {/* System Health and Storage */}
-      <div className="grid gap-6 md:grid-cols-2">
+      <div className="grid gap-6 grid-cols-1 lg:grid-cols-2">
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center space-x-2">
