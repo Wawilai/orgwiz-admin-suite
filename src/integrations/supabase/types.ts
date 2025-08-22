@@ -276,6 +276,74 @@ export type Database = {
           },
         ]
       }
+      group_members: {
+        Row: {
+          added_at: string
+          added_by: string
+          external_email: string | null
+          group_id: string
+          id: string
+          user_id: string | null
+        }
+        Insert: {
+          added_at?: string
+          added_by: string
+          external_email?: string | null
+          group_id: string
+          id?: string
+          user_id?: string | null
+        }
+        Update: {
+          added_at?: string
+          added_by?: string
+          external_email?: string | null
+          group_id?: string
+          id?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_group_members_group"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      groups: {
+        Row: {
+          created_at: string
+          created_by: string
+          description: string | null
+          group_email: string
+          group_name: string
+          id: string
+          organization_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          description?: string | null
+          group_email: string
+          group_name: string
+          id?: string
+          organization_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          description?: string | null
+          group_email?: string
+          group_name?: string
+          id?: string
+          organization_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       license_assignments: {
         Row: {
           assigned_at: string
@@ -713,75 +781,102 @@ export type Database = {
       profiles: {
         Row: {
           avatar_url: string | null
+          backup_email: string | null
           bio: string | null
           created_at: string
+          department_en: string | null
           display_name: string | null
           email: string
           employee_id: string | null
           end_date: string | null
           first_name: string
+          first_name_en: string | null
           id: string
           language: string | null
           last_login: string | null
           last_name: string
+          last_name_en: string | null
           manager_id: string | null
+          national_id: string | null
           organization_id: string
           organization_unit_id: string | null
           phone: string | null
+          phone_mobile: string | null
+          phone_office: string | null
           position: string | null
           start_date: string | null
           status: string
           timezone: string | null
           updated_at: string
           user_id: string
+          user_type: string
+          username: string | null
         }
         Insert: {
           avatar_url?: string | null
+          backup_email?: string | null
           bio?: string | null
           created_at?: string
+          department_en?: string | null
           display_name?: string | null
           email: string
           employee_id?: string | null
           end_date?: string | null
           first_name: string
+          first_name_en?: string | null
           id?: string
           language?: string | null
           last_login?: string | null
           last_name: string
+          last_name_en?: string | null
           manager_id?: string | null
+          national_id?: string | null
           organization_id: string
           organization_unit_id?: string | null
           phone?: string | null
+          phone_mobile?: string | null
+          phone_office?: string | null
           position?: string | null
           start_date?: string | null
           status?: string
           timezone?: string | null
           updated_at?: string
           user_id: string
+          user_type?: string
+          username?: string | null
         }
         Update: {
           avatar_url?: string | null
+          backup_email?: string | null
           bio?: string | null
           created_at?: string
+          department_en?: string | null
           display_name?: string | null
           email?: string
           employee_id?: string | null
           end_date?: string | null
           first_name?: string
+          first_name_en?: string | null
           id?: string
           language?: string | null
           last_login?: string | null
           last_name?: string
+          last_name_en?: string | null
           manager_id?: string | null
+          national_id?: string | null
           organization_id?: string
           organization_unit_id?: string | null
           phone?: string | null
+          phone_mobile?: string | null
+          phone_office?: string | null
           position?: string | null
           start_date?: string | null
           status?: string
           timezone?: string | null
           updated_at?: string
           user_id?: string
+          user_type?: string
+          username?: string | null
         }
         Relationships: [
           {
