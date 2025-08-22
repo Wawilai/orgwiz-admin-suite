@@ -1,6 +1,12 @@
 import { createRoot } from 'react-dom/client'
 import App from './App.tsx'
 import './index.css'
+import { initializeFocusEnhancement } from './utils/focusManagement.ts'
+
+// Initialize focus management system
+document.addEventListener('DOMContentLoaded', () => {
+  initializeFocusEnhancement();
+});
 
 // Create a simple fallback component
 const FallbackApp = () => (

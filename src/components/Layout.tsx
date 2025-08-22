@@ -14,6 +14,8 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
+import { toast } from "sonner";
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -21,6 +23,23 @@ interface LayoutProps {
 
 export function Layout({ children }: LayoutProps) {
   const navigate = useNavigate();
+  const { user, signOut, isAuthenticated } = useAuth();
+
+  const handleLogout = async () => {
+    try {
+      await signOut();
+      toast.success("ออกจากระบบสำเร็จ");
+      navigate("/");
+    } catch (error) {
+      toast.error("เกิดข้อผิดพลาดในการออกจากระบบ");
+    }
+  };
+
+  // Redirect to auth if not authenticated
+  if (!isAuthenticated) {
+    navigate("/auth");
+    return null;
+  }
 
   return (
     <SidebarProvider 
@@ -65,21 +84,29 @@ export function Layout({ children }: LayoutProps) {
                     </Avatar>
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent className="w-56 bg-popover" align="end" forceMount>
+                <DropdownMenuContent className="w-56 bg-popover border shadow-lg z-50" align="end" forceMount>
                   <DropdownMenuLabel className="font-normal">
                     <div className="flex flex-col space-y-1">
-                      <p className="text-sm font-medium leading-none">Admin User</p>
+                      <p className="text-sm font-medium leading-none">
+                        {user?.user_metadata?.full_name || "Admin User"}
+                      </p>
                       <p className="text-xs leading-none text-muted-foreground">
-                        admin@company.com
+                        {user?.email || "admin@company.com"}
                       </p>
                     </div>
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={() => navigate('/account-settings')}>
+                  <DropdownMenuItem 
+                    onClick={() => navigate('/account-settings')}
+                    className="focus:bg-accent focus:text-accent-foreground cursor-pointer"
+                  >
                     <User className="mr-2 h-4 w-4" />
                     <span>โปรไฟล์</span>
                   </DropdownMenuItem>
-                  <DropdownMenuItem>
+                  <DropdownMenuItem 
+                    onClick={handleLogout}
+                    className="focus:bg-accent focus:text-accent-foreground cursor-pointer text-destructive"
+                  >
                     <LogOut className="mr-2 h-4 w-4" />
                     <span>ออกจากระบบ</span>
                   </DropdownMenuItem>

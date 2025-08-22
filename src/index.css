@@ -284,6 +284,142 @@ All colors MUST be HSL.
   }
 }
 
+  /* Enhanced Focus States - Fix for mouse focus issues */
+  button:focus-visible,
+  [role="button"]:focus-visible,
+  input:focus-visible,
+  textarea:focus-visible,
+  select:focus-visible,
+  [tabindex]:focus-visible,
+  a:focus-visible {
+    outline: 2px solid hsl(var(--ring));
+    outline-offset: 2px;
+    transition: outline 0.2s ease-in-out;
+  }
+
+  /* Remove default outline and replace with custom ring */
+  *:focus {
+    outline: none;
+  }
+
+  *:focus-visible {
+    outline: 2px solid hsl(var(--ring));
+    outline-offset: 2px;
+  }
+
+  /* Only show focus outline for keyboard users */
+  body:not(.keyboard-user) *:focus {
+    outline: none !important;
+    box-shadow: none !important;
+  }
+
+  body.keyboard-user *:focus-visible {
+    outline: 2px solid hsl(var(--ring)) !important;
+    outline-offset: 2px !important;
+  }
+
+  /* Ensure buttons maintain focus after click for keyboard users */
+  body.keyboard-user button:focus:not(:focus-visible) {
+    outline: none;
+  }
+
+  body.keyboard-user button:focus-visible {
+    outline: 2px solid hsl(var(--ring));
+    outline-offset: 2px;
+  }
+
+  /* Enhanced focus for form elements */
+  body.keyboard-user input:focus,
+  body.keyboard-user textarea:focus,
+  body.keyboard-user select:focus {
+    box-shadow: 0 0 0 2px hsl(var(--ring) / 0.2);
+    border-color: hsl(var(--ring));
+  }
+
+  /* Focus for custom components */
+  body.keyboard-user [data-radix-collection-item]:focus-visible,
+  body.keyboard-user [role="menuitem"]:focus-visible,
+  body.keyboard-user [role="option"]:focus-visible {
+    background-color: hsl(var(--accent));
+    color: hsl(var(--accent-foreground));
+    outline: 2px solid hsl(var(--ring));
+    outline-offset: -2px;
+  }
+
+  /* Dropdown and popover focus styles */
+  body.keyboard-user [role="menu"] [role="menuitem"]:focus,
+  body.keyboard-user [role="listbox"] [role="option"]:focus {
+    background-color: hsl(var(--accent));
+    color: hsl(var(--accent-foreground));
+  }
+
+  /* Ensure focus is visible on all clickable elements */
+  body.keyboard-user [role="button"]:focus-visible,
+  body.keyboard-user button:focus-visible {
+    box-shadow: 0 0 0 2px hsl(var(--background)), 0 0 0 4px hsl(var(--ring));
+  }
+
+  /* Tab focus indication */
+  body.keyboard-user [role="tab"]:focus-visible {
+    box-shadow: inset 0 -2px 0 0 hsl(var(--ring));
+  }
+
+  /* Card and dialog focus */
+  body.keyboard-user [role="dialog"]:focus,
+  body.keyboard-user .card:focus-within {
+    box-shadow: 0 0 0 2px hsl(var(--ring) / 0.3);
+  }
+
+  /* Ensure dropdowns have proper z-index and background */
+  [role="menu"],
+  [role="listbox"],
+  .dropdown-menu,
+  [data-radix-popper-content-wrapper] {
+    z-index: 50 !important;
+    background-color: hsl(var(--popover)) !important;
+    border: 1px solid hsl(var(--border)) !important;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05) !important;
+  }
+
+  /* Fix for disappearing focus in dropdowns */
+  [role="menuitem"],
+  [role="option"] {
+    position: relative;
+    cursor: pointer;
+    transition: background-color 0.15s ease-in-out;
+  }
+
+  [role="menuitem"]:hover,
+  [role="option"]:hover {
+    background-color: hsl(var(--accent)) !important;
+    color: hsl(var(--accent-foreground)) !important;
+  }
+
+  /* Prevent focus loss on interactive elements */
+  button, 
+  [role="button"],
+  input,
+  textarea,
+  select,
+  a[href] {
+    position: relative;
+  }
+
+  /* Ensure focus rings are always visible above other content */
+  *:focus-visible::after {
+    content: '';
+    position: absolute;
+    top: -2px;
+    left: -2px;
+    right: -2px;
+    bottom: -2px;
+    border: 2px solid hsl(var(--ring));
+    border-radius: inherit;
+    pointer-events: none;
+    z-index: 1;
+  }
+}
+
 /* High contrast mode support */
 @media (prefers-contrast: high) {
   .card {

@@ -28,12 +28,16 @@ import {
   CheckCircle2,
   Copy,
   RefreshCw,
+  User
 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import type { Factor } from "@supabase/supabase-js";
+import { useAuth } from "@/contexts/AuthContext";
+import { Link } from "react-router-dom";
 
 const MFASettings = () => {
+  const { user, isAuthenticated, loading: authLoading } = useAuth();
   const [mfaFactors, setMfaFactors] = useState<Factor[]>([]);
   const [isSetupDialogOpen, setIsSetupDialogOpen] = useState(false);
   const [isDisableDialogOpen, setIsDisableDialogOpen] = useState(false);
@@ -51,23 +55,37 @@ const MFASettings = () => {
   }, []);
 
   const loadMFAFactors = async () => {
+    if (!isAuthenticated || !user) {
+      console.log('User not authenticated, skipping MFA factors loading');
+      return;
+    }
+
     try {
       const { data, error } = await supabase.auth.mfa.listFactors();
       
       if (error) {
         console.error('Error loading MFA factors:', error);
-        toast.error('ไม่สามารถโหลดข้อมูล MFA ได้');
+        if (error.message !== 'Auth session missing!') {
+          toast.error('ไม่สามารถโหลดข้อมูล MFA ได้');
+        }
         return;
       }
 
       setMfaFactors(data?.totp || []);
     } catch (error) {
       console.error('Error:', error);
-      toast.error('เกิดข้อผิดพลาดในการโหลดข้อมูล');
+      if (isAuthenticated) {
+        toast.error('เกิดข้อผิดพลาดในการโหลดข้อมูล');
+      }
     }
   };
 
   const setupMFA = async () => {
+    if (!isAuthenticated || !user) {
+      toast.error('กรุณาเข้าสู่ระบบก่อนใช้งาน MFA');
+      return;
+    }
+
     setLoading(true);
     try {
       const { data, error } = await supabase.auth.mfa.enroll({
@@ -177,6 +195,54 @@ const MFASettings = () => {
   };
 
   const hasMFA = mfaFactors.some(factor => factor.status === 'verified');
+
+  // Show loading state while auth is loading
+  if (authLoading) {
+    return (
+      <div className="space-y-6">
+        <div className="text-center py-12">
+          <RefreshCw className="h-8 w-8 animate-spin mx-auto mb-4 text-primary" />
+          <p className="text-muted-foreground">กำลังโหลด...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show authentication required message
+  if (!isAuthenticated) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-3xl font-bold text-foreground">การรักษาความปลอดภัยสองขั้นตอน</h1>
+          <p className="text-muted-foreground mt-1">
+            เพิ่มความปลอดภัยให้กับบัญชีของคุณด้วยการยืนยันตัวตนสองขั้นตอน
+          </p>
+        </div>
+
+        <Card>
+          <CardContent className="py-12">
+            <div className="text-center space-y-4">
+              <div className="p-3 bg-muted rounded-full w-fit mx-auto">
+                <ShieldX className="h-8 w-8 text-muted-foreground" />
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold">จำเป็นต้องเข้าสู่ระบบ</h3>
+                <p className="text-muted-foreground mt-2">
+                  กรุณาเข้าสู่ระบบก่อนจึงจะสามารถใช้งานฟีเจอร์ MFA ได้
+                </p>
+              </div>
+              <Link to="/auth">
+                <Button>
+                  <User className="h-4 w-4 mr-2" />
+                  เข้าสู่ระบบ
+                </Button>
+              </Link>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
