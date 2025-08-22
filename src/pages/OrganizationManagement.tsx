@@ -36,6 +36,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { useMasterData } from "@/contexts/MasterDataContext";
+import { toast } from "sonner";
 import {
   Building,
   Plus,
@@ -98,6 +100,7 @@ const mockOrganizations = [
 ];
 
 const OrganizationManagement = () => {
+  const { getActiveItems } = useMasterData();
   const [organizations, setOrganizations] = useState(mockOrganizations);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedFilter, setSelectedFilter] = useState("all");
@@ -113,6 +116,9 @@ const OrganizationManagement = () => {
     admin: "",
     adminEmail: ""
   });
+
+  // Get master data
+  const organizationTypes = getActiveItems('organizationTypes');
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -271,9 +277,11 @@ const OrganizationManagement = () => {
                       <SelectValue placeholder="เลือกประเภทองค์กร" />
                     </SelectTrigger>
                     <SelectContent className="bg-popover">
-                      <SelectItem value="บริษัทมหาชน">บริษัทมหาชน</SelectItem>
-                      <SelectItem value="บริษัทจำกัด">บริษัทจำกัด</SelectItem>
-                      <SelectItem value="ห้างหุ้นส่วน">ห้างหุ้นส่วน</SelectItem>
+                      {organizationTypes.map((type) => (
+                        <SelectItem key={type.id} value={type.name}>
+                          {type.name}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>
@@ -342,10 +350,16 @@ const OrganizationManagement = () => {
                 </div>
               </div>
               <div className="flex justify-end space-x-2">
-                <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>
+                <Button variant="outline" onClick={() => {
+                  setIsAddDialogOpen(false);
+                  toast.success("ยกเลิกการเพิ่มองค์กร");
+                }}>
                   ยกเลิก
                 </Button>
-                <Button onClick={handleAdd}>
+                <Button onClick={() => {
+                  handleAdd();
+                  toast.success("เพิ่มองค์กรสำเร็จ");
+                }}>
                   บันทึก
                 </Button>
               </div>
@@ -556,9 +570,11 @@ const OrganizationManagement = () => {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent className="bg-popover">
-                  <SelectItem value="บริษัทมหาชน">บริษัทมหาชน</SelectItem>
-                  <SelectItem value="บริษัทจำกัด">บริษัทจำกัด</SelectItem>
-                  <SelectItem value="ห้างหุ้นส่วน">ห้างหุ้นส่วน</SelectItem>
+                  {organizationTypes.map((type) => (
+                    <SelectItem key={type.id} value={type.name}>
+                      {type.name}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
@@ -622,10 +638,16 @@ const OrganizationManagement = () => {
             </div>
           </div>
           <div className="flex justify-end space-x-2">
-            <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
+            <Button variant="outline" onClick={() => {
+              setIsEditDialogOpen(false);
+              toast.success("ยกเลิกการแก้ไข");
+            }}>
               ยกเลิก
             </Button>
-            <Button onClick={handleEdit}>
+            <Button onClick={() => {
+              handleEdit();
+              toast.success("แก้ไของค์กรสำเร็จ");
+            }}>
               บันทึกการแก้ไข
             </Button>
           </div>

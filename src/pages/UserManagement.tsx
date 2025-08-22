@@ -37,6 +37,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { DatePicker } from "@/components/ui/date-picker";
+import { useMasterData } from "@/contexts/MasterDataContext";
+import { toast } from "sonner";
 import {
   Users,
   UserPlus,
@@ -94,6 +96,7 @@ const users = [
 ];
 
 const UserManagement = () => {
+  const { getActiveItems } = useMasterData();
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedFilter, setSelectedFilter] = useState("all");
   const [isAddUserOpen, setIsAddUserOpen] = useState(false);
@@ -104,6 +107,12 @@ const UserManagement = () => {
   const [editingUser, setEditingUser] = useState<any>(null);
   const [selectedUser, setSelectedUser] = useState<any>(null);
   const [usersData, setUsersData] = useState(users);
+
+  // Get master data
+  const organizationTypes = getActiveItems('organizationTypes');
+  const departments = getActiveItems('departments');
+  const positions = getActiveItems('positions');
+  const userRoles = getActiveItems('userRoles');
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -268,9 +277,11 @@ const UserManagement = () => {
                         <SelectValue placeholder="เลือกองค์กร" />
                       </SelectTrigger>
                       <SelectContent className="bg-popover">
-                        <SelectItem value="abc-corp">ABC Corp</SelectItem>
-                        <SelectItem value="xyz-ltd">XYZ Ltd</SelectItem>
-                        <SelectItem value="def-co">DEF Co</SelectItem>
+                        {organizationTypes.map((org) => (
+                          <SelectItem key={org.id} value={org.code}>
+                            {org.name}
+                          </SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                   </div>
@@ -281,10 +292,11 @@ const UserManagement = () => {
                         <SelectValue placeholder="เลือกหน่วยงาน" />
                       </SelectTrigger>
                       <SelectContent className="bg-popover">
-                        <SelectItem value="it">IT Department</SelectItem>
-                        <SelectItem value="hr">HR Department</SelectItem>
-                        <SelectItem value="finance">Finance Department</SelectItem>
-                        <SelectItem value="marketing">Marketing Department</SelectItem>
+                        {departments.map((dept) => (
+                          <SelectItem key={dept.id} value={dept.code}>
+                            {dept.name}
+                          </SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                   </div>
@@ -298,19 +310,28 @@ const UserManagement = () => {
                         <SelectValue placeholder="เลือกบทบาท" />
                       </SelectTrigger>
                       <SelectContent className="bg-popover">
-                        <SelectItem value="admin">ผู้ดูแลระบบ</SelectItem>
-                        <SelectItem value="manager">ผู้จัดการ</SelectItem>
-                        <SelectItem value="supervisor">หัวหน้างาน</SelectItem>
-                        <SelectItem value="user">ผู้ใช้งาน</SelectItem>
+                        {userRoles.map((role) => (
+                          <SelectItem key={role.id} value={role.code}>
+                            {role.name}
+                          </SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="position">ตำแหน่ง</Label>
-                    <Input
-                      id="position"
-                      placeholder="Software Engineer"
-                    />
+                    <Select>
+                      <SelectTrigger>
+                        <SelectValue placeholder="เลือกตำแหน่ง" />
+                      </SelectTrigger>
+                      <SelectContent className="bg-popover">
+                        {positions.map((pos) => (
+                          <SelectItem key={pos.id} value={pos.code}>
+                            {pos.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
                 </div>
 
@@ -348,10 +369,16 @@ const UserManagement = () => {
                 </div>
               </div>
               <div className="flex justify-end space-x-2">
-                <Button variant="outline" onClick={() => setIsAddUserOpen(false)}>
+                <Button variant="outline" onClick={() => {
+                  setIsAddUserOpen(false);
+                  toast.success("ยกเลิกการเพิ่มผู้ใช้งาน");
+                }}>
                   ยกเลิก
                 </Button>
-                <Button onClick={() => setIsAddUserOpen(false)}>
+                <Button onClick={() => {
+                  setIsAddUserOpen(false);
+                  toast.success("เพิ่มผู้ใช้งานสำเร็จ");
+                }}>
                   บันทึก
                 </Button>
               </div>
@@ -404,9 +431,11 @@ const UserManagement = () => {
                         <SelectValue placeholder="เลือกองค์กร" />
                       </SelectTrigger>
                       <SelectContent className="bg-popover">
-                        <SelectItem value="ABC Corp">ABC Corp</SelectItem>
-                        <SelectItem value="XYZ Ltd">XYZ Ltd</SelectItem>
-                        <SelectItem value="DEF Co">DEF Co</SelectItem>
+                        {organizationTypes.map((org) => (
+                          <SelectItem key={org.id} value={org.name}>
+                            {org.name}
+                          </SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                   </div>
@@ -420,9 +449,11 @@ const UserManagement = () => {
                         <SelectValue placeholder="เลือกบทบาท" />
                       </SelectTrigger>
                       <SelectContent className="bg-popover">
-                        <SelectItem value="Admin">ผู้ดูแลระบบ</SelectItem>
-                        <SelectItem value="Manager">ผู้จัดการ</SelectItem>
-                        <SelectItem value="User">ผู้ใช้งาน</SelectItem>
+                        {userRoles.map((role) => (
+                          <SelectItem key={role.id} value={role.name}>
+                            {role.name}
+                          </SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                   </div>
@@ -442,10 +473,16 @@ const UserManagement = () => {
                 </div>
               </div>
               <div className="flex justify-end space-x-2">
-                <Button variant="outline" onClick={() => setIsEditUserOpen(false)}>
+                <Button variant="outline" onClick={() => {
+                  setIsEditUserOpen(false);
+                  toast.success("ยกเลิกการแก้ไข");
+                }}>
                   ยกเลิก
                 </Button>
-                <Button onClick={() => setIsEditUserOpen(false)}>
+                <Button onClick={() => {
+                  setIsEditUserOpen(false);  
+                  toast.success("แก้ไขข้อมูลผู้ใช้งานสำเร็จ");
+                }}>
                   บันทึกการเปลี่ยนแปลง
                 </Button>
               </div>

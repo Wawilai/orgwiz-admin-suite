@@ -3,6 +3,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ThemeProvider } from "@/components/ThemeProvider";
+import { MasterDataProvider } from "@/contexts/MasterDataContext";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { Layout } from "@/components/Layout";
 import Index from "./pages/Index";
@@ -34,14 +35,16 @@ import InactiveAccountsDetail from "./pages/reports/InactiveAccountsDetail";
 import AdminContactsDetail from "./pages/reports/AdminContactsDetail";
 import SystemSettings from "./pages/SystemSettings";
 import AccountSettings from "./pages/AccountSettings";
+import MasterDataManagement from "./pages/MasterDataManagement";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <ThemeProvider defaultTheme="system" storageKey="vite-ui-theme">
-      <TooltipProvider>
+    <MasterDataProvider>
+      <ThemeProvider defaultTheme="system" storageKey="vite-ui-theme">
+        <TooltipProvider>
         <Toaster />
         <Sonner />
         <BrowserRouter>
@@ -73,13 +76,15 @@ const App = () => (
           <Route path="/reports/mail-relay-detail" element={<Layout><MailRelayDetail /></Layout>} />
           <Route path="/reports/inactive-detail" element={<Layout><InactiveAccountsDetail /></Layout>} />
           <Route path="/reports/contacts-detail" element={<Layout><AdminContactsDetail /></Layout>} />
+          <Route path="/master-data" element={<Layout><MasterDataManagement /></Layout>} />
           <Route path="/system-settings" element={<Layout><SystemSettings /></Layout>} />
           <Route path="/account-settings" element={<Layout><AccountSettings /></Layout>} />
           <Route path="*" element={<NotFound />} />
         </Routes>
-      </BrowserRouter>
-    </TooltipProvider>
-    </ThemeProvider>
+        </BrowserRouter>
+      </TooltipProvider>
+      </ThemeProvider>
+    </MasterDataProvider>
   </QueryClientProvider>
 );
 
