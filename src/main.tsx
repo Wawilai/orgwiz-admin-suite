@@ -4,9 +4,10 @@ import { BrowserRouter } from 'react-router-dom'
 import App from './App.tsx'
 import './index.css'
 import { ThemeProvider } from './components/ThemeProvider'
-import { Toaster } from './components/ui/toaster'
 import { AuthProvider } from './contexts/AuthContext'
 import { MasterDataProvider } from './contexts/MasterDataContext'
+import { Toaster } from "./components/ui/toaster";
+import { Toaster as Sonner } from "./components/ui/sonner";
 import { initializeFocusEnhancement } from './utils/focusManagement.ts'
 
 // Initialize focus management system
@@ -24,6 +25,7 @@ if (rootElement) {
             <MasterDataProvider>
               <App />
               <Toaster />
+              <Sonner />
             </MasterDataProvider>
           </AuthProvider>
         </ThemeProvider>

@@ -3,6 +3,7 @@ import { AdminSidebar } from "./AdminSidebar";
 import { Bell, Search, User, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { useEffect } from "react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -25,6 +26,13 @@ export function Layout({ children }: LayoutProps) {
   const navigate = useNavigate();
   const { user, signOut, isAuthenticated } = useAuth();
 
+  // Handle authentication redirect with useEffect to prevent race conditions
+  useEffect(() => {
+    if (!isAuthenticated) {
+      navigate("/auth");
+    }
+  }, [isAuthenticated, navigate]);
+
   const handleLogout = async () => {
     try {
       await signOut();
@@ -35,9 +43,8 @@ export function Layout({ children }: LayoutProps) {
     }
   };
 
-  // Redirect to auth if not authenticated
+  // Don't render anything if not authenticated (will redirect via useEffect)
   if (!isAuthenticated) {
-    navigate("/auth");
     return null;
   }
 
