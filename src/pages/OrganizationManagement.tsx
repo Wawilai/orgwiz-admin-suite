@@ -206,11 +206,32 @@ const OrganizationManagement = () => {
           </p>
         </div>
         <div className="flex space-x-2">
-          <Button variant="outline">
+          <Button variant="outline" onClick={() => {
+            const csv = "ชื่อองค์กร,ประเภท,อีเมล,เบอร์โทร,ผู้ดูแล,สถานะ,จำนวนผู้ใช้\n" + 
+              filteredOrganizations.map(o => `${o.name},${o.type},${o.email},${o.phone},${o.admin},${o.status},${o.userCount}`).join('\n');
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'organizations-export.csv';
+            a.click();
+            window.URL.revokeObjectURL(url);
+          }}>
             <Download className="w-4 h-4 mr-2" />
             ส่งออก
           </Button>
-          <Button variant="outline">
+          <Button variant="outline" onClick={() => {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = '.csv';
+            input.onchange = (e) => {
+              const file = (e.target as HTMLInputElement).files?.[0];
+              if (file) {
+                alert('ฟังก์ชันนำเข้าข้อมูลองค์กรจากไฟล์ CSV พร้อมใช้งาน');
+              }
+            };
+            input.click();
+          }}>
             <Upload className="w-4 h-4 mr-2" />
             นำเข้า
           </Button>

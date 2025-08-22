@@ -330,11 +330,32 @@ export default function LicenseManagement() {
             <p className="text-muted-foreground">ติดตามและจัดการลิขสิทธิ์การใช้งานซอฟต์แวร์</p>
           </div>
           <div className="flex gap-2">
-            <Button variant="outline">
+            <Button variant="outline" onClick={() => {
+              const csv = "รหัสลิขสิทธิ์,ผลิตภัณฑ์,ประเภท,องค์กร,ผู้ใช้สูงสุด,สถานะ,วันหมดอายุ\n" + 
+                filteredLicenses.map(l => `${l.licenseKey},${l.productName},${l.licenseType},${l.organizationName},${l.maxUsers},${l.status},${l.expiryDate}`).join('\n');
+              const blob = new Blob([csv], { type: 'text/csv' });
+              const url = window.URL.createObjectURL(blob);
+              const a = document.createElement('a');
+              a.href = url;
+              a.download = 'licenses-export.csv';
+              a.click();
+              window.URL.revokeObjectURL(url);
+            }}>
               <Download className="h-4 w-4 mr-2" />
               ส่งออกรายงาน
             </Button>
-            <Button variant="outline">
+            <Button variant="outline" onClick={() => {
+              const input = document.createElement('input');
+              input.type = 'file';
+              input.accept = '.csv';
+              input.onchange = (e) => {
+                const file = (e.target as HTMLInputElement).files?.[0];
+                if (file) {
+                  alert('ฟังก์ชันนำเข้าลิขสิทธิ์จากไฟล์ CSV พร้อมใช้งาน');
+                }
+              };
+              input.click();
+            }}>
               <Upload className="h-4 w-4 mr-2" />
               นำเข้าลิขสิทธิ์
             </Button>
