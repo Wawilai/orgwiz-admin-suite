@@ -9,6 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
 import { toast } from '@/hooks/use-toast';
 import { 
   BarChart3, 
@@ -27,8 +28,33 @@ import {
   Video,
   HardDrive,
   Activity,
-  Eye
+  Eye,
+  Building,
+  Shield,
+  UserX,
+  Phone,
+  FileText,
+  PieChart,
+  BarChart,
+  LineChart
 } from 'lucide-react';
+import { 
+  PieChart as RechartsPieChart, 
+  Pie,
+  Cell, 
+  ResponsiveContainer, 
+  BarChart as RechartsBarChart, 
+  Bar, 
+  XAxis, 
+  YAxis, 
+  CartesianGrid, 
+  Tooltip, 
+  Legend,
+  AreaChart,
+  Area,
+  LineChart as RechartsLineChart,
+  Line
+} from 'recharts';
 
 interface DashboardMetric {
   id: string;
@@ -63,6 +89,112 @@ interface ServiceUsage {
   avgUsageTime: number;
   growthRate: number;
 }
+
+// Additional interfaces for new requirements
+interface LicenseData {
+  service: string;
+  total: number;
+  used: number;
+  available: number;
+  usage_percentage: number;
+}
+
+interface OrganizationData {
+  name: string;
+  domain: string;
+  licenses_used: number;
+  total_licenses: number;
+}
+
+interface MailRelayData {
+  date: string;
+  accepted: number;
+  rejected: number;
+  success_rate: number;
+}
+
+interface RelaySystem {
+  name: string;
+  admin: string;
+  email: string;
+  phone: string;
+  status: 'ปกติ' | 'ต้องติดตาม' | 'ต้องตรวจสอบ';
+}
+
+interface InactiveAccount {
+  username: string;
+  email: string;
+  department: string;
+  last_login: string;
+  days_inactive: number;
+}
+
+interface AdminContact {
+  organization: string;
+  admin_name: string;
+  email: string;
+  phone: string;
+  users_count: number;
+}
+
+// Mock data for new features
+const mockKPIData = [
+  { title: 'Daily Active Users (DAU)', value: '1,247', change: 12.5, icon: Users, color: 'blue' },
+  { title: 'Total Services', value: '3', change: 0, icon: Activity, color: 'green' },
+  { title: 'License Usage', value: '78%', change: 2.5, icon: Shield, color: 'orange' },
+  { title: 'Growth Trend', value: '+15.2%', change: 15.2, icon: TrendingUp, color: 'purple' }
+];
+
+const mockServiceUsageChart = [
+  { name: 'อีเมล', value: 45, fill: 'hsl(var(--chart-1))' },
+  { name: 'แชท', value: 30, fill: 'hsl(var(--chart-2))' },
+  { name: 'ประชุม', value: 25, fill: 'hsl(var(--chart-3))' }
+];
+
+const mockLicenseData: LicenseData[] = [
+  { service: 'อีเมล', total: 2000, used: 1560, available: 440, usage_percentage: 78 },
+  { service: 'แชท', total: 1500, used: 1140, available: 360, usage_percentage: 76 },
+  { service: 'ประชุม', total: 1000, used: 680, available: 320, usage_percentage: 68 }
+];
+
+const mockOrganizationData: OrganizationData[] = [
+  { name: 'กรมบัญชีกลาง', domain: 'cgd.go.th', licenses_used: 450, total_licenses: 500 },
+  { name: 'กรมสรรพากร', domain: 'rd.go.th', licenses_used: 380, total_licenses: 400 },
+  { name: 'กรมศุลกากร', domain: 'customs.go.th', licenses_used: 340, total_licenses: 350 },
+  { name: 'กรมพัฒนาที่ดิน', domain: 'dld.go.th', licenses_used: 290, total_licenses: 300 },
+  { name: 'กรมป่าไผ่', domain: 'dnp.go.th', licenses_used: 240, total_licenses: 280 }
+];
+
+const mockMailRelayData: MailRelayData[] = [
+  { date: '21/01', accepted: 15420, rejected: 234, success_rate: 98.5 },
+  { date: '22/01', accepted: 16780, rejected: 189, success_rate: 98.9 },
+  { date: '23/01', accepted: 14560, rejected: 312, success_rate: 97.9 },
+  { date: '24/01', accepted: 17890, rejected: 156, success_rate: 99.1 },
+  { date: '25/01', accepted: 16230, rejected: 201, success_rate: 98.8 }
+];
+
+const mockRelaySystemsData: RelaySystem[] = [
+  { name: 'Mail Relay 01', admin: 'นายสมชาย ใจดี', email: 'somchai@gov.th', phone: '02-123-4567', status: 'ปกติ' },
+  { name: 'Mail Relay 02', admin: 'นางสาวสมหญิง รักดี', email: 'somying@gov.th', phone: '02-234-5678', status: 'ปกติ' },
+  { name: 'Mail Relay 03', admin: 'นายประชา สุขใจ', email: 'pracha@gov.th', phone: '02-345-6789', status: 'ต้องติดตาม' }
+];
+
+const mockInactiveAccounts: InactiveAccount[] = [
+  { username: 'user001', email: 'user001@gov.th', department: 'กรมบัญชีกลาง', last_login: '2024-12-10', days_inactive: 42 },
+  { username: 'user002', email: 'user002@gov.th', department: 'กรมสรรพากr', last_login: '2024-12-15', days_inactive: 37 },
+  { username: 'user003', email: 'user003@gov.th', department: 'กรมศุลกากร', last_login: '2024-11-20', days_inactive: 62 },
+  { username: 'user004', email: 'user004@gov.th', department: 'กรมพัฒนาที่ดิน', last_login: '2024-10-30', days_inactive: 83 },
+  { username: 'user005', email: 'user005@gov.th', department: 'กรมป่าไผ่', last_login: '2024-09-15', days_inactive: 128 }
+];
+
+const mockAdminContacts: AdminContact[] = [
+  { organization: 'กรมบัญชีกลาง', admin_name: 'นายสมชาย จันทร์ดี', email: 'admin1@cgd.go.th', phone: '02-123-4567', users_count: 450 },
+  { organization: 'กรมสรรพากร', admin_name: 'นางสาวสมหญิง แสงดี', email: 'admin2@rd.go.th', phone: '02-234-5678', users_count: 380 },
+  { organization: 'กรมศุลกากร', admin_name: 'นายประชา สุขใจ', email: 'admin3@customs.go.th', phone: '02-345-6789', users_count: 340 },
+  { organization: 'กรมพัฒนาที่ดิน', admin_name: 'นางวิไล ใสใจ', email: 'admin4@dld.go.th', phone: '02-456-7890', users_count: 290 }
+];
+
+const COLORS = ['hsl(var(--chart-1))', 'hsl(var(--chart-2))', 'hsl(var(--chart-3))', 'hsl(var(--chart-4))', 'hsl(var(--chart-5))'];
 
 const mockMetrics: DashboardMetric[] = [
   {
@@ -176,7 +308,7 @@ const mockServiceUsage: ServiceUsage[] = [
 ];
 
 export default function Reports() {
-  const [currentTab, setCurrentTab] = useState('dashboard');
+  const [currentTab, setCurrentTab] = useState('executive');
   const [dateRange, setDateRange] = useState('7days');
   const [isExportDialogOpen, setIsExportDialogOpen] = useState(false);
   const [selectedReport, setSelectedReport] = useState('');
@@ -307,31 +439,32 @@ export default function Reports() {
         </div>
 
         <TabsList>
-          <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
-          <TabsTrigger value="users">ผู้ใช้งาน</TabsTrigger>
-          <TabsTrigger value="services">บริการ</TabsTrigger>
-          <TabsTrigger value="system">ระบบ</TabsTrigger>
+          <TabsTrigger value="executive">Executive Overview</TabsTrigger>
+          <TabsTrigger value="license">License & Quota</TabsTrigger>
+          <TabsTrigger value="services">Service Usage</TabsTrigger>
+          <TabsTrigger value="mail-relay">Mail Relay</TabsTrigger>
+          <TabsTrigger value="inactive">Inactive Accounts</TabsTrigger>
+          <TabsTrigger value="contacts">Admin Contacts</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="dashboard" className="space-y-6">
-          {/* Key Metrics */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {mockMetrics.map((metric) => {
-              const Icon = metric.icon;
+        {/* Executive Overview Tab */}
+        <TabsContent value="executive" className="space-y-6">
+          {/* KPI Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            {mockKPIData.map((kpi, index) => {
+              const Icon = kpi.icon;
               return (
-                <Card key={metric.id}>
+                <Card key={index}>
                   <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">{metric.title}</CardTitle>
+                    <CardTitle className="text-sm font-medium">{kpi.title}</CardTitle>
                     <Icon className="h-4 w-4 text-muted-foreground" />
                   </CardHeader>
                   <CardContent>
-                    <div className="text-2xl font-bold">{metric.value}</div>
+                    <div className="text-2xl font-bold">{kpi.value}</div>
                     <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                      {getChangeIcon(metric.changeType)}
-                      <span className={metric.changeType === 'increase' ? 'text-green-600' : 'text-red-600'}>
-                        {metric.change > 0 ? '+' : ''}{metric.change}%
-                      </span>
-                      <span>จากเมื่อวาน</span>
+                      <TrendingUp className="h-4 w-4 text-green-600" />
+                      <span className="text-green-600">+{kpi.change}%</span>
+                      <span>จาก 90 วันที่ผ่านมา</span>
                     </div>
                   </CardContent>
                 </Card>
@@ -339,141 +472,283 @@ export default function Reports() {
             })}
           </div>
 
-          {/* Quick Stats */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Visualizations */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Service Usage Donut Chart */}
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <Users className="h-5 w-5" />
-                  ผู้ใช้งานออนไลน์
+                  <PieChart className="h-5 w-5" />
+                  การใช้งานแยกตามบริการ
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-bold text-green-600">{totalActiveUsers.toLocaleString()}</div>
-                <div className="text-sm text-muted-foreground">ผู้ใช้งานที่เข้าสู่ระบบ</div>
-                <Progress value={75} className="mt-2" />
+                <ChartContainer
+                  config={{
+                    email: { label: "อีเมล", color: "hsl(var(--chart-1))" },
+                    chat: { label: "แชท", color: "hsl(var(--chart-2))" },
+                    meeting: { label: "ประชุม", color: "hsl(var(--chart-3))" },
+                  }}
+                  className="h-[300px]"
+                >
+                  <ResponsiveContainer width="100%" height="100%">
+                    <RechartsPieChart>
+                      <Pie
+                        data={mockServiceUsageChart}
+                        dataKey="value"
+                        nameKey="name"
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={60}
+                        outerRadius={120}
+                        fill="#8884d8"
+                      >
+                        {mockServiceUsageChart.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                        ))}
+                      </Pie>
+                      <Tooltip />
+                      <Legend />
+                    </RechartsPieChart>
+                  </ResponsiveContainer>
+                </ChartContainer>
               </CardContent>
             </Card>
 
+            {/* Growth Trend Chart */}
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <CheckCircle className="h-5 w-5" />
-                  อัปไทม์โดยเฉลี่ย
+                  <LineChart className="h-5 w-5" />
+                  แนวโน้มการใช้งาน 90 วัน
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-bold text-blue-600">{avgUptime.toFixed(1)}%</div>
-                <div className="text-sm text-muted-foreground">ความเสถียรของระบบ</div>
-                <Progress value={avgUptime} className="mt-2" />
+                <ChartContainer
+                  config={{
+                    users: { label: "ผู้ใช้งาน", color: "hsl(var(--chart-1))" },
+                  }}
+                  className="h-[300px]"
+                >
+                  <ResponsiveContainer width="100%" height="100%">
+                    <AreaChart data={mockUserActivity}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="date" />
+                      <YAxis />
+                      <Tooltip />
+                      <Area 
+                        type="monotone" 
+                        dataKey="activeUsers" 
+                        stroke="hsl(var(--chart-1))" 
+                        fill="hsl(var(--chart-1))" 
+                        fillOpacity={0.3}
+                      />
+                    </AreaChart>
+                  </ResponsiveContainer>
+                </ChartContainer>
               </CardContent>
             </Card>
+          </div>
+        </TabsContent>
 
+        {/* License & Quota Tab */}
+        <TabsContent value="license" className="space-y-6">
+          {/* License Overview Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <AlertCircle className="h-5 w-5" />
-                  ปัญหาวิกฤต
-                </CardTitle>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm">โควตารวม</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-bold text-red-600">{criticalIssues}</div>
-                <div className="text-sm text-muted-foreground">ต้องแก้ไขด่วน</div>
-                {criticalIssues > 0 && (
-                  <Button variant="outline" size="sm" className="mt-2">
-                    <Eye className="h-4 w-4 mr-2" />
-                    ดูรายละเอียด
-                  </Button>
-                )}
+                <div className="text-2xl font-bold">4,500</div>
+                <p className="text-xs text-muted-foreground">ใบอนุญาต</p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm">โควตาที่ใช้</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-blue-600">3,380</div>
+                <p className="text-xs text-muted-foreground">ใบอนุญาต</p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm">อัตราการใช้งาน</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-orange-600">75.1%</div>
+                <Progress value={75.1} className="mt-2" />
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm">จำนวนองค์กร</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-green-600">45</div>
+                <p className="text-xs text-muted-foreground">องค์กร</p>
               </CardContent>
             </Card>
           </div>
 
-          {/* Recent Activity */}
-          <Card>
-            <CardHeader>
-              <CardTitle>กิจกรรมล่าสุด</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {[
-                  { time: '15:30', activity: 'ผู้ใช้ใหม่ 5 คน ลงทะเบียนเข้าระบบ', type: 'info' },
-                  { time: '14:45', activity: 'การประชุมออนไลน์ดำเนินการ 23 ห้อง', type: 'success' },
-                  { time: '13:20', activity: 'Email Service มีปัญหาการเชื่อมต่อ', type: 'warning' },
-                  { time: '12:15', activity: 'อัปเดตระบบ License Management เรียบร้อย', type: 'success' },
-                  { time: '11:30', activity: 'Storage Quota เกิน 80% ใน 3 องค์กร', type: 'warning' }
-                ].map((activity, index) => (
-                  <div key={index} className="flex items-start gap-3 p-3 border rounded-lg">
-                    <div className="flex items-center gap-2 text-sm">
-                      <Clock className="h-4 w-4 text-muted-foreground" />
-                      <span className="text-muted-foreground">{activity.time}</span>
-                    </div>
-                    <div className="flex-1">
-                      <p className="text-sm">{activity.activity}</p>
-                    </div>
-                    <Badge variant={activity.type === 'success' ? 'default' : activity.type === 'warning' ? 'secondary' : 'outline'}>
-                      {activity.type === 'success' ? 'สำเร็จ' : activity.type === 'warning' ? 'เตือน' : 'ข้อมูล'}
-                    </Badge>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
+          {/* License Allocation Chart */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <BarChart className="h-5 w-5" />
+                  การจัดสรรใบอนุญาตตามบริการ
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ChartContainer
+                  config={{
+                    used: { label: "ใช้งาน", color: "hsl(var(--chart-1))" },
+                    available: { label: "เหลือ", color: "hsl(var(--chart-2))" },
+                  }}
+                  className="h-[300px]"
+                >
+                  <ResponsiveContainer width="100%" height="100%">
+                    <RechartsBarChart data={mockLicenseData}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="service" />
+                      <YAxis />
+                      <Tooltip />
+                      <Legend />
+                      <Bar dataKey="used" fill="hsl(var(--chart-1))" />
+                      <Bar dataKey="available" fill="hsl(var(--chart-2))" />
+                    </RechartsBarChart>
+                  </ResponsiveContainer>
+                </ChartContainer>
+              </CardContent>
+            </Card>
 
-        <TabsContent value="users" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>กิจกรรมผู้ใช้งานรายวัน</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>วันที่</TableHead>
-                    <TableHead>ผู้ใช้งานออนไลน์</TableHead>
-                    <TableHead>ผู้ใช้ใหม่</TableHead>
-                    <TableHead>จำนวนล็อกอิน</TableHead>
-                    <TableHead>เวลาออนไลน์เฉลี่ย</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {mockUserActivity.map((activity, index) => (
-                    <TableRow key={index}>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <Calendar className="h-4 w-4" />
-                          {new Date(activity.date).toLocaleDateString('th-TH')}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <Users className="h-4 w-4 text-green-600" />
-                          <span className="font-medium">{activity.activeUsers.toLocaleString()}</span>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="outline">+{activity.newUsers}</Badge>
-                      </TableCell>
-                      <TableCell>{activity.totalLogins.toLocaleString()}</TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <Clock className="h-4 w-4" />
-                          {activity.avgSessionTime} นาที
-                        </div>
-                      </TableCell>
+            {/* Top Organizations Table */}
+            <Card>
+              <CardHeader>
+                <CardTitle>องค์กรที่ใช้โควตาสูงสุด 5 อันดับ</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>องค์กร</TableHead>
+                      <TableHead>ใช้งาน</TableHead>
+                      <TableHead>อัตรา</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
+                  </TableHeader>
+                  <TableBody>
+                    {mockOrganizationData.slice(0, 5).map((org, index) => (
+                      <TableRow key={index}>
+                        <TableCell>
+                          <div className="space-y-1">
+                            <div className="font-medium">{org.name}</div>
+                            <div className="text-xs text-muted-foreground">{org.domain}</div>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="text-sm">
+                            {org.licenses_used}/{org.total_licenses}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center space-x-2">
+                            <Progress value={(org.licenses_used / org.total_licenses) * 100} className="w-16" />
+                            <span className="text-sm">{Math.round((org.licenses_used / org.total_licenses) * 100)}%</span>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
+          </div>
         </TabsContent>
 
+        {/* Service Usage Tab */}
         <TabsContent value="services" className="space-y-6">
+          {/* Service Usage Overview Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm">อีเมลส่ง</CardTitle>
+                <Mail className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">45,230</div>
+                <p className="text-xs text-muted-foreground">ฉบับ</p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm">อีเมลรับ</CardTitle>
+                <Mail className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">52,890</div>
+                <p className="text-xs text-muted-foreground">ฉบับ</p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm">ข้อความแชท</CardTitle>
+                <MessageSquare className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">89,450</div>
+                <p className="text-xs text-muted-foreground">ข้อความ</p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm">นาทีประชุม</CardTitle>
+                <Video className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">12,340</div>
+                <p className="text-xs text-muted-foreground">นาที</p>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Email Usage Trend Chart */}
           <Card>
             <CardHeader>
-              <CardTitle>การใช้งานบริการ</CardTitle>
+              <CardTitle className="flex items-center gap-2">
+                <BarChart className="h-5 w-5" />
+                แนวโน้มการใช้งานอีเมล
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ChartContainer
+                config={{
+                  sent: { label: "ส่ง", color: "hsl(var(--chart-1))" },
+                  received: { label: "รับ", color: "hsl(var(--chart-2))" },
+                }}
+                className="h-[300px]"
+              >
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={mockMailRelayData}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="date" />
+                    <YAxis />
+                    <Tooltip />
+                    <Legend />
+                    <Area type="monotone" dataKey="accepted" stackId="1" stroke="hsl(var(--chart-1))" fill="hsl(var(--chart-1))" fillOpacity={0.6} />
+                    <Area type="monotone" dataKey="rejected" stackId="2" stroke="hsl(var(--chart-2))" fill="hsl(var(--chart-2))" fillOpacity={0.6} />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </ChartContainer>
+            </CardContent>
+          </Card>
+
+          {/* Service Usage by Account Table */}
+          <Card>
+            <CardHeader>
+              <CardTitle>การใช้งานรายบัญชี</CardTitle>
             </CardHeader>
             <CardContent>
               <Table>
@@ -526,61 +801,168 @@ export default function Reports() {
           </Card>
         </TabsContent>
 
-        <TabsContent value="system" className="space-y-6">
+        {/* Mail Relay Tab */}
+        <TabsContent value="mail-relay" className="space-y-6">
+          {/* Mail Relay Stats Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm">Accepted</CardTitle>
+                <CheckCircle className="h-4 w-4 text-green-600" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-green-600">16,230</div>
+                <p className="text-xs text-muted-foreground">อีเมล</p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm">Rejected</CardTitle>
+                <AlertCircle className="h-4 w-4 text-red-600" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-red-600">201</div>
+                <p className="text-xs text-muted-foreground">อีเมล</p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm">Success Rate</CardTitle>
+                <TrendingUp className="h-4 w-4 text-blue-600" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-blue-600">98.8%</div>
+                <Progress value={98.8} className="mt-2" />
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm">Relay Systems</CardTitle>
+                <Activity className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">3</div>
+                <p className="text-xs text-muted-foreground">ระบบ</p>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Mail Relay Charts */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Accepted/Rejected Trend */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <BarChart className="h-5 w-5" />
+                  แนวโน้ม Accepted/Rejected รายวัน
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ChartContainer
+                  config={{
+                    accepted: { label: "Accepted", color: "hsl(var(--chart-1))" },
+                    rejected: { label: "Rejected", color: "hsl(var(--chart-3))" },
+                  }}
+                  className="h-[300px]"
+                >
+                  <ResponsiveContainer width="100%" height="100%">
+                    <AreaChart data={mockMailRelayData}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="date" />
+                      <YAxis />
+                      <Tooltip />
+                      <Legend />
+                      <Area type="monotone" dataKey="accepted" stroke="hsl(var(--chart-1))" fill="hsl(var(--chart-1))" fillOpacity={0.6} />
+                      <Area type="monotone" dataKey="rejected" stroke="hsl(var(--chart-3))" fill="hsl(var(--chart-3))" fillOpacity={0.6} />
+                    </AreaChart>
+                  </ResponsiveContainer>
+                </ChartContainer>
+              </CardContent>
+            </Card>
+
+            {/* Success Rate Trend */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <LineChart className="h-5 w-5" />
+                  อัตราความสำเร็จรายวัน
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ChartContainer
+                  config={{
+                    success_rate: { label: "Success Rate", color: "hsl(var(--chart-2))" },
+                  }}
+                  className="h-[300px]"
+                >
+                  <ResponsiveContainer width="100%" height="100%">
+                    <RechartsLineChart data={mockMailRelayData}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="date" />
+                      <YAxis />
+                      <Tooltip />
+                      <Line type="monotone" dataKey="success_rate" stroke="hsl(var(--chart-2))" strokeWidth={2} />
+                    </RechartsLineChart>
+                  </ResponsiveContainer>
+                </ChartContainer>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Relay Systems Table */}
           <Card>
             <CardHeader>
-              <CardTitle>สุขภาพระบบ</CardTitle>
-              <p className="text-sm text-muted-foreground">
-                ติดตามสถานะและประสิทธิภาพของส่วนประกอบระบบ
-              </p>
+              <CardTitle className="flex items-center gap-2">
+                <Activity className="h-5 w-5" />
+                ระบบ Relay และผู้ดูแล
+              </CardTitle>
             </CardHeader>
             <CardContent>
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>ส่วนประกอบ</TableHead>
+                    <TableHead>ระบบ</TableHead>
+                    <TableHead>ผู้ดูแล</TableHead>
+                    <TableHead>ติดต่อ</TableHead>
                     <TableHead>สถานะ</TableHead>
-                    <TableHead>อัปไทม์</TableHead>
-                    <TableHead>เวลาตอบสนง</TableHead>
-                    <TableHead>ตรวจสอบล่าสุด</TableHead>
+                    <TableHead>การดำเนินการ</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {mockSystemHealth.map((health, index) => (
+                  {mockRelaySystemsData.map((system, index) => (
                     <TableRow key={index}>
                       <TableCell>
-                        <div className="flex items-center gap-2">
-                          <Activity className="h-4 w-4" />
-                          <span className="font-medium">{health.component}</span>
-                        </div>
+                        <div className="font-medium">{system.name}</div>
                       </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          {health.status === 'Healthy' && <CheckCircle className="h-4 w-4 text-green-600" />}
-                          {health.status === 'Warning' && <AlertCircle className="h-4 w-4 text-yellow-600" />}
-                          {health.status === 'Critical' && <AlertCircle className="h-4 w-4 text-red-600" />}
-                          {getStatusBadge(health.status)}
-                        </div>
-                      </TableCell>
+                      <TableCell>{system.admin}</TableCell>
                       <TableCell>
                         <div className="space-y-1">
-                          <div className="flex justify-between text-sm">
-                            <span>{health.uptime}%</span>
+                          <div className="flex items-center gap-2">
+                            <Mail className="h-3 w-3" />
+                            <span className="text-xs">{system.email}</span>
                           </div>
-                          <Progress value={health.uptime} className="h-2" />
+                          <div className="flex items-center gap-2">
+                            <Phone className="h-3 w-3" />
+                            <span className="text-xs">{system.phone}</span>
+                          </div>
                         </div>
                       </TableCell>
                       <TableCell>
-                        <Badge variant={health.responseTime > 100 ? "destructive" : "outline"}>
-                          {health.responseTime}ms
+                        <Badge variant={
+                          system.status === 'ปกติ' ? 'default' : 
+                          system.status === 'ต้องติดตาม' ? 'secondary' : 'destructive'
+                        }>
+                          {system.status}
                         </Badge>
                       </TableCell>
                       <TableCell>
-                        <div className="flex items-center gap-2">
-                          <Clock className="h-4 w-4" />
-                          <span className="text-sm">
-                            {new Date(health.lastCheck).toLocaleString('th-TH')}
-                          </span>
+                        <div className="flex gap-1">
+                          <Button size="sm" variant="outline">
+                            <Mail className="h-3 w-3" />
+                          </Button>
+                          <Button size="sm" variant="outline">
+                            <Phone className="h-3 w-3" />
+                          </Button>
                         </div>
                       </TableCell>
                     </TableRow>
@@ -589,45 +971,271 @@ export default function Reports() {
               </Table>
             </CardContent>
           </Card>
+        </TabsContent>
 
-          {/* System Alerts */}
+        {/* Inactive Accounts Tab */}
+        <TabsContent value="inactive" className="space-y-6">
+          {/* Inactive Stats Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm">Inactive {'>'} 15 วัน</CardTitle>
+                <UserX className="h-4 w-4 text-yellow-600" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-yellow-600">28</div>
+                <p className="text-xs text-muted-foreground">บัญชี</p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm">Inactive {'>'} 30 วัน</CardTitle>
+                <UserX className="h-4 w-4 text-orange-600" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-orange-600">15</div>
+                <p className="text-xs text-muted-foreground">บัญชี</p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm">Inactive {'>'} 90 วัน</CardTitle>
+                <UserX className="h-4 w-4 text-red-600" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-red-600">8</div>
+                <p className="text-xs text-muted-foreground">บัญชี</p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm">รวมทั้งหมด</CardTitle>
+                <Users className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">51</div>
+                <p className="text-xs text-muted-foreground">บัญชี</p>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Action Recommendations */}
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <AlertCircle className="h-5 w-5" />
-                การแจ้งเตือนระบบ
+                <FileText className="h-5 w-5" />
+                คำแนะนำการดำเนินการ
               </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
-                {mockSystemHealth.filter(h => h.status !== 'Healthy').map((alert, index) => (
-                  <div key={index} className={`p-4 border rounded-lg ${
-                    alert.status === 'Critical' ? 'border-red-200 bg-red-50' : 'border-yellow-200 bg-yellow-50'
-                  }`}>
-                    <div className="flex items-start justify-between">
-                      <div className="space-y-1">
-                        <div className="flex items-center gap-2">
-                          <AlertCircle className={`h-4 w-4 ${
-                            alert.status === 'Critical' ? 'text-red-600' : 'text-yellow-600'
-                          }`} />
-                          <span className="font-medium">{alert.component}</span>
-                          {getStatusBadge(alert.status)}
-                        </div>
-                        <p className="text-sm text-muted-foreground">
-                          อัปไทม์: {alert.uptime}% | เวลาตอบสนง: {alert.responseTime}ms
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          ตรวจสอบล่าสุด: {new Date(alert.lastCheck).toLocaleString('th-TH')}
-                        </p>
-                      </div>
-                      <Button variant="outline" size="sm">
-                        <Eye className="h-4 w-4 mr-2" />
-                        ตรวจสอบ
-                      </Button>
+                <div className="p-4 border rounded-lg bg-yellow-50 border-yellow-200">
+                  <div className="flex items-start gap-3">
+                    <AlertCircle className="h-5 w-5 text-yellow-600 mt-0.5" />
+                    <div>
+                      <h4 className="font-medium">บัญชีไม่ได้ใช้งาน {'>'} 30 วัน</h4>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        แนะนำให้ติดต่อผู้ใช้งานเพื่อยืนยันการใช้งานต่อ หรือพิจารณาระงับบัญชี
+                      </p>
                     </div>
                   </div>
-                ))}
+                </div>
+                <div className="p-4 border rounded-lg bg-red-50 border-red-200">
+                  <div className="flex items-start gap-3">
+                    <AlertCircle className="h-5 w-5 text-red-600 mt-0.5" />
+                    <div>
+                      <h4 className="font-medium">บัญชีไม่ได้ใช้งาน {'>'} 90 วัน</h4>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        ควรพิจารณาปิดบัญชีและเรียกคืนใบอนุญาตเพื่อจัดสรรให้ผู้ใช้งานใหม่
+                      </p>
+                    </div>
+                  </div>
+                </div>
               </div>
+            </CardContent>
+          </Card>
+
+          {/* Inactive Accounts Table */}
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <CardTitle className="flex items-center gap-2">
+                  <UserX className="h-5 w-5" />
+                  รายชื่อบัญชีไม่ได้ใช้งาน
+                </CardTitle>
+                <Button>
+                  <Download className="h-4 w-4 mr-2" />
+                  ส่งออก CSV
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>ชื่อผู้ใช้</TableHead>
+                    <TableHead>อีเมล</TableHead>
+                    <TableHead>หน่วยงาน</TableHead>
+                    <TableHead>ล็อกอินล่าสุด</TableHead>
+                    <TableHead>วันที่ไม่ได้ใช้</TableHead>
+                    <TableHead>สถานะ</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {mockInactiveAccounts.map((account, index) => (
+                    <TableRow key={index}>
+                      <TableCell>
+                        <div className="font-medium">{account.username}</div>
+                      </TableCell>
+                      <TableCell>{account.email}</TableCell>
+                      <TableCell>{account.department}</TableCell>
+                      <TableCell>{new Date(account.last_login).toLocaleDateString('th-TH')}</TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <Clock className="h-4 w-4" />
+                          {account.days_inactive} วัน
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant={
+                          account.days_inactive > 90 ? 'destructive' : 
+                          account.days_inactive > 30 ? 'secondary' : 'outline'
+                        }>
+                          {account.days_inactive > 90 ? 'ต้องปิดบัญชี' : 
+                           account.days_inactive > 30 ? 'ต้องติดตาม' : 'เตือน'}
+                        </Badge>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Admin Contacts Tab */}
+        <TabsContent value="contacts" className="space-y-6">
+          {/* Admin Contact Stats Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm">องค์กรทั้งหมด</CardTitle>
+                <Building className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">45</div>
+                <p className="text-xs text-muted-foreground">องค์กร</p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm">ผู้ดูแลทั้งหมด</CardTitle>
+                <Users className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">52</div>
+                <p className="text-xs text-muted-foreground">คน</p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm">ค่าเฉลี่ย</CardTitle>
+                <Users className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">1.16</div>
+                <p className="text-xs text-muted-foreground">ผู้ดูแลต่อองค์กร</p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm">ความครอบคลุม</CardTitle>
+                <CheckCircle className="h-4 w-4 text-green-600" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-green-600">100%</div>
+                <p className="text-xs text-muted-foreground">องค์กรมีผู้ดูแล</p>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Admin Contacts Table */}
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <CardTitle className="flex items-center gap-2">
+                  <Building className="h-5 w-5" />
+                  ข้อมูลติดต่อผู้ดูแลองค์กร
+                </CardTitle>
+                <div className="flex gap-2">
+                  <Button variant="outline">
+                    <Download className="h-4 w-4 mr-2" />
+                    ส่งออก CSV
+                  </Button>
+                  <Button variant="outline">
+                    <FileText className="h-4 w-4 mr-2" />
+                    รายงานตามองค์กร
+                  </Button>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>องค์กร</TableHead>
+                    <TableHead>ผู้ดูแล</TableHead>
+                    <TableHead>ข้อมูลติดต่อ</TableHead>
+                    <TableHead>ผู้ใช้งาน</TableHead>
+                    <TableHead>การดำเนินการ</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {mockAdminContacts.map((contact, index) => (
+                    <TableRow key={index}>
+                      <TableCell>
+                        <div className="font-medium">{contact.organization}</div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <Users className="h-4 w-4" />
+                          {contact.admin_name}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2">
+                            <Mail className="h-3 w-3" />
+                            <span className="text-xs">{contact.email}</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Phone className="h-3 w-3" />
+                            <span className="text-xs">{contact.phone}</span>
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="outline">
+                          {contact.users_count} คน
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex gap-1">
+                          <Button size="sm" variant="outline" title="ส่งอีเมล">
+                            <Mail className="h-3 w-3" />
+                          </Button>
+                          <Button size="sm" variant="outline" title="โทรศัพท์">
+                            <Phone className="h-3 w-3" />
+                          </Button>
+                          <Button size="sm" variant="outline" title="ส่งข้อความ">
+                            <MessageSquare className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
             </CardContent>
           </Card>
         </TabsContent>
