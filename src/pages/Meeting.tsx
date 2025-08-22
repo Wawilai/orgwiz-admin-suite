@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -13,8 +13,7 @@ import { Switch } from '@/components/ui/switch';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Separator } from '@/components/ui/separator';
-import { DatePicker } from '@/components/ui/date-picker';
-import { DialogDescription } from '@/components/ui/dialog';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { toast } from '@/hooks/use-toast';
 import { 
   Video, 
@@ -39,7 +38,15 @@ import {
   UserPlus,
   UserMinus,
   Vote,
-  FileText
+  FileText,
+  MessageSquare,
+  Hand,
+  MicOff,
+  CameraOff,
+  PhoneOff,
+  Send,
+  Eye,
+  EyeOff
 } from 'lucide-react';
 
 interface Meeting {
@@ -47,7 +54,9 @@ interface Meeting {
   title: string;
   description: string;
   host: string;
+  hostId: string;
   participants: Participant[];
+  invitedEmails: string[];
   scheduledDate: string;
   scheduledTime: string;
   duration: number;
@@ -60,6 +69,14 @@ interface Meeting {
   maxParticipants: number;
   createdAt: string;
   recordingUrl?: string;
+  meetingLink: string;
+  chatMessages: ChatMessage[];
+  polls: Poll[];
+  sharedScreen?: {
+    userId: string;
+    userName: string;
+    isActive: boolean;
+  };
 }
 
 interface Participant {
@@ -72,6 +89,18 @@ interface Participant {
   leaveTime?: string;
   isMuted: boolean;
   isVideoOn: boolean;
+  isHandRaised: boolean;
+  connectionQuality: 'Good' | 'Fair' | 'Poor';
+}
+
+interface ChatMessage {
+  id: string;
+  userId: string;
+  userName: string;
+  message: string;
+  timestamp: string;
+  isPrivate?: boolean;
+  recipientId?: string;
 }
 
 interface Poll {
@@ -90,6 +119,7 @@ const mockMeetings: Meeting[] = [
     title: 'ประชุมทีม IT ประจำสัปดาห์',
     description: 'ประชุมรายงานความคืบหน้าและวางแผนงาน',
     host: 'สมชาย ใจดี',
+    hostId: 'host1',
     participants: [
       {
         id: '1',
@@ -99,7 +129,9 @@ const mockMeetings: Meeting[] = [
         status: 'Joined',
         joinTime: '09:00',
         isMuted: false,
-        isVideoOn: true
+        isVideoOn: true,
+        isHandRaised: false,
+        connectionQuality: 'Good'
       },
       {
         id: '2',
@@ -109,9 +141,12 @@ const mockMeetings: Meeting[] = [
         status: 'Joined',
         joinTime: '09:02',
         isMuted: true,
-        isVideoOn: true
+        isVideoOn: true,
+        isHandRaised: true,
+        connectionQuality: 'Good'
       }
     ],
+    invitedEmails: ['somchai@company.com', 'napa@company.com', 'admin@company.com'],
     scheduledDate: '2024-01-25',
     scheduledTime: '09:00',
     duration: 60,
@@ -122,13 +157,32 @@ const mockMeetings: Meeting[] = [
     waitingRoom: true,
     status: 'Live',
     maxParticipants: 50,
-    createdAt: '2024-01-20'
+    createdAt: '2024-01-20',
+    meetingLink: 'https://meet.company.com/room-001',
+    chatMessages: [
+      {
+        id: '1',
+        userId: '1',
+        userName: 'สมชาย ใจดี',
+        message: 'สวัสดีครับทุกคน',
+        timestamp: '09:05'
+      },
+      {
+        id: '2',
+        userId: '2',
+        userName: 'นภา สว่างใส',
+        message: 'สวัสดีค่ะ',
+        timestamp: '09:06'
+      }
+    ],
+    polls: []
   },
   {
     id: '2',
     title: 'Demo โครงการใหม่',
     description: 'นำเสนอระบบใหม่ให้ลูกค้า',
     host: 'นภา สว่างใส',
+    hostId: 'host2',
     participants: [
       {
         id: '2',
@@ -137,9 +191,12 @@ const mockMeetings: Meeting[] = [
         role: 'Host',
         status: 'Invited',
         isMuted: false,
-        isVideoOn: false
+        isVideoOn: false,
+        isHandRaised: false,
+        connectionQuality: 'Good'
       }
     ],
+    invitedEmails: ['napa@company.com', 'client@customer.com'],
     scheduledDate: '2024-01-26',
     scheduledTime: '14:00',
     duration: 120,
@@ -150,7 +207,10 @@ const mockMeetings: Meeting[] = [
     waitingRoom: false,
     status: 'Scheduled',
     maxParticipants: 20,
-    createdAt: '2024-01-22'
+    createdAt: '2024-01-22',
+    meetingLink: 'https://meet.company.com/room-002',
+    chatMessages: [],
+    polls: []
   }
 ];
 
@@ -172,7 +232,14 @@ export default function Meeting() {
   const [activeMeeting, setActiveMeeting] = useState<Meeting | null>(null);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isPollDialogOpen, setIsPollDialogOpen] = useState(false);
+  const [isInviteDialogOpen, setIsInviteDialogOpen] = useState(false);
+  const [isChatOpen, setIsChatOpen] = useState(false);
+  const [isRecording, setIsRecording] = useState(false);
+  const [isScreenSharing, setIsScreenSharing] = useState(false);
   const [currentTab, setCurrentTab] = useState('meetings');
+  const [chatMessage, setChatMessage] = useState('');
+  const [inviteEmails, setInviteEmails] = useState('');
+  const [currentUser] = useState({ id: 'current', name: 'ผู้ใช้ปัจจุบัน', isMuted: false, isVideoOn: true });
   const [formData, setFormData] = useState<Partial<Meeting>>({
     title: '',
     description: '',
@@ -181,7 +248,8 @@ export default function Meeting() {
     duration: 60,
     password: '',
     waitingRoom: true,
-    maxParticipants: 50
+    maxParticipants: 50,
+    invitedEmails: []
   });
   const [pollData, setPollData] = useState({
     question: '',
@@ -268,7 +336,8 @@ export default function Meeting() {
       duration: 60,
       password: '',
       waitingRoom: true,
-      maxParticipants: 50
+      maxParticipants: 50,
+      invitedEmails: []
     });
   };
 
@@ -312,6 +381,154 @@ export default function Meeting() {
       const newOptions = pollData.options.filter((_, i) => i !== index);
       setPollData({ ...pollData, options: newOptions });
     }
+  };
+
+  // เพิ่ม functions ใหม่สำหรับฟีเจอร์ขั้นสูง
+  const handleSendChatMessage = () => {
+    if (!chatMessage.trim() || !activeMeeting) return;
+    
+    const newMessage: ChatMessage = {
+      id: Date.now().toString(),
+      userId: currentUser.id,
+      userName: currentUser.name,
+      message: chatMessage,
+      timestamp: new Date().toLocaleTimeString('th-TH', { 
+        hour: '2-digit', 
+        minute: '2-digit' 
+      })
+    };
+    
+    const updatedMeeting = {
+      ...activeMeeting,
+      chatMessages: [...activeMeeting.chatMessages, newMessage]
+    };
+    
+    setActiveMeeting(updatedMeeting);
+    setMeetings(meetings.map(m => m.id === activeMeeting.id ? updatedMeeting : m));
+    setChatMessage('');
+    
+    toast({
+      title: "ข้อความถูกส่งแล้ว",
+      description: "ข้อความของคุณถูกส่งไปยังผู้เข้าร่วมทั้งหมด",
+    });
+  };
+
+  const handleToggleRecording = () => {
+    if (!activeMeeting) return;
+    
+    const updatedMeeting = {
+      ...activeMeeting,
+      isRecording: !activeMeeting.isRecording
+    };
+    
+    setActiveMeeting(updatedMeeting);
+    setMeetings(meetings.map(m => m.id === activeMeeting.id ? updatedMeeting : m));
+    setIsRecording(!isRecording);
+    
+    toast({
+      title: isRecording ? "หยุดบันทึก" : "เริ่มบันทึก",
+      description: isRecording ? "การบันทึกถูกหยุดแล้ว" : "เริ่มบันทึกการประชุมแล้ว",
+    });
+  };
+
+  const handleToggleScreenShare = () => {
+    if (!activeMeeting) return;
+    
+    setIsScreenSharing(!isScreenSharing);
+    
+    const updatedMeeting = {
+      ...activeMeeting,
+      sharedScreen: !isScreenSharing ? {
+        userId: currentUser.id,
+        userName: currentUser.name,
+        isActive: true
+      } : undefined
+    };
+    
+    setActiveMeeting(updatedMeeting);
+    setMeetings(meetings.map(m => m.id === activeMeeting.id ? updatedMeeting : m));
+    
+    toast({
+      title: isScreenSharing ? "หยุดแชร์หน้าจอ" : "เริ่มแชร์หน้าจอ",
+      description: isScreenSharing ? "หยุดแชร์หน้าจอแล้ว" : "เริ่มแชร์หน้าจอแล้ว",
+    });
+  };
+
+  const handleInviteParticipants = () => {
+    if (!inviteEmails.trim() || !activeMeeting) return;
+    
+    const emailList = inviteEmails.split(',').map(email => email.trim()).filter(email => email);
+    
+    const updatedMeeting = {
+      ...activeMeeting,
+      invitedEmails: [...new Set([...activeMeeting.invitedEmails, ...emailList])]
+    };
+    
+    setActiveMeeting(updatedMeeting);
+    setMeetings(meetings.map(m => m.id === activeMeeting.id ? updatedMeeting : m));
+    setIsInviteDialogOpen(false);
+    setInviteEmails('');
+    
+    toast({
+      title: "ส่งคำเชิญแล้ว",
+      description: `ส่งคำเชิญไปยัง ${emailList.length} อีเมลแล้ว`,
+    });
+  };
+
+  const handleCopyMeetingLink = (meetingLink: string) => {
+    navigator.clipboard.writeText(meetingLink);
+    toast({
+      title: "คัดลอกลิงก์แล้ว",
+      description: "ลิงก์การประชุมถูกคัดลอกไปยังคลิปบอร์ดแล้ว",
+    });
+  };
+
+  const handleToggleMic = () => {
+    if (!activeMeeting) return;
+    
+    const updatedParticipants = activeMeeting.participants.map(p => 
+      p.id === currentUser.id ? { ...p, isMuted: !p.isMuted } : p
+    );
+    
+    const updatedMeeting = {
+      ...activeMeeting,
+      participants: updatedParticipants
+    };
+    
+    setActiveMeeting(updatedMeeting);
+    setMeetings(meetings.map(m => m.id === activeMeeting.id ? updatedMeeting : m));
+  };
+
+  const handleToggleVideo = () => {
+    if (!activeMeeting) return;
+    
+    const updatedParticipants = activeMeeting.participants.map(p => 
+      p.id === currentUser.id ? { ...p, isVideoOn: !p.isVideoOn } : p
+    );
+    
+    const updatedMeeting = {
+      ...activeMeeting,
+      participants: updatedParticipants
+    };
+    
+    setActiveMeeting(updatedMeeting);
+    setMeetings(meetings.map(m => m.id === activeMeeting.id ? updatedMeeting : m));
+  };
+
+  const handleRaiseHand = () => {
+    if (!activeMeeting) return;
+    
+    const updatedParticipants = activeMeeting.participants.map(p => 
+      p.id === currentUser.id ? { ...p, isHandRaised: !p.isHandRaised } : p
+    );
+    
+    const updatedMeeting = {
+      ...activeMeeting,
+      participants: updatedParticipants
+    };
+    
+    setActiveMeeting(updatedMeeting);
+    setMeetings(meetings.map(m => m.id === activeMeeting.id ? updatedMeeting : m));
   };
 
   return (
@@ -570,7 +787,7 @@ export default function Meeting() {
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent>
-                              <DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => handleCopyMeetingLink(meeting.meetingLink)}>
                                 <Copy className="mr-2 h-4 w-4" />
                                 คัดลอกลิงก์
                               </DropdownMenuItem>
@@ -619,10 +836,79 @@ export default function Meeting() {
                         )}
                       </CardTitle>
                       <div className="flex gap-2">
-                        <Button variant="outline" size="sm">
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={handleToggleScreenShare}
+                          className={isScreenSharing ? 'bg-green-100' : ''}
+                        >
                           <Share2 className="h-4 w-4 mr-2" />
-                          แชร์หน้าจอ
+                          {isScreenSharing ? 'หยุดแชร์' : 'แชร์หน้าจอ'}
                         </Button>
+                        
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={handleToggleRecording}
+                          className={isRecording ? 'bg-red-100' : ''}
+                        >
+                          {isRecording ? <Square className="h-4 w-4 mr-2" /> : <Play className="h-4 w-4 mr-2" />}
+                          {isRecording ? 'หยุดบันทึก' : 'บันทึก'}
+                        </Button>
+                        
+                        <Dialog open={isInviteDialogOpen} onOpenChange={setIsInviteDialogOpen}>
+                          <DialogTrigger asChild>
+                            <Button variant="outline" size="sm">
+                              <UserPlus className="h-4 w-4 mr-2" />
+                              เชิญ
+                            </Button>
+                          </DialogTrigger>
+                          <DialogContent>
+                            <DialogHeader>
+                              <DialogTitle>เชิญผู้เข้าร่วมประชุม</DialogTitle>
+                              <DialogDescription>
+                                ใส่อีเมลของผู้ที่ต้องการเชิญเข้าร่วมประชุม
+                              </DialogDescription>
+                            </DialogHeader>
+                            <div className="space-y-4">
+                              <div className="space-y-2">
+                                <Label htmlFor="inviteEmails">อีเมล (คั่นด้วยเครื่องหมายจุลภาค)</Label>
+                                <Textarea
+                                  id="inviteEmails"
+                                  value={inviteEmails}
+                                  onChange={(e) => setInviteEmails(e.target.value)}
+                                  placeholder="user1@example.com, user2@example.com"
+                                  rows={3}
+                                />
+                              </div>
+                              <div className="space-y-2">
+                                <Label>ลิงก์การประชุม</Label>
+                                <div className="flex gap-2">
+                                  <Input 
+                                    value={activeMeeting.meetingLink} 
+                                    readOnly 
+                                    className="flex-1"
+                                  />
+                                  <Button 
+                                    variant="outline" 
+                                    size="sm"
+                                    onClick={() => handleCopyMeetingLink(activeMeeting.meetingLink)}
+                                  >
+                                    <Copy className="h-4 w-4" />
+                                  </Button>
+                                </div>
+                              </div>
+                            </div>
+                            <div className="flex justify-end gap-2">
+                              <Button variant="outline" onClick={() => setIsInviteDialogOpen(false)}>
+                                ยกเลิก
+                              </Button>
+                              <Button onClick={handleInviteParticipants}>
+                                ส่งคำเชิญ
+                              </Button>
+                            </div>
+                          </DialogContent>
+                        </Dialog>
                         <Dialog open={isPollDialogOpen} onOpenChange={setIsPollDialogOpen}>
                           <DialogTrigger asChild>
                             <Button variant="outline" size="sm">
@@ -703,20 +989,83 @@ export default function Meeting() {
                     </div>
                     
                     {/* Controls */}
-                    <div className="flex justify-center gap-4 mt-4">
-                      <Button variant="outline">
-                        <Mic className="h-4 w-4" />
+                    <div className="flex justify-center gap-2 mt-4 flex-wrap">
+                      <Button 
+                        variant={currentUser.isMuted ? "destructive" : "outline"}
+                        onClick={handleToggleMic}
+                        size="sm"
+                      >
+                        {currentUser.isMuted ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
                       </Button>
-                      <Button variant="outline">
-                        <Camera className="h-4 w-4" />
+                      
+                      <Button 
+                        variant={currentUser.isVideoOn ? "outline" : "destructive"}
+                        onClick={handleToggleVideo}
+                        size="sm"
+                      >
+                        {currentUser.isVideoOn ? <Camera className="h-4 w-4" /> : <CameraOff className="h-4 w-4" />}
                       </Button>
-                      <Button variant="outline">
-                        <Monitor className="h-4 w-4" />
+                      
+                      <Button variant="outline" onClick={handleRaiseHand} size="sm">
+                        <Hand className="h-4 w-4" />
                       </Button>
-                      <Button variant="destructive">
+                      
+                      <Button 
+                        variant="outline"
+                        onClick={() => setIsChatOpen(!isChatOpen)}
+                        size="sm"
+                      >
+                        <MessageSquare className="h-4 w-4" />
+                      </Button>
+                      
+                      <Button variant="destructive" size="sm">
+                        <PhoneOff className="h-4 w-4" />
                         ออกจากห้อง
                       </Button>
                     </div>
+                    
+                    {/* Chat Section */}
+                    {isChatOpen && (
+                      <div className="mt-4 border rounded-lg p-4 bg-muted/50">
+                        <div className="flex items-center justify-between mb-3">
+                          <h4 className="font-medium">แชท</h4>
+                          <Button variant="ghost" size="sm" onClick={() => setIsChatOpen(false)}>
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                        </div>
+                        
+                        <ScrollArea className="h-48 mb-3">
+                          <div className="space-y-2">
+                            {activeMeeting.chatMessages.map((msg) => (
+                              <div key={msg.id} className="text-sm">
+                                <div className="flex justify-between items-start">
+                                  <span className="font-medium text-primary">{msg.userName}</span>
+                                  <span className="text-xs text-muted-foreground">{msg.timestamp}</span>
+                                </div>
+                                <div className="text-foreground mt-1">{msg.message}</div>
+                              </div>
+                            ))}
+                          </div>
+                        </ScrollArea>
+                        
+                        <div className="flex gap-2">
+                          <Input
+                            value={chatMessage}
+                            onChange={(e) => setChatMessage(e.target.value)}
+                            placeholder="พิมพ์ข้อความ..."
+                            onKeyPress={(e) => {
+                              if (e.key === 'Enter') {
+                                e.preventDefault();
+                                handleSendChatMessage();
+                              }
+                            }}
+                          />
+                          <Button onClick={handleSendChatMessage} size="sm">
+                            <Send className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
 
@@ -761,21 +1110,30 @@ export default function Meeting() {
                           <Avatar className="h-8 w-8">
                             <AvatarFallback>{participant.name.charAt(0)}</AvatarFallback>
                           </Avatar>
-                          <div>
-                            <div className="text-sm font-medium">{participant.name}</div>
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2">
+                              <div className="text-sm font-medium">{participant.name}</div>
+                              {participant.isHandRaised && (
+                                <Hand className="h-3 w-3 text-yellow-500" />
+                              )}
+                            </div>
                             <div className="text-xs text-muted-foreground">
                               {participant.role}
                               {participant.joinTime && ` • ${participant.joinTime}`}
                             </div>
                           </div>
                         </div>
-                        <div className="flex gap-1">
+                        <div className="flex items-center gap-1">
                           <div className={`w-2 h-2 rounded-full ${
                             participant.isMuted ? 'bg-red-500' : 'bg-green-500'
-                          }`} />
+                          }`} title={participant.isMuted ? 'ปิดเสียง' : 'เปิดเสียง'} />
                           <div className={`w-2 h-2 rounded-full ${
                             participant.isVideoOn ? 'bg-green-500' : 'bg-gray-500'
-                          }`} />
+                          }`} title={participant.isVideoOn ? 'เปิดวิดีโอ' : 'ปิดวิดีโอ'} />
+                          <div className={`w-2 h-2 rounded-full ${
+                            participant.connectionQuality === 'Good' ? 'bg-green-500' :
+                            participant.connectionQuality === 'Fair' ? 'bg-yellow-500' : 'bg-red-500'
+                          }`} title={`สัญญาณ: ${participant.connectionQuality}`} />
                         </div>
                       </div>
                     ))}
@@ -784,13 +1142,61 @@ export default function Meeting() {
                   <Separator className="my-4" />
                   
                   <div className="space-y-2">
-                    <Button variant="outline" size="sm" className="w-full">
-                      <UserPlus className="h-4 w-4 mr-2" />
-                      เชิญผู้เข้าร่วม
+                    <Dialog open={isInviteDialogOpen} onOpenChange={setIsInviteDialogOpen}>
+                      <DialogTrigger asChild>
+                        <Button variant="outline" size="sm" className="w-full">
+                          <UserPlus className="h-4 w-4 mr-2" />
+                          เชิญผู้เข้าร่วม
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent>
+                        <DialogHeader>
+                          <DialogTitle>เชิญผู้เข้าร่วมประชุม</DialogTitle>
+                          <DialogDescription>
+                            ใส่อีเมลของผู้ที่ต้องการเชิญเข้าร่วมประชุม
+                          </DialogDescription>
+                        </DialogHeader>
+                        <div className="space-y-4">
+                          <div className="space-y-2">
+                            <Label htmlFor="inviteEmails">อีเมล (คั่นด้วยเครื่องหมายจุลภาค)</Label>
+                            <Textarea
+                              id="inviteEmails"
+                              value={inviteEmails}
+                              onChange={(e) => setInviteEmails(e.target.value)}
+                              placeholder="user1@example.com, user2@example.com"
+                              rows={3}
+                            />
+                          </div>
+                        </div>
+                        <div className="flex justify-end gap-2">
+                          <Button variant="outline" onClick={() => setIsInviteDialogOpen(false)}>
+                            ยกเลิก
+                          </Button>
+                          <Button onClick={handleInviteParticipants}>
+                            ส่งคำเชิญ
+                          </Button>
+                        </div>
+                      </DialogContent>
+                    </Dialog>
+                    
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="w-full"
+                      onClick={() => handleCopyMeetingLink(activeMeeting.meetingLink)}
+                    >
+                      <Copy className="h-4 w-4 mr-2" />
+                      คัดลอกลิงก์
                     </Button>
+                    
                     <Button variant="outline" size="sm" className="w-full">
                       <FileText className="h-4 w-4 mr-2" />
                       รายงานการเข้าร่วม
+                    </Button>
+                    
+                    <Button variant="outline" size="sm" className="w-full">
+                      <Download className="h-4 w-4 mr-2" />
+                      ดาวน์โหลดบันทึก
                     </Button>
                   </div>
                 </CardContent>
