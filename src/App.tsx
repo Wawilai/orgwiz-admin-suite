@@ -23,6 +23,12 @@ import PackageManagement from "./pages/PackageManagement";
 import BillingManagement from "./pages/BillingManagement";
 import LicenseManagement from "./pages/LicenseManagement";
 import Reports from "./pages/Reports";
+import ExecutiveDetail from "./pages/reports/ExecutiveDetail";
+import LicenseDetail from "./pages/reports/LicenseDetail";
+import ServiceDetail from "./pages/reports/ServiceDetail";
+import MailRelayDetail from "./pages/reports/MailRelayDetail";
+import InactiveAccountsDetail from "./pages/reports/InactiveAccountsDetail";
+import AdminContactsDetail from "./pages/reports/AdminContactsDetail";
 import SystemSettings from "./pages/SystemSettings";
 import AccountSettings from "./pages/AccountSettings";
 import NotFound from "./pages/NotFound";
@@ -55,6 +61,12 @@ const App = () => (
           <Route path="/billing" element={<Layout><BillingManagement /></Layout>} />
           <Route path="/licenses" element={<Layout><LicenseManagement /></Layout>} />
           <Route path="/reports" element={<Layout><Reports /></Layout>} />
+          <Route path="/reports/executive-detail" element={<Layout><ExecutiveDetail /></Layout>} />
+          <Route path="/reports/license-detail" element={<Layout><LicenseDetail /></Layout>} />
+          <Route path="/reports/service-detail" element={<Layout><ServiceDetail /></Layout>} />
+          <Route path="/reports/mail-relay-detail" element={<Layout><MailRelayDetail /></Layout>} />
+          <Route path="/reports/inactive-detail" element={<Layout><InactiveAccountsDetail /></Layout>} />
+          <Route path="/reports/contacts-detail" element={<Layout><AdminContactsDetail /></Layout>} />
           <Route path="/system-settings" element={<Layout><SystemSettings /></Layout>} />
           <Route path="/account-settings" element={<Layout><AccountSettings /></Layout>} />
           <Route path="*" element={<NotFound />} />
