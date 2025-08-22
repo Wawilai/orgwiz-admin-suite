@@ -389,12 +389,12 @@ export default function Reports() {
   const criticalIssues = mockSystemHealth.filter(h => h.status === 'Critical').length;
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
+    <div className="container mx-auto p-3 md:p-6 space-y-4 md:space-y-6">
       <Tabs value={currentTab} onValueChange={setCurrentTab} className="space-y-6">
         <div className="flex justify-between items-center">
           <div>
-            <h1 className="text-3xl font-bold">รายงานและการวิเคราะห์</h1>
-            <p className="text-muted-foreground">ติดตามประสิทธิภาพและการใช้งานระบบ</p>
+            <h1 className="text-2xl md:text-3xl font-bold">รายงานและการวิเคราะห์</h1>
+            <p className="text-sm md:text-base text-muted-foreground">ติดตามประสิทธิภาพและการใช้งานระบบ</p>
           </div>
           <div className="flex gap-2">
             <Select value={dateRange} onValueChange={setDateRange}>
@@ -465,19 +465,22 @@ export default function Reports() {
           </div>
         </div>
 
-        <TabsList>
-          <TabsTrigger value="executive">Executive Overview</TabsTrigger>
-          <TabsTrigger value="license">License & Quota</TabsTrigger>
-          <TabsTrigger value="services">Service Usage</TabsTrigger>
-          <TabsTrigger value="mail-relay">Mail Relay</TabsTrigger>
-          <TabsTrigger value="inactive">Inactive Accounts</TabsTrigger>
-          <TabsTrigger value="contacts">Admin Contacts</TabsTrigger>
-        </TabsList>
+        {/* Scrollable Tab Navigation for Mobile */}
+        <div className="overflow-x-auto">
+          <TabsList className="inline-flex h-10 items-center justify-center rounded-md bg-muted p-1 text-muted-foreground min-w-max">
+            <TabsTrigger value="executive" className="text-xs md:text-sm px-2 md:px-3">Executive Overview</TabsTrigger>
+            <TabsTrigger value="license" className="text-xs md:text-sm px-2 md:px-3">License & Quota</TabsTrigger>
+            <TabsTrigger value="services" className="text-xs md:text-sm px-2 md:px-3">Service Usage</TabsTrigger>
+            <TabsTrigger value="mail-relay" className="text-xs md:text-sm px-2 md:px-3">Mail Relay</TabsTrigger>
+            <TabsTrigger value="inactive" className="text-xs md:text-sm px-2 md:px-3">Inactive Accounts</TabsTrigger>
+            <TabsTrigger value="contacts" className="text-xs md:text-sm px-2 md:px-3">Admin Contacts</TabsTrigger>
+          </TabsList>
+        </div>
 
         {/* Executive Overview Tab */}
-        <TabsContent value="executive" className="space-y-6">
+        <TabsContent value="executive" className="space-y-4 md:space-y-6">
       {/* KPI Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
         {mockKPIData.map((kpi, index) => {
           const Icon = kpi.icon;
           const gradients = [
@@ -492,8 +495,8 @@ export default function Reports() {
                 <div className="absolute top-2 right-2 opacity-20">
                   <Icon className="h-12 w-12" />
                 </div>
-                <CardTitle className="text-sm font-medium text-white/90">{kpi.title}</CardTitle>
-                <div className="text-2xl font-bold mt-2">{kpi.value}</div>
+                <CardTitle className="text-xs md:text-sm font-medium text-white/90">{kpi.title}</CardTitle>
+                <div className="text-lg md:text-2xl font-bold mt-1 md:mt-2">{kpi.value}</div>
                 <div className="flex items-center gap-1 text-xs text-white/80 mt-2">
                   <TrendingUp className="h-3 w-3" />
                   <span>+{kpi.change}%</span>
@@ -506,7 +509,7 @@ export default function Reports() {
       </div>
 
           {/* Visualizations */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 md:gap-6">
             {/* Service Usage Donut Chart */}
             <Card className="overflow-hidden hover:shadow-xl transition-all duration-300 cursor-pointer group" onClick={() => handleCardClick('executive', 'Service Usage Breakdown')}>
               <CardHeader>
@@ -626,9 +629,9 @@ export default function Reports() {
         </TabsContent>
 
         {/* License & Quota Tab */}
-        <TabsContent value="license" className="space-y-6">
+        <TabsContent value="license" className="space-y-4 md:space-y-6">
           {/* License Overview Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
             <Card className="overflow-hidden hover:shadow-lg transition-all duration-300 cursor-pointer group" onClick={() => handleCardClick('license', 'License Overview')}>
               <div className="bg-gradient-to-br from-indigo-500 to-indigo-600 p-4 text-white">
                 <CardTitle className="text-sm text-white/90">โควตารวม</CardTitle>
@@ -759,9 +762,9 @@ export default function Reports() {
         </TabsContent>
 
         {/* Service Usage Tab */}
-        <TabsContent value="services" className="space-y-6">
+        <TabsContent value="services" className="space-y-4 md:space-y-6">
           {/* Service Usage Overview Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
             <Card className="overflow-hidden hover:shadow-lg transition-all duration-300 cursor-pointer group" onClick={() => handleCardClick('services', 'Email Usage')}>
               <div className="bg-gradient-to-br from-blue-500 to-cyan-600 p-4 text-white relative">
                 <div className="absolute top-2 right-2 opacity-20">
@@ -892,9 +895,9 @@ export default function Reports() {
         </TabsContent>
 
         {/* Mail Relay Tab */}
-        <TabsContent value="mail-relay" className="space-y-6">
+        <TabsContent value="mail-relay" className="space-y-4 md:space-y-6">
           {/* Mail Relay Stats Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
             <Card className="overflow-hidden hover:shadow-lg transition-all duration-300 cursor-pointer group" onClick={() => handleCardClick('mail-relay', 'Accepted Emails')}>
               <div className="bg-gradient-to-br from-green-500 to-emerald-600 p-4 text-white relative">
                 <div className="absolute top-2 right-2 opacity-20">
@@ -1066,9 +1069,9 @@ export default function Reports() {
         </TabsContent>
 
         {/* Inactive Accounts Tab */}
-        <TabsContent value="inactive" className="space-y-6">
+        <TabsContent value="inactive" className="space-y-4 md:space-y-6">
           {/* Inactive Stats Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
             <Card className="overflow-hidden hover:shadow-lg transition-all duration-300 cursor-pointer group" onClick={() => handleCardClick('inactive', 'Inactive 15 Days')}>
               <div className="bg-gradient-to-br from-yellow-500 to-amber-600 p-4 text-white relative">
                 <div className="absolute top-2 right-2 opacity-20">
@@ -1206,9 +1209,9 @@ export default function Reports() {
         </TabsContent>
 
         {/* Admin Contacts Tab */}
-        <TabsContent value="contacts" className="space-y-6">
+        <TabsContent value="contacts" className="space-y-4 md:space-y-6">
           {/* Admin Contact Stats Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
             <Card className="overflow-hidden hover:shadow-lg transition-all duration-300 cursor-pointer group" onClick={() => handleCardClick('contacts', 'Total Organizations')}>
               <div className="bg-gradient-to-br from-indigo-500 to-purple-600 p-4 text-white relative">
                 <div className="absolute top-2 right-2 opacity-20">

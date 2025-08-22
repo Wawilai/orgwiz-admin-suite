@@ -120,8 +120,8 @@ export function AdminSidebar() {
 
   const getNavClass = (path: string) => {
     return cn(
-      "flex items-center transition-colors rounded-md",
-      collapsed ? "justify-center py-2 px-1" : "px-3 py-1",
+      "flex items-center transition-colors rounded-md w-full",
+      collapsed ? "justify-center py-2 px-1" : "px-2 md:px-3 py-1.5 md:py-2",
       isActive(path)
         ? "bg-sidebar-accent text-sidebar-primary font-medium"
         : "hover:bg-sidebar-accent/50 text-sidebar-foreground"
@@ -130,7 +130,7 @@ export function AdminSidebar() {
 
   const getGroupHeaderClass = (groupTitle: string, hasActiveItem: boolean) => {
     return cn(
-      "flex items-center justify-between w-full px-3 py-1 text-sm font-medium transition-colors rounded-md",
+      "flex items-center justify-between w-full px-2 md:px-3 py-1.5 md:py-2 text-xs md:text-sm font-medium transition-colors rounded-md",
       "hover:bg-sidebar-accent/30",
       hasActiveItem 
         ? "text-sidebar-primary bg-sidebar-accent/20" 
@@ -140,20 +140,29 @@ export function AdminSidebar() {
 
   return (
     <Sidebar
-      className={collapsed ? "w-20" : "w-64"}
+      className={cn(
+        "transition-all duration-300 ease-in-out",
+        collapsed ? "w-16" : "w-64"
+      )}
       collapsible="icon"
+      side="left"
     >
-      <div className="flex items-center justify-between p-4 border-b border-sidebar-border">
+      <div className="flex items-center justify-between p-3 md:p-4 border-b border-sidebar-border">
         {!collapsed && (
           <div className="flex items-center space-x-2">
-            <Building2 className="w-6 h-6 text-sidebar-primary" />
-            <span className="font-semibold text-sidebar-foreground">Enterprise</span>
+            <Building2 className="w-5 h-5 md:w-6 md:h-6 text-sidebar-primary" />
+            <span className="font-semibold text-sm md:text-base text-sidebar-foreground">Enterprise</span>
           </div>
         )}
-        <SidebarTrigger className="hover:bg-sidebar-accent/50" />
+        {collapsed && (
+          <Building2 className="w-5 h-5 text-sidebar-primary mx-auto" />
+        )}
       </div>
 
-      <SidebarContent className={collapsed ? "px-1 py-1" : "px-3 py-1"}>
+      <SidebarContent className={cn(
+        "overflow-y-auto",
+        collapsed ? "px-1 py-2" : "px-2 md:px-3 py-2"
+      )}>
         {menuItems.map((group) => {
           // Handle standalone items (like Dashboard)
           if (group.standalone) {

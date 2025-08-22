@@ -19,41 +19,43 @@ interface LayoutProps {
 
 export function Layout({ children }: LayoutProps) {
   return (
-    <SidebarProvider>
+    <SidebarProvider 
+      defaultOpen={true}
+    >
       <div className="min-h-screen flex w-full bg-background">
         <AdminSidebar />
         
-        <div className="flex-1 flex flex-col">
+        <div className="flex-1 flex flex-col min-w-0">
           {/* Header */}
-          <header className="h-16 border-b border-border bg-card flex items-center justify-between px-6 shadow-sm">
-            <div className="flex items-center space-x-4">
-              <SidebarTrigger className="lg:hidden" />
-              <h1 className="text-xl font-semibold text-foreground hidden md:block">
+          <header className="h-16 border-b border-border bg-card flex items-center justify-between px-4 md:px-6 shadow-sm sticky top-0 z-10">
+            <div className="flex items-center space-x-2 md:space-x-4 min-w-0 flex-1">
+              <SidebarTrigger className="flex-shrink-0" />
+              <h1 className="text-lg md:text-xl font-semibold text-foreground truncate">
                 Enterprise Management System
               </h1>
             </div>
             
             {/* Search and Actions */}
-            <div className="flex items-center space-x-4">
-              <div className="relative hidden md:block">
+            <div className="flex items-center space-x-2 md:space-x-4 flex-shrink-0">
+              <div className="relative hidden lg:block">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
                 <Input
                   placeholder="ค้นหา..."
-                  className="pl-10 w-64"
+                  className="pl-10 w-48 xl:w-64"
                 />
               </div>
               
-              <Button variant="ghost" size="icon" className="relative">
-                <Bell className="h-5 w-5" />
-                <span className="absolute -top-1 -right-1 h-3 w-3 bg-destructive rounded-full"></span>
+              <Button variant="ghost" size="icon" className="relative flex-shrink-0">
+                <Bell className="h-4 w-4 md:h-5 md:w-5" />
+                <span className="absolute -top-1 -right-1 h-2 w-2 md:h-3 md:w-3 bg-destructive rounded-full"></span>
               </Button>
               
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" className="relative h-8 w-8 rounded-full">
-                    <Avatar className="h-8 w-8">
+                  <Button variant="ghost" className="relative h-7 w-7 md:h-8 md:w-8 rounded-full flex-shrink-0">
+                    <Avatar className="h-7 w-7 md:h-8 md:w-8">
                       <AvatarImage src="/placeholder-avatar.jpg" alt="Admin" />
-                      <AvatarFallback>AD</AvatarFallback>
+                      <AvatarFallback className="text-xs md:text-sm">AD</AvatarFallback>
                     </Avatar>
                   </Button>
                 </DropdownMenuTrigger>
@@ -81,8 +83,10 @@ export function Layout({ children }: LayoutProps) {
           </header>
 
           {/* Main Content */}
-          <main className="flex-1 overflow-auto bg-muted/10 p-6">
-            {children}
+          <main className="flex-1 overflow-auto bg-muted/10 p-3 md:p-6">
+            <div className="max-w-full">
+              {children}
+            </div>
           </main>
         </div>
       </div>
