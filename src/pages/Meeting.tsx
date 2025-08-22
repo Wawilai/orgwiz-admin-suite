@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -46,7 +46,10 @@ import {
   PhoneOff,
   Send,
   Eye,
-  EyeOff
+  EyeOff,
+  Maximize,
+  Minimize,
+  Volume2
 } from 'lucide-react';
 
 interface Meeting {
@@ -144,6 +147,18 @@ const mockMeetings: Meeting[] = [
         isVideoOn: true,
         isHandRaised: true,
         connectionQuality: 'Good'
+      },
+      {
+        id: '3',
+        name: 'วิชัย เก่งมาก',
+        email: 'wichai@company.com',
+        role: 'Participant',
+        status: 'Joined',
+        joinTime: '09:01',
+        isMuted: false,
+        isVideoOn: false,
+        isHandRaised: false,
+        connectionQuality: 'Fair'
       }
     ],
     invitedEmails: ['somchai@company.com', 'napa@company.com', 'admin@company.com'],
@@ -236,6 +251,8 @@ export default function Meeting() {
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
   const [isScreenSharing, setIsScreenSharing] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [selectedVideoUser, setSelectedVideoUser] = useState<string | null>(null);
   const [currentTab, setCurrentTab] = useState('meetings');
   const [chatMessage, setChatMessage] = useState('');
   const [inviteEmails, setInviteEmails] = useState('');
@@ -256,17 +273,75 @@ export default function Meeting() {
     options: ['', '']
   });
 
+  // Listen for fullscreen changes
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullscreen(!!document.fullscreenElement);
+    };
+    
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
+  }, []);
+
+  const generateVideoGrid = () => {
+    if (!activeMeeting) return [];
+    
+    const allUsers = [
+      {
+        id: currentUser.id,
+        name: currentUser.name,
+        isMuted: currentUser.isMuted,
+        isVideoOn: currentUser.isVideoOn,
+        isCurrentUser: true
+      },
+      ...activeMeeting.participants.map(p => ({
+        id: p.id,
+        name: p.name,
+        isMuted: p.isMuted,
+        isVideoOn: p.isVideoOn,
+        isCurrentUser: false
+      }))
+    ];
+    
+    return allUsers;
+  };
+
+  const getGridColumns = (count: number) => {
+    if (count === 1) return 'grid-cols-1';
+    if (count === 2) return 'grid-cols-2';
+    if (count <= 4) return 'grid-cols-2';
+    if (count <= 6) return 'grid-cols-3';
+    return 'grid-cols-4';
+  };
+
+  const toggleFullscreen = async () => {
+    if (!document.fullscreenElement) {
+      const videoContainer = document.getElementById('video-container');
+      if (videoContainer && videoContainer.requestFullscreen) {
+        await videoContainer.requestFullscreen();
+        setIsFullscreen(true);
+      }
+    } else {
+      await document.exitFullscreen();
+      setIsFullscreen(false);
+    }
+  };
+
   const handleCreateMeeting = () => {
     const newMeeting: Meeting = {
       id: Date.now().toString(),
       ...formData as Meeting,
       host: 'ผู้ใช้ปัจจุบัน',
+      hostId: currentUser.id,
       participants: [],
       meetingRoom: `room-${Date.now()}`,
       isRecording: false,
       isLocked: false,
       status: 'Scheduled',
-      createdAt: new Date().toISOString()
+      createdAt: new Date().toISOString(),
+      meetingLink: `https://meet.company.com/room-${Date.now()}`,
+      chatMessages: [],
+      polls: []
     };
     setMeetings([...meetings, newMeeting]);
     setIsCreateDialogOpen(false);
@@ -909,6 +984,7 @@ export default function Meeting() {
                             </div>
                           </DialogContent>
                         </Dialog>
+                        
                         <Dialog open={isPollDialogOpen} onOpenChange={setIsPollDialogOpen}>
                           <DialogTrigger asChild>
                             <Button variant="outline" size="sm">
@@ -972,57 +1048,222 @@ export default function Meeting() {
                             </div>
                           </DialogContent>
                         </Dialog>
+                        
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={toggleFullscreen}
+                        >
+                          {isFullscreen ? <Minimize className="h-4 w-4 mr-2" /> : <Maximize className="h-4 w-4 mr-2" />}
+                          {isFullscreen ? 'ออกเต็มจอ' : 'เต็มจอ'}
+                        </Button>
                         <Button variant="outline" size="sm">
                           <Settings className="h-4 w-4" />
                         </Button>
                       </div>
                     </div>
                   </CardHeader>
-                  <CardContent>
-                    {/* Video Grid Simulation */}
-                    <div className="aspect-video bg-gray-900 rounded-lg flex items-center justify-center text-white">
-                      <div className="text-center">
-                        <Video className="h-16 w-16 mx-auto mb-4" />
-                        <p className="text-lg">หน้าจอการประชุม</p>
-                        <p className="text-sm opacity-70">จำลองพื้นที่แสดงวิดีโอของผู้เข้าร่วม</p>
+                  <CardContent className="p-0">
+                    {/* Video Grid Container */}
+                    <div 
+                      id="video-container"
+                      className={`${isFullscreen ? 'fixed inset-0 z-50 bg-black' : 'aspect-video bg-gray-900'} rounded-lg flex flex-col`}
+                    >
+                      {/* Video Grid */}
+                      <div className={`flex-1 p-4 ${isFullscreen ? 'h-screen' : 'h-full'}`}>
+                        {selectedVideoUser ? (
+                          // Single user view
+                          <div className="h-full flex flex-col">
+                            <div className="flex-1 bg-gradient-to-br from-blue-900 to-purple-900 rounded-lg flex items-center justify-center relative">
+                              <div className="text-center text-white">
+                                <div className="w-24 h-24 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-4 backdrop-blur-sm">
+                                  <span className="text-2xl font-bold">
+                                    {generateVideoGrid().find(u => u.id === selectedVideoUser)?.name.charAt(0)}
+                                  </span>
+                                </div>
+                                <p className="text-xl font-medium">
+                                  {generateVideoGrid().find(u => u.id === selectedVideoUser)?.name}
+                                </p>
+                                {!generateVideoGrid().find(u => u.id === selectedVideoUser)?.isVideoOn && (
+                                  <p className="text-sm opacity-70 mt-2">วิดีโอปิดอยู่</p>
+                                )}
+                              </div>
+                              
+                              {/* Floating controls for single view */}
+                              <div className="absolute top-4 right-4 flex gap-2">
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => setSelectedVideoUser(null)}
+                                  className="bg-black/50 text-white border-white/20 hover:bg-white/20"
+                                >
+                                  <Users className="h-4 w-4 mr-2" />
+                                  กลับสู่ Grid
+                                </Button>
+                              </div>
+                              
+                              {/* Audio indicator */}
+                              <div className="absolute bottom-4 left-4">
+                                {generateVideoGrid().find(u => u.id === selectedVideoUser)?.isMuted ? (
+                                  <div className="bg-red-500 p-2 rounded-full">
+                                    <MicOff className="h-4 w-4 text-white" />
+                                  </div>
+                                ) : (
+                                  <div className="bg-green-500 p-2 rounded-full animate-pulse">
+                                    <Volume2 className="h-4 w-4 text-white" />
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        ) : (
+                          // Grid view
+                          <div className={`h-full grid gap-2 ${getGridColumns(generateVideoGrid().length)}`}>
+                            {generateVideoGrid().map((user) => (
+                              <div 
+                                key={user.id}
+                                className="bg-gradient-to-br from-blue-900 to-purple-900 rounded-lg flex items-center justify-center relative cursor-pointer hover:scale-105 transition-transform group"
+                                onClick={() => setSelectedVideoUser(user.id)}
+                              >
+                                <div className="text-center text-white">
+                                  <div className={`w-16 h-16 ${user.isCurrentUser ? 'bg-primary' : 'bg-white/20'} rounded-full flex items-center justify-center mx-auto mb-2 backdrop-blur-sm`}>
+                                    <span className="text-lg font-bold">
+                                      {user.name.charAt(0)}
+                                    </span>
+                                  </div>
+                                  <p className="text-sm font-medium truncate px-2">
+                                    {user.isCurrentUser ? 'คุณ' : user.name}
+                                  </p>
+                                  {!user.isVideoOn && (
+                                    <p className="text-xs opacity-70 mt-1">วิดีโอปิด</p>
+                                  )}
+                                </div>
+                                
+                                {/* Expand hint */}
+                                <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg flex items-center justify-center">
+                                  <Maximize className="h-6 w-6 text-white" />
+                                </div>
+                                
+                                {/* Audio indicator */}
+                                <div className="absolute bottom-2 left-2">
+                                  {user.isMuted ? (
+                                    <div className="bg-red-500 p-1 rounded-full">
+                                      <MicOff className="h-3 w-3 text-white" />
+                                    </div>
+                                  ) : (
+                                    <div className="bg-green-500 p-1 rounded-full animate-pulse">
+                                      <Volume2 className="h-3 w-3 text-white" />
+                                    </div>
+                                  )}
+                                </div>
+                                
+                                {/* Video off overlay */}
+                                {!user.isVideoOn && (
+                                  <div className="absolute top-2 right-2">
+                                    <div className="bg-gray-500 p-1 rounded-full">
+                                      <CameraOff className="h-3 w-3 text-white" />
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        )}
                       </div>
+                      
+                      {/* Screen sharing indicator */}
+                      {isScreenSharing && (
+                        <div className="bg-green-500 text-white px-4 py-2 text-sm flex items-center gap-2">
+                          <Monitor className="h-4 w-4" />
+                          คุณกำลังแชร์หน้าจอ
+                        </div>
+                      )}
+                      
+                      {/* Recording indicator */}
+                      {activeMeeting.isRecording && (
+                        <div className="bg-red-500 text-white px-4 py-2 text-sm flex items-center gap-2">
+                          <div className="w-2 h-2 bg-white rounded-full animate-pulse" />
+                          กำลังบันทึกการประชุม
+                        </div>
+                      )}
+                      
+                      {/* Fullscreen controls */}
+                      {isFullscreen && (
+                        <div className="absolute top-4 left-4 right-4 flex justify-between items-center z-10">
+                          <div className="bg-black/50 text-white px-3 py-1 rounded-lg backdrop-blur-sm">
+                            <h3 className="text-lg font-medium">{activeMeeting.title}</h3>
+                          </div>
+                          
+                          <div className="flex gap-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={toggleFullscreen}
+                              className="bg-black/50 text-white border-white/20 hover:bg-white/20"
+                            >
+                              <Minimize className="h-4 w-4 mr-2" />
+                              ออกเต็มจอ
+                            </Button>
+                            
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => setIsChatOpen(!isChatOpen)}
+                              className="bg-black/50 text-white border-white/20 hover:bg-white/20"
+                            >
+                              <MessageSquare className="h-4 w-4 mr-2" />
+                              แชท
+                            </Button>
+                          </div>
+                        </div>
+                      )}
                     </div>
                     
                     {/* Controls */}
-                    <div className="flex justify-center gap-2 mt-4 flex-wrap">
-                      <Button 
-                        variant={currentUser.isMuted ? "destructive" : "outline"}
-                        onClick={handleToggleMic}
-                        size="sm"
-                      >
-                        {currentUser.isMuted ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
-                      </Button>
-                      
-                      <Button 
-                        variant={currentUser.isVideoOn ? "outline" : "destructive"}
-                        onClick={handleToggleVideo}
-                        size="sm"
-                      >
-                        {currentUser.isVideoOn ? <Camera className="h-4 w-4" /> : <CameraOff className="h-4 w-4" />}
-                      </Button>
-                      
-                      <Button variant="outline" onClick={handleRaiseHand} size="sm">
-                        <Hand className="h-4 w-4" />
-                      </Button>
-                      
-                      <Button 
-                        variant="outline"
-                        onClick={() => setIsChatOpen(!isChatOpen)}
-                        size="sm"
-                      >
-                        <MessageSquare className="h-4 w-4" />
-                      </Button>
-                      
-                      <Button variant="destructive" size="sm">
-                        <PhoneOff className="h-4 w-4" />
-                        ออกจากห้อง
-                      </Button>
-                    </div>
+                    {!isFullscreen && (
+                      <div className="flex justify-center gap-2 mt-4 flex-wrap">
+                        <Button 
+                          variant={currentUser.isMuted ? "destructive" : "outline"}
+                          onClick={handleToggleMic}
+                          size="sm"
+                        >
+                          {currentUser.isMuted ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
+                        </Button>
+                        
+                        <Button 
+                          variant={currentUser.isVideoOn ? "outline" : "destructive"}
+                          onClick={handleToggleVideo}
+                          size="sm"
+                        >
+                          {currentUser.isVideoOn ? <Camera className="h-4 w-4" /> : <CameraOff className="h-4 w-4" />}
+                        </Button>
+                        
+                        <Button variant="outline" onClick={handleRaiseHand} size="sm">
+                          <Hand className="h-4 w-4" />
+                        </Button>
+                        
+                        <Button 
+                          variant="outline"
+                          onClick={() => setIsChatOpen(!isChatOpen)}
+                          size="sm"
+                        >
+                          <MessageSquare className="h-4 w-4" />
+                        </Button>
+                        
+                        <Button 
+                          variant="outline"
+                          onClick={toggleFullscreen}
+                          size="sm"
+                        >
+                          <Maximize className="h-4 w-4" />
+                        </Button>
+                        
+                        <Button variant="destructive" size="sm">
+                          <PhoneOff className="h-4 w-4" />
+                          ออกจากห้อง
+                        </Button>
+                      </div>
+                    )}
                     
                     {/* Chat Section */}
                     {isChatOpen && (
