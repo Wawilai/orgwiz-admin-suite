@@ -3,7 +3,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { Routes, Route } from "react-router-dom";
 import { Layout } from "./components/Layout";
 import { ThemeProvider } from "./components/ThemeProvider";
 import { AuthProvider } from "./contexts/AuthContext";
@@ -60,12 +60,11 @@ const LoadingFallback = () => (
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <BrowserRouter>
-        <ThemeProvider defaultTheme="light" storageKey="vite-ui-theme">
-          <AuthProvider>
-            <MasterDataProvider>
-              <TooltipProvider>
-                <Routes>
+      <ThemeProvider defaultTheme="light" storageKey="vite-ui-theme">
+        <AuthProvider>
+          <MasterDataProvider>
+            <TooltipProvider>
+              <Routes>
                   <Route path="/" element={
                     <Suspense fallback={<LoadingFallback />}>
                       <Index />
@@ -393,14 +392,13 @@ function App() {
                       <NotFound />
                     </Suspense>
                   } />
-                </Routes>
-                <Toaster />
-                <Sonner />
-              </TooltipProvider>
-            </MasterDataProvider>
-          </AuthProvider>
-        </ThemeProvider>
-      </BrowserRouter>
+              </Routes>
+              <Toaster />
+              <Sonner />
+            </TooltipProvider>
+          </MasterDataProvider>
+        </AuthProvider>
+      </ThemeProvider>
     </QueryClientProvider>
   );
 }
