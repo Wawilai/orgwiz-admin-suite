@@ -179,7 +179,7 @@ export function AdminSidebar() {
                       "h-5 w-5",
                       collapsed ? "mx-auto" : "mr-3"
                     )} />
-                    {!collapsed && <span className="text-base">{group.title}</span>}
+                    {!collapsed && <span className="text-sm">{group.title}</span>}
                   </NavLink>
                 </SidebarMenuButton>
               </div>
@@ -231,7 +231,7 @@ export function AdminSidebar() {
                             "h-4 w-4",
                             collapsed ? "mx-auto" : "mr-3"
                           )} />
-                          {!collapsed && <span className="text-base">{item.title}</span>}
+                          {!collapsed && <span className="text-sm">{item.title}</span>}
                         </NavLink>
                       </SidebarMenuButton>
                     </SidebarMenuItem>
