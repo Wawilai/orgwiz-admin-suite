@@ -573,11 +573,14 @@ const UserManagement = () => {
                         <DropdownMenuContent align="end" className="bg-popover">
                           <DropdownMenuLabel>การดำเนินการ</DropdownMenuLabel>
                           <DropdownMenuSeparator />
-                          <DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => openEditDialog(user)}>
                             <Edit className="mr-2 h-4 w-4" />
                             แก้ไข
                           </DropdownMenuItem>
-                          <DropdownMenuItem className="text-destructive">
+                          <DropdownMenuItem 
+                            className="text-destructive"
+                            onClick={() => handleDeleteUser(user.id)}
+                          >
                             <Trash2 className="mr-2 h-4 w-4" />
                             ลบ
                           </DropdownMenuItem>
