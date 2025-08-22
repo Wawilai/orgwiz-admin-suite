@@ -105,6 +105,7 @@ const DomainManagement = () => {
   const [selectedFilter, setSelectedFilter] = useState("all");
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isPolicyDialogOpen, setIsPolicyDialogOpen] = useState(false);
   const [selectedDomain, setSelectedDomain] = useState<any>(null);
   const [formData, setFormData] = useState({
     name: "",
@@ -113,6 +114,18 @@ const DomainManagement = () => {
     spfEnabled: false,
     dkimEnabled: false,
     routingEnabled: false,
+  });
+  const [policyData, setPolicyData] = useState({
+    spfStrict: false,
+    spfRecords: "",
+    dkimEnabled: false,
+    dkimSelector: "",
+    dkimKeySize: "2048",
+    dmarcPolicy: "none",
+    dmarcRua: "",
+    maxMailboxes: "",
+    maxAliases: "",
+    externalForwarding: false,
   });
 
   const getStatusBadge = (status: string) => {
@@ -207,6 +220,40 @@ const DomainManagement = () => {
       routingEnabled: domain.routingEnabled,
     });
     setIsEditDialogOpen(true);
+  };
+
+  const openPolicyDialog = (domain: any) => {
+    setSelectedDomain(domain);
+    setPolicyData({
+      spfStrict: domain.spfEnabled,
+      spfRecords: `v=spf1 include:_spf.${domain.name} ~all`,
+      dkimEnabled: domain.dkimEnabled,
+      dkimSelector: "default",
+      dkimKeySize: "2048",
+      dmarcPolicy: domain.spfEnabled && domain.dkimEnabled ? "quarantine" : "none",
+      dmarcRua: `mailto:dmarc@${domain.name}`,
+      maxMailboxes: "1000",
+      maxAliases: "500",
+      externalForwarding: false,
+    });
+    setIsPolicyDialogOpen(true);
+  };
+
+  const handlePolicyUpdate = () => {
+    if (selectedDomain) {
+      setDomains(domains.map(domain => 
+        domain.id === selectedDomain.id 
+          ? { 
+              ...domain, 
+              spfEnabled: policyData.spfStrict,
+              dkimEnabled: policyData.dkimEnabled,
+              routingEnabled: domain.routingEnabled 
+            } 
+          : domain
+      ));
+      setIsPolicyDialogOpen(false);
+      setSelectedDomain(null);
+    }
   };
 
   return (
@@ -623,7 +670,7 @@ const DomainManagement = () => {
                             <Edit className="mr-2 h-4 w-4" />
                             แก้ไข
                           </DropdownMenuItem>
-                          <DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => openPolicyDialog(domain)}>
                             <Shield className="mr-2 h-4 w-4" />
                             ตั้งค่านโยบาย
                           </DropdownMenuItem>
@@ -644,6 +691,158 @@ const DomainManagement = () => {
           </div>
         </CardContent>
       </Card>
+
+      {/* Policy Settings Dialog */}
+      <Dialog open={isPolicyDialogOpen} onOpenChange={setIsPolicyDialogOpen}>
+        <DialogContent className="max-w-4xl bg-card">
+          <DialogHeader>
+            <DialogTitle>ตั้งค่านโยบายโดเมน: {selectedDomain?.name}</DialogTitle>
+            <DialogDescription>
+              กำหนดนโยบายความปลอดภัยและการใช้งานสำหรับโดเมน {selectedDomain?.name}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-6 max-h-[70vh] overflow-y-auto">
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold">นโยบาย SPF (Sender Policy Framework)</h3>
+              <div className="space-y-3">
+                <div className="flex items-center space-x-2">
+                  <Switch 
+                    id="spf-strict" 
+                    checked={policyData.spfStrict}
+                    onCheckedChange={(checked) => setPolicyData({...policyData, spfStrict: checked})}
+                  />
+                  <Label htmlFor="spf-strict">ใช้งาน SPF แบบเข้มงวด</Label>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="spf-records">SPF Records</Label>
+                  <Input 
+                    id="spf-records" 
+                    value={policyData.spfRecords}
+                    onChange={(e) => setPolicyData({...policyData, spfRecords: e.target.value})}
+                    placeholder="v=spf1 include:_spf.example.com ~all"
+                    className="font-mono text-sm"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold">นโยบาย DKIM (DomainKeys Identified Mail)</h3>
+              <div className="space-y-3">
+                <div className="flex items-center space-x-2">
+                  <Switch 
+                    id="dkim-enable"
+                    checked={policyData.dkimEnabled}
+                    onCheckedChange={(checked) => setPolicyData({...policyData, dkimEnabled: checked})}
+                  />
+                  <Label htmlFor="dkim-enable">เปิดใช้งาน DKIM</Label>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="dkim-selector">Selector</Label>
+                    <Input 
+                      id="dkim-selector"
+                      value={policyData.dkimSelector}
+                      onChange={(e) => setPolicyData({...policyData, dkimSelector: e.target.value})}
+                      placeholder="default"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="dkim-key-size">Key Size</Label>
+                    <Select 
+                      value={policyData.dkimKeySize}
+                      onValueChange={(value) => setPolicyData({...policyData, dkimKeySize: value})}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="เลือกขนาด Key" />
+                      </SelectTrigger>
+                      <SelectContent className="bg-popover">
+                        <SelectItem value="1024">1024 bits</SelectItem>
+                        <SelectItem value="2048">2048 bits</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold">นโยบาย DMARC</h3>
+              <div className="space-y-3">
+                <div className="space-y-2">
+                  <Label htmlFor="dmarc-policy">DMARC Policy</Label>
+                  <Select
+                    value={policyData.dmarcPolicy}
+                    onValueChange={(value) => setPolicyData({...policyData, dmarcPolicy: value})}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="เลือก Policy" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-popover">
+                      <SelectItem value="none">None</SelectItem>
+                      <SelectItem value="quarantine">Quarantine</SelectItem>
+                      <SelectItem value="reject">Reject</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="dmarc-rua">Report URI (RUA)</Label>
+                  <Input 
+                    id="dmarc-rua"
+                    value={policyData.dmarcRua}
+                    onChange={(e) => setPolicyData({...policyData, dmarcRua: e.target.value})}
+                    placeholder="mailto:dmarc@example.com"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold">การจำกัดการใช้งาน</h3>
+              <div className="space-y-3">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="max-mailboxes">จำนวนกล่องจดหมายสูงสุด</Label>
+                    <Input 
+                      id="max-mailboxes" 
+                      type="number"
+                      value={policyData.maxMailboxes}
+                      onChange={(e) => setPolicyData({...policyData, maxMailboxes: e.target.value})}
+                      placeholder="1000"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="max-aliases">จำนวน Aliases สูงสุด</Label>
+                    <Input 
+                      id="max-aliases" 
+                      type="number"
+                      value={policyData.maxAliases}
+                      onChange={(e) => setPolicyData({...policyData, maxAliases: e.target.value})}
+                      placeholder="500"
+                    />
+                  </div>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Switch 
+                    id="external-forwarding"
+                    checked={policyData.externalForwarding}
+                    onCheckedChange={(checked) => setPolicyData({...policyData, externalForwarding: checked})}
+                  />
+                  <Label htmlFor="external-forwarding">อนุญาตการส่งต่อไปยังโดเมนภายนอก</Label>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div className="flex justify-end space-x-2">
+            <Button variant="outline" onClick={() => setIsPolicyDialogOpen(false)}>
+              ยกเลิก
+            </Button>
+            <Button onClick={handlePolicyUpdate}>
+              บันทึกการตั้งค่า
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Edit Dialog */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
