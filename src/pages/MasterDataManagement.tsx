@@ -113,6 +113,13 @@ const mockDepartments: MasterDataItem[] = [
   { id: 4, code: "MARKETING", name: "แผนกการตลาด", description: "จัดการการตลาดและประชาสัมพันธ์", isActive: true, order: 4, createdAt: "2024-01-01", updatedAt: "2024-01-01" },
 ];
 
+const mockDepartmentsEn: MasterDataItem[] = [
+  { id: 1, code: "IT", name: "Information Technology Department", description: "Manages systems and technology", isActive: true, order: 1, createdAt: "2024-01-01", updatedAt: "2024-01-01" },
+  { id: 2, code: "HR", name: "Human Resources Department", description: "Manages personnel and welfare", isActive: true, order: 2, createdAt: "2024-01-01", updatedAt: "2024-01-01" },
+  { id: 3, code: "FINANCE", name: "Finance Department", description: "Manages finance and accounting", isActive: true, order: 3, createdAt: "2024-01-01", updatedAt: "2024-01-01" },
+  { id: 4, code: "MARKETING", name: "Marketing Department", description: "Manages marketing and public relations", isActive: true, order: 4, createdAt: "2024-01-01", updatedAt: "2024-01-01" },
+];
+
 const mockPositions: MasterDataItem[] = [
   { id: 1, code: "CEO", name: "ประธานเจ้าหน้าที่บริหาร", description: "ผู้บริหารสูงสุด", isActive: true, order: 1, createdAt: "2024-01-01", updatedAt: "2024-01-01" },
   { id: 2, code: "MANAGER", name: "ผู้จัดการ", description: "ผู้จัดการระดับกลาง", isActive: true, order: 2, createdAt: "2024-01-01", updatedAt: "2024-01-01" },
@@ -148,6 +155,13 @@ const organizationDataTypes = [
     description: "จัดการแผนกและหน่วยงานต่างๆ",
     icon: Users,
     data: mockDepartments 
+  },
+  { 
+    key: "departments-en", 
+    name: "แผนก (อังกฤษ)", 
+    description: "จัดการชื่อแผนกภาษาอังกฤษ",
+    icon: Users,
+    data: mockDepartmentsEn 
   },
   { 
     key: "positions", 

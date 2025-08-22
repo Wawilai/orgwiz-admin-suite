@@ -131,6 +131,7 @@ const UserManagement = () => {
     employeeId: "",
     organization: "",
     department: "",
+    departmentEn: "",
     role: "",
     position: "",
     userType: "",
@@ -167,6 +168,7 @@ const UserManagement = () => {
     nationalId: "",
     organization: "",
     department: "",
+    departmentEn: "",
     role: "",
     userType: "",
   }, {
@@ -187,6 +189,7 @@ const UserManagement = () => {
   // Get master data
   const organizationTypes = getActiveItems('organizationTypes');
   const departments = getActiveItems('departments');
+  const departmentsEn = getActiveItems('departmentsEn');
   const positions = getActiveItems('positions');
   const userRoles = getActiveItems('userRoles');
 
@@ -231,6 +234,7 @@ const UserManagement = () => {
       nationalId: user.nationalId || "",
       organization: user.organization,
       department: user.organizationUnit || "",
+      departmentEn: user.departmentEn || "",
       role: user.role,
       userType: user.userType || "user",
     });
@@ -722,6 +726,49 @@ const UserManagement = () => {
                         {organizationTypes.map((org) => (
                           <SelectItem key={org.id} value={org.name}>
                             {org.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </FormFieldWrapper>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <FormFieldWrapper
+                    label="หน่วยงาน"
+                    error={editUserValidation.errors.department}
+                  >
+                    <Select 
+                      value={editUserValidation.values.department}
+                      onValueChange={(value) => editUserValidation.setValue('department', value)}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="เลือกหน่วยงาน" />
+                      </SelectTrigger>
+                      <SelectContent className="bg-popover">
+                        {departments.map((dept) => (
+                          <SelectItem key={dept.id} value={dept.code}>
+                            {dept.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </FormFieldWrapper>
+                  <FormFieldWrapper
+                    label="แผนก (อังกฤษ)"
+                    error={editUserValidation.errors.departmentEn}
+                  >
+                    <Select 
+                      value={editUserValidation.values.departmentEn}
+                      onValueChange={(value) => editUserValidation.setValue('departmentEn', value)}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select Department" />
+                      </SelectTrigger>
+                      <SelectContent className="bg-popover">
+                        {departmentsEn.map((dept) => (
+                          <SelectItem key={dept.id} value={dept.code}>
+                            {dept.name}
                           </SelectItem>
                         ))}
                       </SelectContent>
