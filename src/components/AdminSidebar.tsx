@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { NavLink, useLocation } from "react-router-dom";
+import { useLanguage } from "@/contexts/LanguageContext";
 import {
   Sidebar,
   SidebarContent,
@@ -39,63 +40,64 @@ import { cn } from "@/lib/utils";
 
 const menuItems = [
   {
-    title: "แดชบอร์ด",
+    title: "nav.dashboard",
     url: "/dashboard",
     icon: LayoutDashboard,
     standalone: true
   },
   {
-    title: "การจัดการระบบ",
+    title: "sidebar.userManagement",
     icon: Building2,
     items: [
-      { title: "จัดการผู้ใช้งาน", url: "/users", icon: Users },
-      { title: "จัดการองค์กร", url: "/organizations", icon: Building2 },
-      { title: "หน่วยงาน", url: "/organization-units", icon: Building2 },
-      { title: "จัดการโดเมน", url: "/domains", icon: Globe },
-      { title: "จัดการสิทธิ์", url: "/roles", icon: UserCheck },
-      { title: "จัดการ Quota", url: "/quotas", icon: Database }
+      { title: "nav.users", url: "/users", icon: Users },
+      { title: "nav.organizations", url: "/organizations", icon: Building2 },
+      { title: "nav.organizationUnits", url: "/organization-units", icon: Building2 },
+      { title: "nav.domains", url: "/domains", icon: Globe },
+      { title: "nav.roles", url: "/roles", icon: UserCheck },
+      { title: "nav.quotas", url: "/quotas", icon: Database }
     ]
   },
   {
-    title: "บริการหลัก",
+    title: "sidebar.services",
     icon: Mail,
     items: [
-      { title: "บริการอีเมล", url: "/mail-service", icon: Mail },
-      { title: "Mail Relay", url: "/mail-relay", icon: Zap },
-      { title: "สมุดที่อยู่", url: "/address-book", icon: Users },
-      { title: "ปฏิทิน", url: "/calendar", icon: Calendar },
-      { title: "แชท", url: "/chat", icon: MessageSquare },
-      { title: "ประชุมออนไลน์", url: "/meetings", icon: Video },
-      { title: "พื้นที่จัดเก็บ", url: "/storage", icon: HardDrive }
+      { title: "nav.mailService", url: "/mail-service", icon: Mail },
+      { title: "nav.mailRelay", url: "/mail-relay", icon: Zap },
+      { title: "nav.addressBook", url: "/address-book", icon: Users },
+      { title: "nav.calendar", url: "/calendar", icon: Calendar },
+      { title: "nav.chat", url: "/chat", icon: MessageSquare },
+      { title: "nav.meetings", url: "/meetings", icon: Video },
+      { title: "nav.storage", url: "/storage", icon: HardDrive }
     ]
   },
   {
-    title: "ธุรกิจและบัญชี",
+    title: "sidebar.collaboration",
     icon: CreditCard,
     items: [
-      { title: "จัดการแพ็กเกจ", url: "/packages", icon: Package },
-      { title: "การเรียกเก็บเงิน", url: "/billing", icon: CreditCard },
-      { title: "จัดการไลเซ้นส์", url: "/licenses", icon: FileKey }
+      { title: "nav.packages", url: "/packages", icon: Package },
+      { title: "nav.billing", url: "/billing", icon: CreditCard },
+      { title: "nav.licenses", url: "/licenses", icon: FileKey }
     ]
   },
   {
-    title: "รายงานและวิเคราะห์",
+    title: "sidebar.businessManagement",
     icon: BarChart3,
     items: [
-      { title: "รายงาน", url: "/reports", icon: BarChart3 }
+      { title: "nav.reports", url: "/reports", icon: BarChart3 }
     ]
   },
   {
-    title: "ตั้งค่าระบบ",
+    title: "sidebar.systemManagement",
     icon: Settings,
     items: [
-      { title: "ตั้งค่าระบบ", url: "/system-settings", icon: Settings },
-      { title: "ตั้งค่าบัญชี", url: "/account-settings", icon: User }
+      { title: "nav.settings", url: "/system-settings", icon: Settings },
+      { title: "account.title", url: "/account-settings", icon: User }
     ]
   }
 ];
 
 export function AdminSidebar() {
+  const { t } = useLanguage();
   const { state } = useSidebar();
   const location = useLocation();
   const [expandedGroups, setExpandedGroups] = useState<string[]>(() => {
@@ -172,13 +174,13 @@ export function AdminSidebar() {
                   <NavLink
                     to={group.url!}
                     className={getNavClass(group.url!)}
-                    title={collapsed ? group.title : undefined}
+                    title={collapsed ? t(group.title) : undefined}
                   >
                     <group.icon className={cn(
                       "h-5 w-5",
                       collapsed ? "mx-auto" : "mr-3"
                     )} />
-                    {!collapsed && <span className="text-base">{group.title}</span>}
+                    {!collapsed && <span className="text-base">{t(group.title)}</span>}
                   </NavLink>
                 </SidebarMenuButton>
               </div>
@@ -200,7 +202,7 @@ export function AdminSidebar() {
                   <div className="flex items-center">
                     <group.icon className="h-4 w-4 mr-2" />
                     <SidebarGroupLabel className="text-sm font-semibold uppercase tracking-wide">
-                      {group.title}
+                      {t(group.title)}
                     </SidebarGroupLabel>
                   </div>
                   {isExpanded ? (
@@ -224,13 +226,13 @@ export function AdminSidebar() {
                         <NavLink
                           to={item.url}
                           className={getNavClass(item.url)}
-                          title={collapsed ? item.title : undefined}
+                          title={collapsed ? t(item.title) : undefined}
                         >
                           <item.icon className={cn(
                             "h-4 w-4",
                             collapsed ? "mx-auto" : "mr-3"
                           )} />
-                          {!collapsed && <span className="text-base">{item.title}</span>}
+                          {!collapsed && <span className="text-base">{t(item.title)}</span>}
                         </NavLink>
                       </SidebarMenuButton>
                     </SidebarMenuItem>
@@ -246,7 +248,7 @@ export function AdminSidebar() {
                       <NavLink
                         to={item.url}
                         className={getNavClass(item.url)}
-                        title={item.title}
+                        title={t(item.title)}
                       >
                         <item.icon className="h-5 w-5 mx-auto" />
                       </NavLink>
