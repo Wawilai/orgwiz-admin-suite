@@ -14,6 +14,17 @@ import RoleManagement from "./pages/RoleManagement";
 import QuotaManagement from "./pages/QuotaManagement";
 import MailService from "./pages/MailService";
 import MailRelay from "./pages/MailRelay";
+import AddressBook from "./pages/AddressBook";
+import Calendar from "./pages/Calendar";
+import Chat from "./pages/Chat";
+import Meeting from "./pages/Meeting";
+import Storage from "./pages/Storage";
+import PackageManagement from "./pages/PackageManagement";
+import BillingManagement from "./pages/BillingManagement";
+import LicenseManagement from "./pages/LicenseManagement";
+import Reports from "./pages/Reports";
+import SystemSettings from "./pages/SystemSettings";
+import AccountSettings from "./pages/AccountSettings";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -35,17 +46,17 @@ const App = () => (
           <Route path="/quotas" element={<Layout><QuotaManagement /></Layout>} />
           <Route path="/mail-service" element={<Layout><MailService /></Layout>} />
           <Route path="/mail-relay" element={<Layout><MailRelay /></Layout>} />
-          <Route path="/address-book" element={<Layout><Index /></Layout>} />
-          <Route path="/calendar" element={<Layout><Index /></Layout>} />
-          <Route path="/chat" element={<Layout><Index /></Layout>} />
-          <Route path="/meetings" element={<Layout><Index /></Layout>} />
-          <Route path="/storage" element={<Layout><Index /></Layout>} />
-          <Route path="/packages" element={<Layout><Index /></Layout>} />
-          <Route path="/billing" element={<Layout><Index /></Layout>} />
-          <Route path="/licenses" element={<Layout><Index /></Layout>} />
-          <Route path="/reports" element={<Layout><Index /></Layout>} />
-          <Route path="/system-settings" element={<Layout><Index /></Layout>} />
-          <Route path="/account-settings" element={<Layout><Index /></Layout>} />
+          <Route path="/address-book" element={<Layout><AddressBook /></Layout>} />
+          <Route path="/calendar" element={<Layout><Calendar /></Layout>} />
+          <Route path="/chat" element={<Layout><Chat /></Layout>} />
+          <Route path="/meetings" element={<Layout><Meeting /></Layout>} />
+          <Route path="/storage" element={<Layout><Storage /></Layout>} />
+          <Route path="/packages" element={<Layout><PackageManagement /></Layout>} />
+          <Route path="/billing" element={<Layout><BillingManagement /></Layout>} />
+          <Route path="/licenses" element={<Layout><LicenseManagement /></Layout>} />
+          <Route path="/reports" element={<Layout><Reports /></Layout>} />
+          <Route path="/system-settings" element={<Layout><SystemSettings /></Layout>} />
+          <Route path="/account-settings" element={<Layout><AccountSettings /></Layout>} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
