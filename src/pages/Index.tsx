@@ -1,12 +1,12 @@
-// Enterprise Management System Dashboard
+// Enterprise Management System - Organization Management
 
 import { Layout } from "@/components/Layout";
-import Dashboard from "./Dashboard";
+import OrganizationManagement from "./OrganizationManagement";
 
 const Index = () => {
   return (
     <Layout>
-      <Dashboard />
+      <OrganizationManagement />
     </Layout>
   );
 };

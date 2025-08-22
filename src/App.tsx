@@ -7,6 +7,9 @@ import { Layout } from "@/components/Layout";
 import Index from "./pages/Index";
 import Dashboard from "./pages/Dashboard";
 import UserManagement from "./pages/UserManagement";
+import OrganizationManagement from "./pages/OrganizationManagement";
+import OrganizationUnits from "./pages/OrganizationUnits";
+import DomainManagement from "./pages/DomainManagement";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -18,12 +21,12 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <Routes>
-          <Route path="/" element={<Layout><Dashboard /></Layout>} />
+          <Route path="/" element={<Index />} />
           <Route path="/dashboard" element={<Layout><Dashboard /></Layout>} />
           <Route path="/users" element={<Layout><UserManagement /></Layout>} />
-          <Route path="/organizations" element={<Layout><Index /></Layout>} />
-          <Route path="/organization-units" element={<Layout><Index /></Layout>} />
-          <Route path="/domains" element={<Layout><Index /></Layout>} />
+          <Route path="/organizations" element={<Layout><OrganizationManagement /></Layout>} />
+          <Route path="/organization-units" element={<Layout><OrganizationUnits /></Layout>} />
+          <Route path="/domains" element={<Layout><DomainManagement /></Layout>} />
           <Route path="/roles" element={<Layout><Index /></Layout>} />
           <Route path="/quotas" element={<Layout><Index /></Layout>} />
           <Route path="/mail-service" element={<Layout><Index /></Layout>} />
@@ -39,7 +42,6 @@ const App = () => (
           <Route path="/reports" element={<Layout><Index /></Layout>} />
           <Route path="/system-settings" element={<Layout><Index /></Layout>} />
           <Route path="/account-settings" element={<Layout><Index /></Layout>} />
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
