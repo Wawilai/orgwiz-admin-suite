@@ -193,43 +193,80 @@ const OrganizationManagement = () => {
     return matchesSearch && matchesFilter;
   });
 
-  const handleAdd = () => {
+  const handleAdd = async () => {
     if (formData.name && formData.email) {
-      const newOrg = {
-        id: organizations.length + 1,
-        ...formData,
-        status: "active",
-        userCount: 0,
-        createdAt: new Date().toISOString().split('T')[0],
-        logo: null
-      };
-      setOrganizations([...organizations, newOrg]);
-      setFormData({
-        name: "",
-        type: "",
-        email: "",
-        phone: "",
-        address: "",
-        admin: "",
-        adminEmail: "",
-        tenant_id: ""
-      });
-      setIsAddDialogOpen(false);
+      try {
+        const { error } = await supabase
+          .from('organizations')
+          .insert([{
+            name: formData.name,
+            type: formData.type,
+            email: formData.email,
+            phone: formData.phone,
+            address: formData.address,
+            tenant_id: formData.tenant_id || null,
+            status: 'active'
+          }]);
+        
+        if (error) throw error;
+        
+        await fetchOrganizations();
+        setFormData({
+          name: "",
+          type: "",
+          email: "",
+          phone: "",
+          address: "",
+          admin: "",
+          adminEmail: "",
+          tenant_id: ""
+        });
+        setIsAddDialogOpen(false);
+      } catch (error) {
+        console.error('Error adding organization:', error);
+      }
     }
   };
 
-  const handleEdit = () => {
+  const handleEdit = async () => {
     if (selectedOrg && formData.name && formData.email) {
-      setOrganizations(organizations.map(org => 
-        org.id === selectedOrg.id ? { ...org, ...formData } : org
-      ));
-      setIsEditDialogOpen(false);
-      setSelectedOrg(null);
+      try {
+        const { error } = await supabase
+          .from('organizations')
+          .update({
+            name: formData.name,
+            type: formData.type,
+            email: formData.email,
+            phone: formData.phone,
+            address: formData.address,
+            tenant_id: formData.tenant_id || null
+          })
+          .eq('id', selectedOrg.id);
+        
+        if (error) throw error;
+        
+        await fetchOrganizations();
+        setIsEditDialogOpen(false);
+        setSelectedOrg(null);
+      } catch (error) {
+        console.error('Error updating organization:', error);
+      }
     }
   };
 
-  const handleDelete = (id: number) => {
-    setOrganizations(organizations.filter(org => org.id !== id));
+  const handleDelete = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from('organizations')
+        .delete()
+        .eq('id', id);
+      
+      if (error) throw error;
+      
+      await fetchOrganizations();
+    } catch (error) {
+      console.error('Error deleting organization:', error);
+    }
   };
 
   const openEditDialog = (org: any) => {

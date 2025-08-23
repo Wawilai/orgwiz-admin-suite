@@ -41,6 +41,8 @@ import {
   AlertTriangle,
   CheckCircle,
   TrendingUp,
+  Plus,
+  Trash2,
 } from "lucide-react";
 
 interface Quota {
@@ -58,13 +60,20 @@ const QuotaManagement = () => {
   const { isAuthenticated } = useAuth();
   const [quotas, setQuotas] = useState<Quota[]>([]);
   const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedFilter, setSelectedFilter] = useState("all");
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isAddQuotaOpen, setIsAddQuotaOpen] = useState(false);
   const [selectedQuota, setSelectedQuota] = useState<Quota | null>(null);
   const [formData, setFormData] = useState({
     allocated_mb: 0,
     warning_threshold_mb: 0,
+  });
+  const [newQuotaData, setNewQuotaData] = useState({
+    quota_type: "",
+    allocated_mb: 1000,
+    warning_threshold_mb: 800,
   });
 
   useEffect(() => {
@@ -160,6 +169,50 @@ const QuotaManagement = () => {
     }
   };
 
+  const handleAddQuota = async () => {
+    if (!newQuotaData.quota_type) return;
+    
+    setSubmitting(true);
+    try {
+      const { error } = await supabase
+        .from('storage_quotas')
+        .insert([{
+          ...newQuotaData,
+          organization_id: 'temp-org-id', // Will be replaced with actual org ID
+          used_mb: 0,
+        }]);
+      
+      if (error) throw error;
+      
+      await fetchQuotas();
+      setIsAddQuotaOpen(false);
+      setNewQuotaData({
+        quota_type: "",
+        allocated_mb: 1000,
+        warning_threshold_mb: 800,
+      });
+    } catch (error) {
+      console.error('Error adding quota:', error);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleDeleteQuota = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from('storage_quotas')
+        .delete()
+        .eq('id', id);
+      
+      if (error) throw error;
+      
+      await fetchQuotas();
+    } catch (error) {
+      console.error('Error deleting quota:', error);
+    }
+  };
+
   const openEditDialog = (quota: Quota) => {
     setSelectedQuota(quota);
     setFormData({
@@ -242,6 +295,66 @@ const QuotaManagement = () => {
             <p className="text-xs text-muted-foreground">เต็มแล้ว</p>
           </CardContent>
         </Card>
+      </div>
+
+      <div className="flex justify-end">
+        <Dialog open={isAddQuotaOpen} onOpenChange={setIsAddQuotaOpen}>
+          <DialogTrigger asChild>
+            <Button>
+              <Plus className="w-4 h-4 mr-2" />
+              เพิ่มโควต้า
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="bg-card">
+            <DialogHeader>
+              <DialogTitle>เพิ่มโควต้าใหม่</DialogTitle>
+              <DialogDescription>
+                สร้างโควต้าทรัพยากรใหม่
+              </DialogDescription>
+            </DialogHeader>
+            <div className="grid gap-4 py-4">
+              <div>
+                <Label htmlFor="quota_type">ประเภททรัพยากร</Label>
+                <Select value={newQuotaData.quota_type} onValueChange={(value) => setNewQuotaData({...newQuotaData, quota_type: value})}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="เลือกประเภททรัพยากร" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="file_storage">File Storage</SelectItem>
+                    <SelectItem value="mailbox">Mailbox</SelectItem>
+                    <SelectItem value="backup">Backup</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label htmlFor="allocated_mb">โควต้า (MB)</Label>
+                <Input
+                  id="allocated_mb"
+                  type="number"
+                  value={newQuotaData.allocated_mb}
+                  onChange={(e) => setNewQuotaData({...newQuotaData, allocated_mb: parseInt(e.target.value) || 0})}
+                />
+              </div>
+              <div>
+                <Label htmlFor="warning_threshold_mb">เกณฑ์เตือน (MB)</Label>
+                <Input
+                  id="warning_threshold_mb"
+                  type="number"
+                  value={newQuotaData.warning_threshold_mb}
+                  onChange={(e) => setNewQuotaData({...newQuotaData, warning_threshold_mb: parseInt(e.target.value) || 0})}
+                />
+              </div>
+            </div>
+            <div className="flex justify-end space-x-2">
+              <Button variant="outline" onClick={() => setIsAddQuotaOpen(false)}>
+                ยกเลิก
+              </Button>
+              <Button onClick={handleAddQuota} disabled={submitting}>
+                {submitting ? "กำลังบันทึก..." : "บันทึก"}
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
 
       {/* Quota Dashboard */}
@@ -400,13 +513,23 @@ const QuotaManagement = () => {
                         </div>
                       </TableCell>
                       <TableCell className="text-right">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => openEditDialog(quota)}
-                        >
-                          <Edit className="h-4 w-4" />
-                        </Button>
+                        <div className="flex justify-end space-x-2">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => openEditDialog(quota)}
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleDeleteQuota(quota.id)}
+                            className="text-destructive hover:text-destructive"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
                       </TableCell>
                     </TableRow>
                   );
