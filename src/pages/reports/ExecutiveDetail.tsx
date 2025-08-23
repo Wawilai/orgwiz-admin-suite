@@ -28,6 +28,7 @@ import {
 } from 'recharts';
 
 export default function ExecutiveDetail() {
+  console.log('ExecutiveDetail component loaded');
   const { isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
