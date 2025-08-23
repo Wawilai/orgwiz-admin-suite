@@ -97,6 +97,9 @@ export const usePermissions = () => {
         
         if (userRolesResult.data) {
           userRoles = userRolesResult.data.map(ur => ur.roles?.name).filter(Boolean) || [];
+          // Check for tenant_admin role
+          isTenantAdmin = userRolesResult.data.some(ur => ur.roles?.role_type === 'tenant_admin');
+          
           // Handle permissions properly - convert Json[] to string[]
           allPermissions = userRolesResult.data.flatMap(ur => {
             const rolePermissions = ur.roles?.permissions;
@@ -117,13 +120,13 @@ export const usePermissions = () => {
         isDomainAdmin,
         isSystemSecurity,
         userRoles,
-        canManageUsers: isSuperAdmin || allPermissions.includes('manage_users'),
-        canManageOrganizations: isSuperAdmin || allPermissions.includes('manage_organizations'),
-        canManageDomains: isSuperAdmin || allPermissions.includes('manage_domains'),
-        canViewReports: isSuperAdmin || allPermissions.includes('view_reports'),
-        canManageSystem: isSuperAdmin || allPermissions.includes('manage_system'),
-        canManageBilling: isSuperAdmin || allPermissions.includes('manage_billing'),
-        canManageStorage: isSuperAdmin || allPermissions.includes('manage_storage'),
+        canManageUsers: isSuperAdmin || isTenantAdmin || allPermissions.includes('manage_users'),
+        canManageOrganizations: isSuperAdmin || isTenantAdmin || allPermissions.includes('manage_organizations'),
+        canManageDomains: isSuperAdmin || isTenantAdmin || allPermissions.includes('manage_domains'),
+        canViewReports: isSuperAdmin || isTenantAdmin || allPermissions.includes('view_reports'),
+        canManageSystem: isSuperAdmin || isTenantAdmin || allPermissions.includes('manage_system'),
+        canManageBilling: isSuperAdmin || isTenantAdmin || allPermissions.includes('manage_billing'),
+        canManageStorage: isSuperAdmin || isTenantAdmin || allPermissions.includes('manage_storage'),
       });
     } catch (error) {
       console.error('Error checking user permissions:', error);
@@ -149,12 +152,12 @@ export const usePermissions = () => {
   };
 
   const hasPermission = (permission: keyof UserPermissions): boolean => {
-    if (permissions.isSuperAdmin) return true;
+    if (permissions.isSuperAdmin || permissions.isTenantAdmin) return true;
     return permissions[permission] as boolean;
   };
 
   const hasAnyRole = (roles: string[]): boolean => {
-    if (permissions.isSuperAdmin) return true;
+    if (permissions.isSuperAdmin || permissions.isTenantAdmin) return true;
     return roles.some(role => permissions.userRoles.includes(role));
   };
 
@@ -162,7 +165,7 @@ export const usePermissions = () => {
     // Always allow access if we can't determine permissions (safe fallback)
     if (loading) return true;
     
-    if (permissions.isSuperAdmin) return true;
+    if (permissions.isSuperAdmin || permissions.isTenantAdmin) return true;
 
     switch (module) {
       case 'users':
@@ -182,7 +185,7 @@ export const usePermissions = () => {
       case 'roles':
         return permissions.isSuperAdmin || permissions.isTenantAdmin || permissions.isOrgAdmin;
       case 'security':
-        return permissions.isSuperAdmin || permissions.isSystemSecurity;
+        return permissions.isSuperAdmin || permissions.isTenantAdmin || permissions.isSystemSecurity;
       default:
         return true; // Default to allowing access for unknown modules
     }
