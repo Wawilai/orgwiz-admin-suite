@@ -20,6 +20,8 @@ const UserManagement = () => {
   const [submitting, setSubmitting] = useState(false);
   const [organizations, setOrganizations] = useState<any[]>([]);
   const [organizationUnits, setOrganizationUnits] = useState<any[]>([]);
+  const [managers, setManagers] = useState<any[]>([]);
+  const [roles, setRoles] = useState<any[]>([]);
   const [formData, setFormData] = useState({
     first_name: "",
     last_name: "",
@@ -43,7 +45,9 @@ const UserManagement = () => {
     end_date: "",
     timezone: "Asia/Bangkok",
     language: "th",
-    user_type: "user"
+    user_type: "user",
+    status: "active",
+    selected_role_id: ""
   });
 
   useEffect(() => {
@@ -51,6 +55,8 @@ const UserManagement = () => {
       fetchUsers();
       fetchOrganizations();
       fetchOrganizationUnits();
+      fetchManagers();
+      fetchRoles();
     }
   }, [isAuthenticated]);
 
@@ -81,6 +87,36 @@ const UserManagement = () => {
       setOrganizationUnits(data || []);
     } catch (error) {
       console.error('Error fetching organization units:', error);
+    }
+  };
+
+  const fetchManagers = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('id, first_name, last_name, position')
+        .eq('status', 'active')
+        .in('user_type', ['admin', 'manager'])
+        .order('first_name');
+      
+      if (error) throw error;
+      setManagers(data || []);
+    } catch (error) {
+      console.error('Error fetching managers:', error);
+    }
+  };
+
+  const fetchRoles = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('roles')
+        .select('id, name, role_type, description')
+        .order('name');
+      
+      if (error) throw error;
+      setRoles(data || []);
+    } catch (error) {
+      console.error('Error fetching roles:', error);
     }
   };
 
@@ -123,47 +159,73 @@ const UserManagement = () => {
     
     setSubmitting(true);
     try {
-      const { error } = await supabase
+      // Create profile first
+      const profileData = {...formData};
+      delete profileData.selected_role_id; // Remove role from profile data
+      
+      const { data: profileResult, error: profileError } = await supabase
         .from('profiles')
         .insert([{
-          ...formData,
+          ...profileData,
           user_id: crypto.randomUUID(), // Temporary user ID
-        }]);
+        }])
+        .select()
+        .single();
       
-      if (error) throw error;
+      if (profileError) throw profileError;
+      
+      // Assign role if selected
+      if (formData.selected_role_id && profileResult) {
+        const { error: roleError } = await supabase
+          .from('user_roles')
+          .insert([{
+            user_id: profileResult.user_id,
+            role_id: formData.selected_role_id,
+            assigned_by: profileResult.user_id, // Self-assigned for now
+            is_active: true
+          }]);
+        
+        if (roleError) throw roleError;
+      }
       
       await fetchUsers();
       setIsAddUserOpen(false);
-      setFormData({
-        first_name: "",
-        last_name: "",
-        first_name_en: "",
-        last_name_en: "",
-        email: "",
-        backup_email: "",
-        phone: "",
-        phone_mobile: "",
-        phone_office: "",
-        position: "",
-        employee_id: "",
-        national_id: "",
-        display_name: "",
-        username: "",
-        bio: "",
-        organization_id: "",
-        organization_unit_id: "",
-        manager_id: "",
-        start_date: "",
-        end_date: "",
-        timezone: "Asia/Bangkok",
-        language: "th",
-        user_type: "user"
-      });
+      resetFormData();
     } catch (error) {
       console.error('Error adding user:', error);
     } finally {
       setSubmitting(false);
     }
+  };
+
+  const resetFormData = () => {
+    setFormData({
+      first_name: "",
+      last_name: "",
+      first_name_en: "",
+      last_name_en: "",
+      email: "",
+      backup_email: "",
+      phone: "",
+      phone_mobile: "",
+      phone_office: "",
+      position: "",
+      employee_id: "",
+      national_id: "",
+      display_name: "",
+      username: "",
+      bio: "",
+      organization_id: "",
+      organization_unit_id: "",
+      manager_id: "",
+      start_date: "",
+      end_date: "",
+      timezone: "Asia/Bangkok",
+      language: "th",
+      user_type: "user",
+      status: "active",
+      selected_role_id: ""
+    });
   };
 
   const handleEditUser = async () => {
@@ -228,7 +290,9 @@ const UserManagement = () => {
       end_date: '',
       timezone: 'Asia/Bangkok',
       language: 'th',
-      user_type: user.role || 'user'
+      user_type: user.role || 'user',
+      status: user.status || 'active',
+      selected_role_id: ''
     });
     setIsEditUserOpen(true);
   };
@@ -449,7 +513,24 @@ const UserManagement = () => {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="manager_id">ผู้บังคับบัญชา</Label>
+                <Select value={formData.manager_id} onValueChange={(value) => setFormData({...formData, manager_id: value})}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="เลือกผู้บังคับบัญชา" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">ไม่มี</SelectItem>
+                    {managers.map((manager) => (
+                      <SelectItem key={manager.id} value={manager.id}>
+                        {manager.first_name} {manager.last_name} {manager.position && `(${manager.position})`}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="grid grid-cols-3 gap-4">
                 <div>
                   <Label htmlFor="user_type">ประเภทผู้ใช้</Label>
                   <Select value={formData.user_type} onValueChange={(value) => setFormData({...formData, user_type: value})}>
@@ -475,6 +556,37 @@ const UserManagement = () => {
                     </SelectContent>
                   </Select>
                 </div>
+                <div>
+                  <Label htmlFor="timezone">เขตเวลา</Label>
+                  <Select value={formData.timezone} onValueChange={(value) => setFormData({...formData, timezone: value})}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="เลือกเขตเวลา" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Asia/Bangkok">เวลาไทย (GMT+7)</SelectItem>
+                      <SelectItem value="UTC">UTC (GMT+0)</SelectItem>
+                      <SelectItem value="America/New_York">Eastern Time (GMT-5/-4)</SelectItem>
+                      <SelectItem value="Europe/London">London Time (GMT+0/+1)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div>
+                <Label htmlFor="selected_role_id">บทบาท/สิทธิ์</Label>
+                <Select value={formData.selected_role_id} onValueChange={(value) => setFormData({...formData, selected_role_id: value})}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="เลือกบทบาท" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">ไม่กำหนด</SelectItem>
+                    {roles.map((role) => (
+                      <SelectItem key={role.id} value={role.id}>
+                        {role.name} {role.description && `(${role.description})`}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
 
               <div>
