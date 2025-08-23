@@ -25,19 +25,21 @@ import {
 const Dashboard = () => {
   const { isAuthenticated } = useAuth();
   const [orgStats, setOrgStats] = useState<any>(null);
+  const [recentActivities, setRecentActivities] = useState<any[]>([]);
+  const [systemStatus, setSystemStatus] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (isAuthenticated) {
-      fetchOrganizationStats();
+      fetchDashboardData();
     }
   }, [isAuthenticated]);
 
-  const fetchOrganizationStats = async () => {
+  const fetchDashboardData = async () => {
     try {
       setLoading(true);
       
-      // First get the current user's organization ID
+      // Get organization ID
       const { data: orgId, error: orgError } = await supabase.rpc('get_current_user_organization_id');
       
       if (orgError) {
@@ -55,30 +57,61 @@ const Dashboard = () => {
           total_licenses: 0,
           active_licenses: 0
         });
+        setRecentActivities([]);
+        setSystemStatus([]);
         return;
       }
       
-      // Then get the organization stats
-      const { data: statsData, error: statsError } = await supabase.rpc('get_organization_stats', {
-        org_id: orgId
-      });
+      // Fetch all dashboard data in parallel
+      const [statsResult, activitiesResult] = await Promise.all([
+        supabase.rpc('get_organization_stats', { org_id: orgId }),
+        supabase
+          .from('activity_logs')
+          .select('*')
+          .eq('organization_id', orgId)
+          .order('created_at', { ascending: false })
+          .limit(5)
+      ]);
       
-      if (statsError) {
-        console.error('Error getting organization stats:', statsError);
-        return;
+      // Set organization stats
+      if (statsResult.error) {
+        console.error('Error getting organization stats:', statsResult.error);
+      } else {
+        setOrgStats(statsResult.data || {
+          total_users: 0,
+          active_users: 0,
+          total_domains: 0,
+          active_domains: 0,
+          total_licenses: 0,
+          active_licenses: 0
+        });
       }
       
-      setOrgStats(statsData || {
-        total_users: 0,
-        active_users: 0,
-        total_domains: 0,
-        active_domains: 0,
-        total_licenses: 0,
-        active_licenses: 0
-      });
+      // Set recent activities
+      if (activitiesResult.error) {
+        console.error('Error getting activities:', activitiesResult.error);
+        setRecentActivities([]);
+      } else {
+        const formattedActivities = (activitiesResult.data || []).map((activity: any) => ({
+          id: activity.id,
+          type: activity.action,
+          message: getActivityMessage(activity),
+          time: formatTimeAgo(activity.created_at),
+          status: getActivityStatus(activity.action)
+        }));
+        setRecentActivities(formattedActivities);
+      }
+      
+      // Set system status (mock data for now)
+      setSystemStatus([
+        { service: "Mail Service", status: "online", uptime: "99.9%" },
+        { service: "Chat Service", status: "online", uptime: "99.8%" },
+        { service: "Storage Service", status: "maintenance", uptime: "98.5%" },
+        { service: "Meeting Service", status: "online", uptime: "99.7%" }
+      ]);
+      
     } catch (error) {
-      console.error('Error fetching organization stats:', error);
-      // Set default stats to prevent UI issues
+      console.error('Error fetching dashboard data:', error);
       setOrgStats({
         total_users: 0,
         active_users: 0,
@@ -87,9 +120,51 @@ const Dashboard = () => {
         total_licenses: 0,
         active_licenses: 0
       });
+      setRecentActivities([]);
+      setSystemStatus([]);
     } finally {
       setLoading(false);
     }
+  };
+
+  const getActivityMessage = (activity: any) => {
+    switch (activity.action) {
+      case 'user_created':
+        return `ผู้ใช้ใหม่ ${activity.new_values?.email || 'ไม่ระบุ'} ถูกสร้างขึ้น`;
+      case 'organization_created':
+        return `องค์กร ${activity.new_values?.name || 'ไม่ระบุ'} ถูกสร้างขึ้น`;
+      case 'domain_added':
+        return `โดเมน ${activity.new_values?.name || 'ไม่ระบุ'} ถูกเพิ่ม`;
+      case 'license_assigned':
+        return `ใบอนุญาตถูกกำหนดให้ผู้ใช้`;
+      default:
+        return `${activity.action} - ${activity.entity_type}`;
+    }
+  };
+
+  const getActivityStatus = (action: string) => {
+    if (action.includes('created') || action.includes('assigned') || action.includes('completed')) {
+      return 'success';
+    }
+    if (action.includes('warning') || action.includes('quota')) {
+      return 'warning';
+    }
+    return 'info';
+  };
+
+  const formatTimeAgo = (dateString: string) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffInMinutes = Math.floor((now.getTime() - date.getTime()) / (1000 * 60));
+    
+    if (diffInMinutes < 1) return 'เมื่อสักครู่';
+    if (diffInMinutes < 60) return `${diffInMinutes} นาทีที่แล้ว`;
+    
+    const diffInHours = Math.floor(diffInMinutes / 60);
+    if (diffInHours < 24) return `${diffInHours} ชั่วโมงที่แล้ว`;
+    
+    const diffInDays = Math.floor(diffInHours / 24);
+    return `${diffInDays} วันที่แล้ว`;
   };
 
   const stats = [
@@ -139,43 +214,6 @@ const Dashboard = () => {
     },
   ];
 
-  const recentActivities = [
-    {
-      id: 1,
-      type: "user_created",
-      message: "ผู้ใช้ใหม่ john.doe@company.com ถูกสร้างขึ้น",
-      time: "5 นาทีที่แล้ว",
-      status: "success"
-    },
-    {
-      id: 2,
-      type: "quota_warning", 
-      message: "องค์กร ABC Corp ใกล้เต็มโควต้าอีเมล (95%)",
-      time: "15 นาทีที่แล้ว",
-      status: "warning"
-    },
-    {
-      id: 3,
-      type: "system_update",
-      message: "ระบบอัปเดตเสร็จสิ้น - เวอร์ชัน 2.1.4",
-      time: "1 ชั่วโมงที่แล้ว",
-      status: "info"
-    },
-    {
-      id: 4,
-      type: "backup_completed",
-      message: "การสำรองข้อมูลรายวันเสร็จสิ้น",
-      time: "2 ชั่วโมงที่แล้ว",
-      status: "success"
-    },
-  ];
-
-  const systemStatus = [
-    { service: "Mail Service", status: "online", uptime: "99.9%" },
-    { service: "Chat Service", status: "online", uptime: "99.8%" },
-    { service: "Storage Service", status: "maintenance", uptime: "98.5%" },
-    { service: "Meeting Service", status: "online", uptime: "99.7%" },
-  ];
 
   const getStatusColor = (status: string) => {
     switch (status) {
