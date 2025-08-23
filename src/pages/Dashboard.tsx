@@ -370,56 +370,246 @@ const Dashboard = () => {
         </TabsContent>
 
         <TabsContent value="license" className="space-y-6">
+          <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
+            {/* License Usage Overview */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-sm">การใช้งานใบอนุญาต</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-primary">
+                  {orgStats?.active_licenses || 0}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  จาก {orgStats?.total_licenses || 0} ใบอนุญาตทั้งหมด
+                </p>
+              </CardContent>
+            </Card>
+
+            {/* Storage Quota */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-sm">โควต้าพื้นที่จัดเก็บ</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-orange-600">
+                  {orgStats?.storage_usage?.mailbox || 0} MB
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  พื้นที่อีเมลที่ใช้งาน
+                </p>
+              </CardContent>
+            </Card>
+
+            {/* User Quota */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-sm">โควต้าผู้ใช้งาน</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-green-600">
+                  {orgStats?.active_users || 0}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  ผู้ใช้งานที่ใช้งานอยู่
+                </p>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* License Details Table */}
           <Card>
             <CardHeader>
-              <CardTitle>License & Quota Usage</CardTitle>
-              <CardDescription>การใช้งานใบอนุญาตและโควต้า</CardDescription>
+              <CardTitle>รายละเอียดใบอนุญาต</CardTitle>
+              <CardDescription>ใบอนุญาตที่ใช้งานในองค์กร</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="text-center py-8 text-muted-foreground">
-                ข้อมูลการใช้งานใบอนุญาตและโควต้า
+                {orgStats?.total_licenses > 0 ? 
+                  `มีใบอนุญาต ${orgStats.total_licenses} ชิ้น (ใช้งาน ${orgStats.active_licenses} ชิ้น)` :
+                  'ไม่มีข้อมูลใบอนุญาต'
+                }
               </div>
             </CardContent>
           </Card>
         </TabsContent>
 
         <TabsContent value="service" className="space-y-6">
+          <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-4">
+            {systemStatus.map((service, index) => (
+              <Card key={service.service}>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm">{service.service}</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <div className={`text-lg font-bold ${
+                        service.status === 'online' ? 'text-success' : 
+                        service.status === 'maintenance' ? 'text-warning' : 'text-destructive'
+                      }`}>
+                        {service.status === 'online' ? 'ออนไลน์' : 
+                         service.status === 'maintenance' ? 'บำรุงรักษา' : 'ออฟไลน์'}
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        อัปไทม์: {service.uptime}
+                      </p>
+                    </div>
+                    <div className={`w-3 h-3 rounded-full ${
+                      service.status === 'online' ? 'bg-success' : 
+                      service.status === 'maintenance' ? 'bg-warning' : 'bg-destructive'
+                    }`}></div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+
+          {/* Service Usage Chart */}
           <Card>
             <CardHeader>
-              <CardTitle>Service Usage</CardTitle>
-              <CardDescription>การใช้งานบริการต่างๆ ในระบบ</CardDescription>
+              <CardTitle>การใช้งานบริการ</CardTitle>
+              <CardDescription>สถิติการใช้งานบริการต่างๆ ในระบบ</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="text-center py-8 text-muted-foreground">
-                ข้อมูลการใช้งานบริการ
+                ข้อมูลการใช้งานบริการจะแสดงเมื่อมีการใช้งาน
+                <br />
+                ปัจจุบันมี {systemStatus.length} บริการในระบบ
               </div>
             </CardContent>
           </Card>
         </TabsContent>
 
         <TabsContent value="mail" className="space-y-6">
+          <div className="grid gap-4 grid-cols-1 md:grid-cols-3">
+            {/* Total Domains */}
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm">โดเมนทั้งหมด</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-primary">
+                  {orgStats?.total_domains || 0}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  โดเมนในองค์กร
+                </p>
+              </CardContent>
+            </Card>
+
+            {/* Active Domains */}
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm">โดเมนที่ใช้งาน</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-success">
+                  {orgStats?.active_domains || 0}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  โดเมนที่ทำงาน
+                </p>
+              </CardContent>
+            </Card>
+
+            {/* Mail Service Status */}
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm">สถานะ Mail Service</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className={`text-2xl font-bold ${
+                  systemStatus.find(s => s.service === 'Mail Service')?.status === 'online' ? 'text-success' : 'text-warning'
+                }`}>
+                  {systemStatus.find(s => s.service === 'Mail Service')?.status === 'online' ? 'ออนไลน์' : 'บำรุงรักษา'}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  อัปไทม์: {systemStatus.find(s => s.service === 'Mail Service')?.uptime || 'N/A'}
+                </p>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Mail Relay Details */}
           <Card>
             <CardHeader>
-              <CardTitle>Mail Relay Statistics</CardTitle>
-              <CardDescription>สถิติการส่งอีเมลผ่านระบบ</CardDescription>
+              <CardTitle>สถิติการส่งอีเมล</CardTitle>
+              <CardDescription>ข้อมูลการส่งและรับอีเมลผ่านระบบ</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="text-center py-8 text-muted-foreground">
-                ข้อมูลการส่งอีเมล
+                ข้อมูลการส่งอีเมลจะแสดงเมื่อมีการใช้งาน Mail Relay
+                <br />
+                ปัจจุบันมี {orgStats?.active_domains || 0} โดเมนที่ใช้งาน
               </div>
             </CardContent>
           </Card>
         </TabsContent>
 
         <TabsContent value="inactive" className="space-y-6">
+          <div className="grid gap-4 grid-cols-1 md:grid-cols-3">
+            {/* Total Users */}
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm">ผู้ใช้งานทั้งหมด</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-primary">
+                  {orgStats?.total_users || 0}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  ผู้ใช้ทั้งหมดในระบบ
+                </p>
+              </CardContent>
+            </Card>
+
+            {/* Active Users */}
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm">ผู้ใช้งานที่ใช้งาน</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-success">
+                  {orgStats?.active_users || 0}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  ผู้ใช้ที่ใช้งานอยู่
+                </p>
+              </CardContent>
+            </Card>
+
+            {/* Inactive Users (Calculated) */}
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm">ผู้ใช้งานที่ไม่ได้ใช้งาน</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-warning">
+                  {(orgStats?.total_users || 0) - (orgStats?.active_users || 0)}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  ผู้ใช้ที่ไม่ได้ใช้งาน
+                </p>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Inactive Accounts Details */}
           <Card>
             <CardHeader>
-              <CardTitle>Inactive Accounts</CardTitle>
-              <CardDescription>บัญชีผู้ใช้ที่ไม่ได้ใช้งาน</CardDescription>
+              <CardTitle>รายละเอียดบัญชีที่ไม่ใช้งาน</CardTitle>
+              <CardDescription>บัญชีผู้ใช้ที่ไม่ได้เข้าสู่ระบบเป็นเวลานาน</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="text-center py-8 text-muted-foreground">
-                ข้อมูลบัญชีที่ไม่ได้ใช้งาน
+                {orgStats?.total_users > 0 ? 
+                  `มีผู้ใช้ทั้งหมด ${orgStats.total_users} คน (ใช้งาน ${orgStats.active_users} คน)` :
+                  'ไม่มีข้อมูลผู้ใช้งาน'
+                }
+                <br />
+                อัตราการใช้งาน: {orgStats?.total_users > 0 ? 
+                  Math.round((orgStats.active_users / orgStats.total_users) * 100) : 0}%
               </div>
             </CardContent>
           </Card>
