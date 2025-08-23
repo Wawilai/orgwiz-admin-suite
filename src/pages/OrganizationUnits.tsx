@@ -523,14 +523,14 @@ const OrganizationUnits = () => {
                 ผู้จัดการ
               </Label>
               <Select
-                value={formData.manager_user_id || ""}
-                onValueChange={(value) => setFormData({...formData, manager_user_id: value || null})}
+                value={formData.manager_user_id || "none"}
+                onValueChange={(value) => setFormData({...formData, manager_user_id: value === "none" ? null : value})}
               >
                 <SelectTrigger className="col-span-3">
                   <SelectValue placeholder="เลือกผู้จัดการ (ไม่บังคับ)" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">-- ไม่มีผู้จัดการ --</SelectItem>
+                  <SelectItem value="none">-- ไม่มีผู้จัดการ --</SelectItem>
                   {users.map((user) => (
                     <SelectItem key={user.user_id} value={user.user_id}>
                       {user.display_name || `${user.first_name} ${user.last_name}`} ({user.email})
@@ -641,14 +641,14 @@ const OrganizationUnits = () => {
                 ผู้จัดการ
               </Label>
               <Select
-                value={formData.manager_user_id || ""}
-                onValueChange={(value) => setFormData({...formData, manager_user_id: value || null})}
+                value={formData.manager_user_id || "none"}
+                onValueChange={(value) => setFormData({...formData, manager_user_id: value === "none" ? null : value})}
               >
                 <SelectTrigger className="col-span-3">
                   <SelectValue placeholder="เลือกผู้จัดการ (ไม่บังคับ)" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">-- ไม่มีผู้จัดการ --</SelectItem>
+                  <SelectItem value="none">-- ไม่มีผู้จัดการ --</SelectItem>
                   {users.map((user) => (
                     <SelectItem key={user.user_id} value={user.user_id}>
                       {user.display_name || `${user.first_name} ${user.last_name}`} ({user.email})
