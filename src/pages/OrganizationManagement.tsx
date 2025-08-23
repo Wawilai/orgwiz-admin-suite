@@ -4,6 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/contexts/AuthContext";
+import { usePermissions } from "@/hooks/usePermissions";
 import { supabase } from "@/integrations/supabase/client";
 import {
   Table,
@@ -104,6 +105,7 @@ const mockOrganizations = [
 const OrganizationManagement = () => {
   const { getActiveItems } = useMasterData();
   const { isAuthenticated } = useAuth();
+  const { permissions } = usePermissions();
   const [organizations, setOrganizations] = useState<any[]>([]);
   const [tenants, setTenants] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -132,15 +134,32 @@ const OrganizationManagement = () => {
 
   const fetchOrganizations = async () => {
     try {
-      const { data, error } = await supabase
+      let query = supabase
         .from('organizations')
-        .select('*')
-        .order('created_at', { ascending: false });
+        .select('*');
+      
+      // Tenant admin can see all organizations, super admin can see all,
+      // others only see their own organization
+      if (!permissions.isSuperAdmin && !permissions.isTenantAdmin) {
+        // For regular users, they can only see their own organization
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('organization_id')
+          .eq('user_id', (await supabase.auth.getUser()).data.user?.id)
+          .single();
+        
+        if (profile?.organization_id) {
+          query = query.eq('id', profile.organization_id);
+        }
+      }
+      
+      const { data, error } = await query.order('created_at', { ascending: false });
       
       if (error) throw error;
       setOrganizations(data || []);
     } catch (error) {
       console.error('Error fetching organizations:', error);
+      toast.error('เกิดข้อผิดพลาดในการโหลดข้อมูลองค์กร');
     } finally {
       setLoading(false);
     }
