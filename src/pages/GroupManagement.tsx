@@ -1,5 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
+import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -58,57 +60,90 @@ import {
   X,
 } from "lucide-react";
 
-// Sample group data
-const mockGroups = [
-  {
-    id: 1,
-    name: "ฝ่ายไอที",
-    email: "it@company.com",
-    description: "กลุ่มพนักงานฝ่ายเทคโนโลยีสารสนเทศ",
-    memberCount: 5,
-    createdBy: "สมชาย ใจดี",
-    createdAt: "2024-01-15",
-  },
-  {
-    id: 2,
-    name: "ฝ่ายการตลาด",
-    email: "marketing@company.com", 
-    description: "กลุ่มพนักงานฝ่ายการตลาดและประชาสัมพันธ์",
-    memberCount: 8,
-    createdBy: "นภา สว่างใส",
-    createdAt: "2024-01-10",
-  },
-  {
-    id: 3,
-    name: "ผู้บริหาร",
-    email: "executives@company.com",
-    description: "กลุ่มผู้บริหารระดับสูง",
-    memberCount: 3,
-    createdBy: "วิชาญ เก่งเก็บ",
-    createdAt: "2024-01-05",
-  }
-];
+interface Group {
+  id: string;
+  group_name: string;
+  group_email: string;
+  description?: string;
+  memberCount?: number;
+  created_by?: string;
+  created_at: string;
+}
 
-const mockMembers = [
-  { id: 1, groupId: 1, type: "internal", name: "สมชาย ใจดี", email: "somchai@company.com" },
-  { id: 2, groupId: 1, type: "internal", name: "สมหญิง รักสะอาด", email: "somying@company.com" },
-  { id: 3, groupId: 1, type: "external", name: "", email: "external@partner.com" },
-  { id: 4, groupId: 2, type: "internal", name: "นภา สว่างใส", email: "napa@company.com" },
-  { id: 5, groupId: 2, type: "external", name: "", email: "client@customer.com" },
-];
+interface GroupMember {
+  id: string;
+  group_id: string;
+  user_id?: string;
+  external_email?: string;
+  added_by: string;
+  added_at: string;
+}
 
 const GroupManagement = () => {
+  const { isAuthenticated } = useAuth();
+  const [groups, setGroups] = useState<Group[]>([]);
+  const [members, setMembers] = useState<GroupMember[]>([]);
+  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [isAddGroupOpen, setIsAddGroupOpen] = useState(false);
   const [isEditGroupOpen, setIsEditGroupOpen] = useState(false);
   const [isMembersDialogOpen, setIsMembersDialogOpen] = useState(false);
   const [isAddMemberDialogOpen, setIsAddMemberDialogOpen] = useState(false);
-  const [editingGroup, setEditingGroup] = useState<any>(null);
-  const [selectedGroup, setSelectedGroup] = useState<any>(null);
-  const [groupsData, setGroupsData] = useState(mockGroups);
-  const [membersData, setMembersData] = useState(mockMembers);
+  const [editingGroup, setEditingGroup] = useState<Group | null>(null);
+  const [selectedGroup, setSelectedGroup] = useState<Group | null>(null);
   const [newMemberEmail, setNewMemberEmail] = useState("");
   const [newMemberType, setNewMemberType] = useState<"internal" | "external">("internal");
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      fetchGroups();
+      fetchMembers();
+    }
+  }, [isAuthenticated]);
+
+  const fetchGroups = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('groups')
+        .select('*')
+        .order('created_at', { ascending: false });
+      
+      if (error) throw error;
+      
+      const groupsWithCounts = await Promise.all(
+        (data || []).map(async (group) => {
+          const { count } = await supabase
+            .from('group_members')
+            .select('*', { count: 'exact', head: true })
+            .eq('group_id', group.id);
+          
+          return {
+            ...group,
+            memberCount: count || 0
+          };
+        })
+      );
+      
+      setGroups(groupsWithCounts);
+    } catch (error) {
+      console.error('Error fetching groups:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchMembers = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('group_members')
+        .select('*');
+      
+      if (error) throw error;
+      setMembers(data || []);
+    } catch (error) {
+      console.error('Error fetching members:', error);
+    }
+  };
 
   // Confirmation dialogs
   const { showDeleteConfirmation, DeleteConfirmationDialog } = useDeleteConfirmation();
@@ -135,119 +170,172 @@ const GroupManagement = () => {
     description: { maxLength: 500 },
   });
 
-  const openEditDialog = (group: any) => {
+  const openEditDialog = (group: Group) => {
     setEditingGroup(group);
     editGroupValidation.setValues({
-      name: group.name,
-      email: group.email,
+      name: group.group_name,
+      email: group.group_email,
       description: group.description || "",
     });
     setIsEditGroupOpen(true);
   };
 
-  const openMembersDialog = (group: any) => {
+  const openMembersDialog = (group: Group) => {
     setSelectedGroup(group);
     setIsMembersDialogOpen(true);
   };
 
   const handleAddGroup = async () => {
     await addGroupValidation.handleSubmit(async (values) => {
-      const newGroup = {
-        id: Math.max(...groupsData.map(g => g.id), 0) + 1,
-        name: values.name,
-        email: values.email,
-        description: values.description,
-        memberCount: 0,
-        createdBy: "ผู้ใช้ปัจจุบัน",
-        createdAt: new Date().toISOString().split('T')[0]
-      };
-      
-      setGroupsData([...groupsData, newGroup]);
-      setIsAddGroupOpen(false);
-      addGroupValidation.reset();
-      
-      toastSuccess("เพิ่มกลุ่มสำเร็จ", `เพิ่มกลุ่ม "${values.name}" เรียบร้อยแล้ว`);
+      try {
+        const { data, error } = await supabase
+          .from('groups')
+          .insert([{
+            group_name: values.name,
+            group_email: values.email,
+            description: values.description,
+            organization_id: 'temp-org-id', // Will be replaced with actual org ID
+            created_by: 'temp-user-id', // Will be replaced with actual user ID
+          }])
+          .select()
+          .single();
+        
+        if (error) throw error;
+        
+        const newGroup = { ...data, memberCount: 0 };
+        setGroups([...groups, newGroup]);
+        setIsAddGroupOpen(false);
+        addGroupValidation.reset();
+        
+        toastSuccess("เพิ่มกลุ่มสำเร็จ", `เพิ่มกลุ่ม "${values.name}" เรียบร้อยแล้ว`);
+      } catch (error) {
+        console.error('Error adding group:', error);
+        toastError("เกิดข้อผิดพลาด", "ไม่สามารถเพิ่มกลุ่มได้");
+      }
     });
   };
 
   const handleEditGroup = async () => {
     await editGroupValidation.handleSubmit(async (values) => {
-      setGroupsData(groupsData.map(group => 
-        group.id === editingGroup.id 
-          ? { ...group, ...values }
-          : group
-      ));
+      if (!editingGroup) return;
       
-      setIsEditGroupOpen(false);
-      setEditingGroup(null);
-      editGroupValidation.reset();
-      
-      toastSuccess("แก้ไขกลุ่มสำเร็จ", `แก้ไขข้อมูลกลุ่ม "${values.name}" เรียบร้อยแล้ว`);
+      try {
+        const { error } = await supabase
+          .from('groups')
+          .update({
+            group_name: values.name,
+            group_email: values.email,
+            description: values.description,
+          })
+          .eq('id', editingGroup.id);
+        
+        if (error) throw error;
+        
+        setGroups(groups.map(group => 
+          group.id === editingGroup.id 
+            ? { ...group, group_name: values.name, group_email: values.email, description: values.description }
+            : group
+        ));
+        
+        setIsEditGroupOpen(false);
+        setEditingGroup(null);
+        editGroupValidation.reset();
+        
+        toastSuccess("แก้ไขกลุ่มสำเร็จ", `แก้ไขข้อมูลกลุ่ม "${values.name}" เรียบร้อยแล้ว`);
+      } catch (error) {
+        console.error('Error updating group:', error);
+        toastError("เกิดข้อผิดพลาด", "ไม่สามารถแก้ไขกลุ่มได้");
+      }
     });
   };
 
-  const handleDeleteGroup = async (group: any) => {
-    const originalGroups = [...groupsData];
-    setGroupsData(groupsData.filter(g => g.id !== group.id));
-    
-    toastWithUndo(
-      "ลบกลุ่มสำเร็จ",
-      `ลบกลุ่ม "${group.name}" แล้ว`,
-      () => {
-        setGroupsData(originalGroups);
-        toastSuccess("เลิกทำการลบ", "กู้คืนกลุ่มเรียบร้อยแล้ว");
-      }
-    );
+  const handleDeleteGroup = async (group: Group) => {
+    try {
+      const { error } = await supabase
+        .from('groups')
+        .delete()
+        .eq('id', group.id);
+      
+      if (error) throw error;
+      
+      setGroups(groups.filter(g => g.id !== group.id));
+      toastSuccess("ลบกลุ่มสำเร็จ", `ลบกลุ่ม "${group.group_name}" แล้ว`);
+    } catch (error) {
+      console.error('Error deleting group:', error);
+      toastError("เกิดข้อผิดพลาด", "ไม่สามารถลบกลุ่มได้");
+    }
   };
 
-  const handleAddMember = () => {
-    if (!newMemberEmail) return;
+  const handleAddMember = async () => {
+    if (!newMemberEmail || !selectedGroup) return;
 
-    const newMember = {
-      id: Math.max(...membersData.map(m => m.id), 0) + 1,
-      groupId: selectedGroup.id,
-      type: newMemberType,
-      name: newMemberType === "external" ? "" : "ผู้ใช้ภายใน",
-      email: newMemberEmail
-    };
+    try {
+      const { data, error } = await supabase
+        .from('group_members')
+        .insert([{
+          group_id: selectedGroup.id,
+          external_email: newMemberType === "external" ? newMemberEmail : null,
+          user_id: newMemberType === "internal" ? 'temp-user-id' : null,
+          added_by: 'temp-user-id',
+        }])
+        .select()
+        .single();
+      
+      if (error) throw error;
+      
+      setMembers([...members, data]);
+      
+      // Update member count
+      setGroups(groups.map(group => 
+        group.id === selectedGroup.id 
+          ? { ...group, memberCount: (group.memberCount || 0) + 1 }
+          : group
+      ));
 
-    setMembersData([...membersData, newMember]);
-    
-    // Update member count
-    setGroupsData(groupsData.map(group => 
-      group.id === selectedGroup.id 
-        ? { ...group, memberCount: group.memberCount + 1 }
-        : group
-    ));
-
-    setNewMemberEmail("");
-    setIsAddMemberDialogOpen(false);
-    toastSuccess("เพิ่มสมาชิกสำเร็จ", "เพิ่มสมาชิกเข้ากลุ่มเรียบร้อยแล้ว");
+      setNewMemberEmail("");
+      setIsAddMemberDialogOpen(false);
+      toastSuccess("เพิ่มสมาชิกสำเร็จ", "เพิ่มสมาชิกเข้ากลุ่มเรียบร้อยแล้ว");
+    } catch (error) {
+      console.error('Error adding member:', error);
+      toastError("เกิดข้อผิดพลาด", "ไม่สามารถเพิ่มสมาชิกได้");
+    }
   };
 
-  const handleRemoveMember = (memberId: number) => {
-    const member = membersData.find(m => m.id === memberId);
+  const handleRemoveMember = async (memberId: string) => {
+    const member = members.find(m => m.id === memberId);
     if (!member) return;
 
-    setMembersData(membersData.filter(m => m.id !== memberId));
-    
-    // Update member count
-    setGroupsData(groupsData.map(group => 
-      group.id === member.groupId 
-        ? { ...group, memberCount: Math.max(0, group.memberCount - 1) }
-        : group
-    ));
+    try {
+      const { error } = await supabase
+        .from('group_members')
+        .delete()
+        .eq('id', memberId);
+      
+      if (error) throw error;
+      
+      setMembers(members.filter(m => m.id !== memberId));
+      
+      // Update member count
+      setGroups(groups.map(group => 
+        group.id === member.group_id 
+          ? { ...group, memberCount: Math.max(0, (group.memberCount || 0) - 1) }
+          : group
+      ));
 
-    toastSuccess("ลบสมาชิกสำเร็จ", "ลบสมาชิกออกจากกลุ่มเรียบร้อยแล้ว");
+      toastSuccess("ลบสมาชิกสำเร็จ", "ลบสมาชิกออกจากกลุ่มเรียบร้อยแล้ว");
+    } catch (error) {
+      console.error('Error removing member:', error);
+      toastError("เกิดข้อผิดพลาด", "ไม่สามารถลบสมาชิกได้");
+    }
   };
 
-  const getGroupMembers = (groupId: number) => {
-    return membersData.filter(member => member.groupId === groupId);
+  const getGroupMembers = (groupId: string) => {
+    return members.filter(member => member.group_id === groupId);
   };
 
-  const filteredGroups = groupsData.filter(group => {
-    const matchesSearch = group.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         group.email.toLowerCase().includes(searchTerm.toLowerCase());
+  const filteredGroups = groups.filter(group => {
+    const matchesSearch = group.group_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         group.group_email.toLowerCase().includes(searchTerm.toLowerCase());
     return matchesSearch;
   });
 
@@ -333,7 +421,7 @@ const GroupManagement = () => {
             <Building className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{groupsData.length}</div>
+            <div className="text-2xl font-bold">{groups.length}</div>
           </CardContent>
         </Card>
         <Card>
@@ -343,7 +431,7 @@ const GroupManagement = () => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {groupsData.reduce((sum, group) => sum + group.memberCount, 0)}
+              {groups.reduce((sum, group) => sum + (group.memberCount || 0), 0)}
             </div>
           </CardContent>
         </Card>
@@ -354,7 +442,7 @@ const GroupManagement = () => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {membersData.filter(m => m.type === 'external').length}
+              {members.filter(m => m.external_email).length}
             </div>
           </CardContent>
         </Card>
@@ -392,18 +480,18 @@ const GroupManagement = () => {
             <TableBody>
               {filteredGroups.map((group) => (
                 <TableRow key={group.id}>
-                  <TableCell className="font-medium">{group.name}</TableCell>
-                  <TableCell>{group.email}</TableCell>
+                  <TableCell className="font-medium">{group.group_name}</TableCell>
+                  <TableCell>{group.group_email}</TableCell>
                   <TableCell className="max-w-xs truncate">
                     {group.description || "-"}
                   </TableCell>
                   <TableCell>
                     <Badge variant="secondary">
-                      {group.memberCount} คน
+                      {group.memberCount || 0} คน
                     </Badge>
                   </TableCell>
-                  <TableCell>{group.createdBy}</TableCell>
-                  <TableCell>{new Date(group.createdAt).toLocaleDateString('th-TH')}</TableCell>
+                  <TableCell>{group.created_by || "-"}</TableCell>
+                  <TableCell>{new Date(group.created_at).toLocaleDateString('th-TH')}</TableCell>
                   <TableCell>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
@@ -423,7 +511,7 @@ const GroupManagement = () => {
                         <DropdownMenuSeparator />
                         <DropdownMenuItem 
                           onClick={() => showDeleteConfirmation(
-                            group.name,
+                            group.group_name,
                             () => handleDeleteGroup(group)
                           )}
                           className="text-red-600"
@@ -501,14 +589,14 @@ const GroupManagement = () => {
       <Dialog open={isMembersDialogOpen} onOpenChange={setIsMembersDialogOpen}>
         <DialogContent className="bg-card max-w-4xl">
           <DialogHeader>
-            <DialogTitle>จัดการสมาชิก - {selectedGroup?.name}</DialogTitle>
+            <DialogTitle>จัดการสมาชิก - {selectedGroup?.group_name}</DialogTitle>
             <DialogDescription>
               เพิ่ม แก้ไข หรือลบสมาชิกในกลุ่ม
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div className="flex justify-between items-center">
-              <h4 className="font-medium">รายชื่อสมาชิก ({getGroupMembers(selectedGroup?.id || 0).length} คน)</h4>
+              <h4 className="font-medium">รายชื่อสมาชิก ({getGroupMembers(selectedGroup?.id || "").length} คน)</h4>
               <Dialog open={isAddMemberDialogOpen} onOpenChange={setIsAddMemberDialogOpen}>
                 <DialogTrigger asChild>
                   <Button size="sm">
@@ -567,15 +655,15 @@ const GroupManagement = () => {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {getGroupMembers(selectedGroup?.id || 0).map((member) => (
+                  {getGroupMembers(selectedGroup?.id || "").map((member) => (
                     <TableRow key={member.id}>
                       <TableCell>
-                        {member.name || "-"}
+                        {member.user_id ? "ผู้ใช้ภายใน" : "-"}
                       </TableCell>
-                      <TableCell>{member.email}</TableCell>
+                      <TableCell>{member.external_email || "-"}</TableCell>
                       <TableCell>
-                        <Badge variant={member.type === 'internal' ? 'default' : 'secondary'}>
-                          {member.type === 'internal' ? 'ภายใน' : 'ภายนอก'}
+                        <Badge variant={member.user_id ? 'default' : 'secondary'}>
+                          {member.user_id ? 'ภายใน' : 'ภายนอก'}
                         </Badge>
                       </TableCell>
                       <TableCell>
@@ -589,7 +677,7 @@ const GroupManagement = () => {
                       </TableCell>
                     </TableRow>
                   ))}
-                  {getGroupMembers(selectedGroup?.id || 0).length === 0 && (
+                  {getGroupMembers(selectedGroup?.id || "").length === 0 && (
                     <TableRow>
                       <TableCell colSpan={4} className="text-center text-muted-foreground">
                         ไม่มีสมาชิกในกลุ่มนี้

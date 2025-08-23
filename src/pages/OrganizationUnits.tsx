@@ -1,5 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
+import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -31,124 +33,85 @@ import {
   Network,
 } from "lucide-react";
 
-// Mock data for Organization Units
-const mockOUs = [
-  {
-    id: 1,
-    name: "บริษัท เอบีซี จำกัด (มหาชน)",
-    code: "ABC",
-    parentId: null,
-    level: 0,
-    userCount: 150,
-    children: [
-      {
-        id: 2,
-        name: "ฝ่ายเทคโนโลยีสารสนเทศ",
-        code: "IT",
-        parentId: 1,
-        level: 1,
-        userCount: 25,
-        children: [
-          {
-            id: 3,
-            name: "แผนกพัฒนาระบบ",
-            code: "DEV",
-            parentId: 2,
-            level: 2,
-            userCount: 15,
-            children: []
-          },
-          {
-            id: 4,
-            name: "แผนกโครงสร้างระบบ",
-            code: "INFRA",
-            parentId: 2,
-            level: 2,
-            userCount: 10,
-            children: []
-          }
-        ]
-      },
-      {
-        id: 5,
-        name: "ฝ่ายทรัพยากรบุคคล",
-        code: "HR",
-        parentId: 1,
-        level: 1,
-        userCount: 20,
-        children: [
-          {
-            id: 6,
-            name: "แผนกสรรหาบุคลากร",
-            code: "RECRUIT",
-            parentId: 5,
-            level: 2,
-            userCount: 8,
-            children: []
-          },
-          {
-            id: 7,
-            name: "แผนกพัฒนาบุคลากร",
-            code: "TRAINING",
-            parentId: 5,
-            level: 2,
-            userCount: 12,
-            children: []
-          }
-        ]
-      },
-      {
-        id: 8,
-        name: "ฝ่ายการเงิน",
-        code: "FIN",
-        parentId: 1,
-        level: 1,
-        userCount: 30,
-        children: [
-          {
-            id: 9,
-            name: "แผนกบัญชี",
-            code: "ACC",
-            parentId: 8,
-            level: 2,
-            userCount: 18,
-            children: []
-          },
-          {
-            id: 10,
-            name: "แผนกงบประมาณ",
-            code: "BUDGET",
-            parentId: 8,
-            level: 2,
-            userCount: 12,
-            children: []
-          }
-        ]
-      }
-    ]
-  }
-];
-
-const mockUsers = [
-  { id: 1, name: "สมชาย ใจดี", email: "somchai@abc-corp.com", ouId: 3 },
-  { id: 2, name: "สมหญิง รักสะอาด", email: "somying@abc-corp.com", ouId: 6 },
-  { id: 3, name: "วิชาญ เก่งเก็บ", email: "wichan@abc-corp.com", ouId: 9 },
-];
+interface OrganizationUnit {
+  id: string;
+  name: string;
+  code?: string;
+  parent_unit_id?: string | null;
+  organization_id: string;
+  description?: string;
+  status: string;
+  created_at: string;
+  userCount?: number;
+  children?: OrganizationUnit[];
+}
 
 const OrganizationUnits = () => {
-  const [ous, setOUs] = useState(mockOUs);
-  const [expandedOUs, setExpandedOUs] = useState<Set<number>>(new Set([1, 2, 5, 8]));
-  const [selectedOU, setSelectedOU] = useState<any>(null);
+  const { isAuthenticated } = useAuth();
+  const [ous, setOUs] = useState<OrganizationUnit[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [expandedOUs, setExpandedOUs] = useState<Set<string>>(new Set());
+  const [selectedOU, setSelectedOU] = useState<OrganizationUnit | null>(null);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isAssignUserDialogOpen, setIsAssignUserDialogOpen] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
     code: "",
-    parentId: null as number | null,
+    parent_unit_id: null as string | null,
+    description: "",
   });
 
-  const toggleExpanded = (id: number) => {
+  useEffect(() => {
+    if (isAuthenticated) {
+      fetchOrganizationUnits();
+    }
+  }, [isAuthenticated]);
+
+  const fetchOrganizationUnits = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('organization_units')
+        .select('*')
+        .order('created_at', { ascending: false });
+      
+      if (error) throw error;
+      
+      // Organize into tree structure
+      const treeData = buildTree(data || []);
+      setOUs(treeData);
+    } catch (error) {
+      console.error('Error fetching organization units:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const buildTree = (units: OrganizationUnit[]): OrganizationUnit[] => {
+    const map = new Map();
+    const roots: OrganizationUnit[] = [];
+
+    // Initialize all units
+    units.forEach(unit => {
+      map.set(unit.id, { ...unit, children: [] });
+    });
+
+    // Build tree structure
+    units.forEach(unit => {
+      if (unit.parent_unit_id) {
+        const parent = map.get(unit.parent_unit_id);
+        if (parent) {
+          parent.children.push(map.get(unit.id));
+        }
+      } else {
+        roots.push(map.get(unit.id));
+      }
+    });
+
+    return roots;
+  };
+
+  const toggleExpanded = (id: string) => {
     const newExpanded = new Set(expandedOUs);
     if (newExpanded.has(id)) {
       newExpanded.delete(id);
@@ -203,56 +166,87 @@ const OrganizationUnits = () => {
     }));
   };
 
-  const handleAddOU = () => {
+  const handleAddOU = async () => {
     if (formData.name && formData.code) {
-      const newOU = {
-        id: Date.now(),
-        ...formData,
-        level: selectedOU ? selectedOU.level + 1 : 0,
-        userCount: 0,
-        children: []
-      };
-
-      if (formData.parentId) {
-        setOUs(addOUToTree(ous, newOU));
-      } else {
-        setOUs([...ous, newOU]);
+      try {
+        const { data, error } = await supabase
+          .from('organization_units')
+          .insert([{
+            name: formData.name,
+            code: formData.code,
+            parent_unit_id: formData.parent_unit_id,
+            description: formData.description,
+            organization_id: 'temp-org-id', // Will be replaced with actual org ID
+          }])
+          .select()
+          .single();
+        
+        if (error) throw error;
+        
+        fetchOrganizationUnits(); // Refresh to rebuild tree
+        setFormData({ name: "", code: "", parent_unit_id: null, description: "" });
+        setIsAddDialogOpen(false);
+      } catch (error) {
+        console.error('Error adding organization unit:', error);
       }
-
-      setFormData({ name: "", code: "", parentId: null });
-      setIsAddDialogOpen(false);
     }
   };
 
-  const handleEditOU = () => {
+  const handleEditOU = async () => {
     if (selectedOU && formData.name && formData.code) {
-      const updatedOU = { ...selectedOU, ...formData };
-      setOUs(updateOUInTree(ous, updatedOU));
-      setIsEditDialogOpen(false);
-      setSelectedOU(null);
+      try {
+        const { error } = await supabase
+          .from('organization_units')
+          .update({
+            name: formData.name,
+            code: formData.code,
+            description: formData.description,
+          })
+          .eq('id', selectedOU.id);
+        
+        if (error) throw error;
+        
+        fetchOrganizationUnits(); // Refresh to rebuild tree
+        setIsEditDialogOpen(false);
+        setSelectedOU(null);
+      } catch (error) {
+        console.error('Error updating organization unit:', error);
+      }
     }
   };
 
-  const handleDeleteOU = (id: number) => {
-    setOUs(deleteOUFromTree(ous, id));
+  const handleDeleteOU = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from('organization_units')
+        .delete()
+        .eq('id', id);
+      
+      if (error) throw error;
+      
+      fetchOrganizationUnits(); // Refresh to rebuild tree
+    } catch (error) {
+      console.error('Error deleting organization unit:', error);
+    }
   };
 
-  const openEditDialog = (ou: any) => {
+  const openEditDialog = (ou: OrganizationUnit) => {
     setSelectedOU(ou);
     setFormData({
       name: ou.name,
-      code: ou.code,
-      parentId: ou.parentId
+      code: ou.code || "",
+      parent_unit_id: ou.parent_unit_id,
+      description: ou.description || ""
     });
     setIsEditDialogOpen(true);
   };
 
-  const openAssignDialog = (ou: any) => {
+  const openAssignDialog = (ou: OrganizationUnit) => {
     setSelectedOU(ou);
     setIsAssignUserDialogOpen(true);
   };
 
-  const renderOUTree = (ouList: any[], level: number = 0) => {
+  const renderOUTree = (ouList: OrganizationUnit[], level: number = 0) => {
     return ouList.map((ou) => (
       <div key={ou.id} className={`ml-${level * 4}`}>
         <div className="flex items-center justify-between p-3 border rounded-lg mb-2 bg-card hover:bg-accent/50 transition-colors">
@@ -295,7 +289,7 @@ const OrganizationUnits = () => {
               size="sm"
               onClick={() => {
                 setSelectedOU(ou);
-                setFormData({ name: "", code: "", parentId: ou.id });
+                setFormData({ name: "", code: "", parent_unit_id: ou.id, description: "" });
                 setIsAddDialogOpen(true);
               }}
             >
@@ -346,7 +340,7 @@ const OrganizationUnits = () => {
         </div>
         <Button onClick={() => {
           setSelectedOU(null);
-          setFormData({ name: "", code: "", parentId: null });
+          setFormData({ name: "", code: "", parent_unit_id: null, description: "" });
           setIsAddDialogOpen(true);
         }}>
           <Plus className="w-4 h-4 mr-2" />
@@ -447,7 +441,7 @@ const OrganizationUnits = () => {
                 className="col-span-3"
               />
             </div>
-            {formData.parentId && (
+            {formData.parent_unit_id && (
               <div className="grid grid-cols-4 items-center gap-4">
                 <Label className="text-right">
                   OU แม่
@@ -523,22 +517,14 @@ const OrganizationUnits = () => {
             </DialogDescription>
           </DialogHeader>
           <div className="py-4">
-            <div className="space-y-2">
-              <Label>เลือกผู้ใช้งาน</Label>
-              <div className="border rounded-lg p-3 max-h-60 overflow-y-auto">
-                {mockUsers.map((user) => (
-                  <div key={user.id} className="flex items-center justify-between p-2 hover:bg-accent/50 rounded">
-                    <div>
-                      <div className="font-medium">{user.name}</div>
-                      <div className="text-sm text-muted-foreground">{user.email}</div>
-                    </div>
-                    <Button size="sm" variant="outline">
-                      {user.ouId === selectedOU?.id ? "ลบออก" : "เพิ่ม"}
-                    </Button>
+              <div className="space-y-2">
+                <Label>เลือกผู้ใช้งาน</Label>
+                <div className="border rounded-lg p-3 max-h-60 overflow-y-auto">
+                  <div className="text-center text-muted-foreground py-4">
+                    ยังไม่มีผู้ใช้งานในระบบ
                   </div>
-                ))}
+                </div>
               </div>
-            </div>
           </div>
           <div className="flex justify-end space-x-2">
             <Button variant="outline" onClick={() => setIsAssignUserDialogOpen(false)}>
