@@ -57,16 +57,44 @@ const OrganizationUnits = () => {
   const [isAssignUserDialogOpen, setIsAssignUserDialogOpen] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
+    name_en: "",
     code: "",
     parent_unit_id: null as string | null,
+    manager_user_id: null as string | null,
     description: "",
+    status: "active",
   });
+  const [users, setUsers] = useState<any[]>([]);
 
   useEffect(() => {
     if (isAuthenticated) {
       fetchOrganizationUnits();
+      fetchUsers();
     }
   }, [isAuthenticated]);
+
+  const fetchUsers = async () => {
+    try {
+      const { data: profileData, error: profileError } = await supabase
+        .from('profiles')
+        .select('organization_id')
+        .eq('user_id', (await supabase.auth.getUser()).data.user?.id)
+        .single();
+
+      if (profileError) throw profileError;
+
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('user_id, first_name, last_name, display_name, email')
+        .eq('organization_id', profileData.organization_id)
+        .eq('status', 'active');
+
+      if (error) throw error;
+      setUsers(data || []);
+    } catch (error) {
+      console.error('Error fetching users:', error);
+    }
+  };
 
   const fetchOrganizationUnits = async () => {
     try {
@@ -201,9 +229,12 @@ const OrganizationUnits = () => {
           .from('organization_units')
           .insert([{
             name: formData.name,
+            name_en: formData.name_en || null,
             code: formData.code,
             parent_unit_id: formData.parent_unit_id,
+            manager_user_id: formData.manager_user_id,
             description: formData.description,
+            status: formData.status,
             organization_id: profileData.organization_id,
           }])
           .select()
@@ -212,7 +243,7 @@ const OrganizationUnits = () => {
         if (error) throw error;
         
         fetchOrganizationUnits(); // Refresh to rebuild tree
-        setFormData({ name: "", code: "", parent_unit_id: null, description: "" });
+        setFormData({ name: "", name_en: "", code: "", parent_unit_id: null, manager_user_id: null, description: "", status: "active" });
         setIsAddDialogOpen(false);
       } catch (error) {
         console.error('Error adding organization unit:', error);
@@ -227,8 +258,11 @@ const OrganizationUnits = () => {
           .from('organization_units')
           .update({
             name: formData.name,
+            name_en: formData.name_en || null,
             code: formData.code,
+            manager_user_id: formData.manager_user_id,
             description: formData.description,
+            status: formData.status,
           })
           .eq('id', selectedOU.id);
         
@@ -262,9 +296,12 @@ const OrganizationUnits = () => {
     setSelectedOU(ou);
     setFormData({
       name: ou.name,
+      name_en: (ou as any).name_en || "",
       code: ou.code || "",
       parent_unit_id: ou.parent_unit_id,
-      description: ou.description || ""
+      manager_user_id: (ou as any).manager_user_id || null,
+      description: ou.description || "",
+      status: ou.status || "active"
     });
     setIsEditDialogOpen(true);
   };
@@ -317,7 +354,7 @@ const OrganizationUnits = () => {
               size="sm"
               onClick={() => {
                 setSelectedOU(ou);
-                setFormData({ name: "", code: "", parent_unit_id: ou.id, description: "" });
+                setFormData({ name: "", name_en: "", code: "", parent_unit_id: ou.id, manager_user_id: null, description: "", status: "active" });
                 setIsAddDialogOpen(true);
               }}
             >
@@ -368,7 +405,7 @@ const OrganizationUnits = () => {
         </div>
         <Button onClick={() => {
           setSelectedOU(null);
-          setFormData({ name: "", code: "", parent_unit_id: null, description: "" });
+          setFormData({ name: "", name_en: "", code: "", parent_unit_id: null, manager_user_id: null, description: "", status: "active" });
           setIsAddDialogOpen(true);
         }}>
           <Plus className="w-4 h-4 mr-2" />
@@ -453,7 +490,19 @@ const OrganizationUnits = () => {
                 id="ou-name"
                 value={formData.name}
                 onChange={(e) => setFormData({...formData, name: e.target.value})}
-                placeholder="ชื่อหน่วยงาน"
+                placeholder="ชื่อหน่วยงาน (ภาษาไทย)"
+                className="col-span-3"
+              />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="ou-name-en" className="text-right">
+                ชื่อ OU (EN)
+              </Label>
+              <Input
+                id="ou-name-en"
+                value={formData.name_en}
+                onChange={(e) => setFormData({...formData, name_en: e.target.value})}
+                placeholder="ชื่อหน่วยงาน (English)"
                 className="col-span-3"
               />
             </div>
@@ -468,6 +517,45 @@ const OrganizationUnits = () => {
                 placeholder="รหัสหน่วยงาน"
                 className="col-span-3"
               />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="ou-manager" className="text-right">
+                ผู้จัดการ
+              </Label>
+              <Select
+                value={formData.manager_user_id || ""}
+                onValueChange={(value) => setFormData({...formData, manager_user_id: value || null})}
+              >
+                <SelectTrigger className="col-span-3">
+                  <SelectValue placeholder="เลือกผู้จัดการ (ไม่บังคับ)" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">-- ไม่มีผู้จัดการ --</SelectItem>
+                  {users.map((user) => (
+                    <SelectItem key={user.user_id} value={user.user_id}>
+                      {user.display_name || `${user.first_name} ${user.last_name}`} ({user.email})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="ou-status" className="text-right">
+                สถานะ *
+              </Label>
+              <Select
+                value={formData.status}
+                onValueChange={(value) => setFormData({...formData, status: value})}
+              >
+                <SelectTrigger className="col-span-3">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="active">ใช้งาน</SelectItem>
+                  <SelectItem value="inactive">ไม่ใช้งาน</SelectItem>
+                  <SelectItem value="suspended">ระงับ</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="ou-description" className="text-right">
@@ -521,6 +609,19 @@ const OrganizationUnits = () => {
                 id="edit-ou-name"
                 value={formData.name}
                 onChange={(e) => setFormData({...formData, name: e.target.value})}
+                placeholder="ชื่อหน่วยงาน (ภาษาไทย)"
+                className="col-span-3"
+              />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="edit-ou-name-en" className="text-right">
+                ชื่อ OU (EN)
+              </Label>
+              <Input
+                id="edit-ou-name-en"
+                value={formData.name_en}
+                onChange={(e) => setFormData({...formData, name_en: e.target.value})}
+                placeholder="ชื่อหน่วยงาน (English)"
                 className="col-span-3"
               />
             </div>
@@ -534,6 +635,45 @@ const OrganizationUnits = () => {
                 onChange={(e) => setFormData({...formData, code: e.target.value.toUpperCase()})}
                 className="col-span-3"
               />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="edit-ou-manager" className="text-right">
+                ผู้จัดการ
+              </Label>
+              <Select
+                value={formData.manager_user_id || ""}
+                onValueChange={(value) => setFormData({...formData, manager_user_id: value || null})}
+              >
+                <SelectTrigger className="col-span-3">
+                  <SelectValue placeholder="เลือกผู้จัดการ (ไม่บังคับ)" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">-- ไม่มีผู้จัดการ --</SelectItem>
+                  {users.map((user) => (
+                    <SelectItem key={user.user_id} value={user.user_id}>
+                      {user.display_name || `${user.first_name} ${user.last_name}`} ({user.email})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="edit-ou-status" className="text-right">
+                สถานะ *
+              </Label>
+              <Select
+                value={formData.status}
+                onValueChange={(value) => setFormData({...formData, status: value})}
+              >
+                <SelectTrigger className="col-span-3">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="active">ใช้งาน</SelectItem>
+                  <SelectItem value="inactive">ไม่ใช้งาน</SelectItem>
+                  <SelectItem value="suspended">ระงับ</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="edit-ou-description" className="text-right">
