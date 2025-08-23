@@ -1243,6 +1243,14 @@ export type Database = {
         Args: { org_id: string }
         Returns: Json
       }
+      get_organization_unit_stats: {
+        Args: { org_id: string }
+        Returns: Json
+      }
+      get_service_usage_by_units: {
+        Args: { org_id: string }
+        Returns: Json
+      }
       has_role: {
         Args: {
           _role_type: Database["public"]["Enums"]["app_role"]

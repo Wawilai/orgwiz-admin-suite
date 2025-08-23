@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
@@ -7,6 +7,8 @@ import { Badge } from '@/components/ui/badge';
 import { ChartContainer } from '@/components/ui/chart';
 import { ArrowLeft, Users, Activity, Shield, TrendingUp, Calendar, Download } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
 import {
   LineChart as RechartsLineChart,
   Line,
@@ -25,34 +27,75 @@ import {
   Cell
 } from 'recharts';
 
-// Mock data สำหรับ Executive Detail
-const mockDAUTrend = [
-  { date: '01/01', dau: 1180, growth: 5.2 },
-  { date: '02/01', dau: 1205, growth: 2.1 },
-  { date: '03/01', dau: 1189, growth: -1.3 },
-  { date: '04/01', dau: 1234, growth: 3.8 },
-  { date: '05/01', dau: 1247, growth: 1.1 },
-  { date: '06/01', dau: 1289, growth: 3.4 },
-  { date: '07/01', dau: 1312, growth: 1.8 }
-];
-
-const mockServiceGrowth = [
-  { service: 'อีเมล', jan: 1200, feb: 1350, mar: 1450, growth: 20.8 },
-  { service: 'แชท', jan: 800, feb: 950, mar: 1200, growth: 50.0 },
-  { service: 'ประชุม', jan: 400, feb: 520, mar: 680, growth: 70.0 }
-];
-
-const mockDepartmentUsage = [
-  { department: 'กรมบัญชีกลาง', users: 450, license_usage: 90, active_rate: 95 },
-  { department: 'กรมสรรพากร', users: 380, license_usage: 85, active_rate: 92 },
-  { department: 'กรมศุลกากร', users: 340, license_usage: 80, active_rate: 88 },
-  { department: 'กรมพัฒนาที่ดิน', users: 290, license_usage: 75, active_rate: 85 }
-];
-
-const COLORS = ['hsl(var(--chart-1))', 'hsl(var(--chart-2))', 'hsl(var(--chart-3))'];
-
 export default function ExecutiveDetail() {
+  const { isAuthenticated } = useAuth();
   const navigate = useNavigate();
+  const [loading, setLoading] = useState(true);
+  const [departmentData, setDepartmentData] = useState<any[]>([]);
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      fetchDepartmentData();
+    }
+  }, [isAuthenticated]);
+
+  const fetchDepartmentData = async () => {
+    try {
+      setLoading(true);
+      
+      // Get organization ID
+      const { data: orgId, error: orgError } = await supabase.rpc('get_current_user_organization_id');
+      
+      if (orgError) {
+        console.error('Error getting organization ID:', orgError);
+        return;
+      }
+      
+      if (!orgId) {
+        console.log('No organization ID found for user');
+        return;
+      }
+
+      // Get organization unit statistics
+      const { data: unitStats, error: unitError } = await supabase.rpc('get_organization_unit_stats', {
+        org_id: orgId
+      });
+
+      if (unitError) {
+        console.error('Error getting unit stats:', unitError);
+      } else {
+        const formattedData = Array.isArray(unitStats) ? unitStats.map((unit: any) => ({
+          department: unit.unit_name,
+          users: unit.total_users,
+          license_usage: Math.round(unit.license_usage || 0),
+          active_rate: Math.round(unit.active_rate || 0)
+        })) : [];
+        setDepartmentData(formattedData);
+      }
+      
+    } catch (error) {
+      console.error('Error fetching department data:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Mock data for charts (keeping existing chart data for now)
+  const mockDAUTrend = [
+    { date: '01/01', dau: 1180, growth: 5.2 },
+    { date: '02/01', dau: 1205, growth: 2.1 },
+    { date: '03/01', dau: 1189, growth: -1.3 },
+    { date: '04/01', dau: 1234, growth: 3.8 },
+    { date: '05/01', dau: 1247, growth: 1.1 },
+    { date: '06/01', dau: 1289, growth: 3.4 },
+    { date: '07/01', dau: 1312, growth: 1.8 }
+  ];
+
+  const mockServiceGrowth = [
+    { service: 'อีเมล', jan: 1200, feb: 1350, mar: 1450, growth: 20.8 },
+    { service: 'แชท', jan: 800, feb: 950, mar: 1200, growth: 50.0 },
+    { service: 'ประชุม', jan: 400, feb: 520, mar: 680, growth: 70.0 }
+  ];
   const [timeRange, setTimeRange] = useState('30days');
 
   return (
@@ -223,7 +266,7 @@ export default function ExecutiveDetail() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {mockDepartmentUsage.map((dept, index) => (
+              {departmentData.length > 0 ? departmentData.map((dept, index) => (
                 <TableRow key={index}>
                   <TableCell className="font-medium">{dept.department}</TableCell>
                   <TableCell>
@@ -249,12 +292,18 @@ export default function ExecutiveDetail() {
                       dept.active_rate >= 90 ? 'default' : 
                       dept.active_rate >= 80 ? 'secondary' : 'destructive'
                     }>
-                      {dept.active_rate >= 90 ? 'ดีเยี่ยม' : 
-                       dept.active_rate >= 80 ? 'ดี' : 'ต้องปรับปรุง'}
+                      {dept.active_rate >= 90 ? 'ดีมาก' : 
+                       dept.active_rate >= 80 ? 'ปานกลาง' : 'ต้องปรับปรุง'}
                     </Badge>
                   </TableCell>
                 </TableRow>
-              ))}
+              )) : (
+                <TableRow>
+                  <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+                    ไม่มีข้อมูลหน่วยงาน
+                  </TableCell>
+                </TableRow>
+              )}
             </TableBody>
           </Table>
         </CardContent>
