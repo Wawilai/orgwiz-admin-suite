@@ -39,8 +39,10 @@ export function Layout({ children }: LayoutProps) {
     try {
       await signOut();
       toast.success("ออกจากระบบสำเร็จ");
-      navigate("/");
+      // Navigate to auth page directly instead of home to avoid redirect loop
+      navigate("/auth", { replace: true });
     } catch (error) {
+      console.error("Logout error:", error);
       toast.error("เกิดข้อผิดพลาดในการออกจากระบบ");
     }
   };
