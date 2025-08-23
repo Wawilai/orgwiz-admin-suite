@@ -1,9 +1,12 @@
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
 import {
   Users,
   Building,
@@ -45,64 +48,95 @@ interface Activity {
   status: 'success' | 'warning' | 'error' | 'info';
 }
 
-const mockStats: SystemStats = {
-  totalUsers: 2847,
-  activeUsers: 1234,
-  totalOrganizations: 23,
-  activeOrganizations: 21,
-  totalEmails: 45623,
-  totalMessages: 12456,
-  totalMeetings: 234,
-  storageUsed: 750,
-  storageTotal: 1000,
-  uptime: 99.9
-};
-
-const mockActivities: Activity[] = [
-  {
-    id: '1',
-    type: 'user',
-    title: 'ผู้ใช้ใหม่ลงทะเบียน',
-    description: 'นายสมชาย ใจดี ได้ลงทะเบียนเข้าใช้งานระบบ',
-    timestamp: '2 นาทีที่แล้ว',
-    user: 'สมชาย ใจดี',
-    status: 'success'
-  },
-  {
-    id: '2',
-    type: 'organization',
-    title: 'เพิ่มองค์กรใหม่',
-    description: 'บริษัท เทคโนโลยี ABC จำกัด ได้รับการอนุมัติเข้าระบบ',
-    timestamp: '15 นาทีที่แล้ว',
-    status: 'info'
-  },
-  {
-    id: '3',
-    type: 'system',
-    title: 'การบำรุงรักษาระบบ',
-    description: 'อัปเดตระบบความปลอดภัยเสร็จสิ้น',
-    timestamp: '1 ชั่วโมงที่แล้ว',
-    status: 'success'
-  },
-  {
-    id: '4',
-    type: 'email',
-    title: 'ปริมาณอีเมลสูง',
-    description: 'มีการส่งอีเมลเกิน 1000 ฉบับในชั่วโมงนี้',
-    timestamp: '2 ชั่วโมงที่แล้ว',
-    status: 'warning'
-  },
-  {
-    id: '5',
-    type: 'meeting',
-    title: 'ห้องประชุมใหม่',
-    description: 'สร้างห้องประชุมออนไลน์จำนวน 12 ห้อง',
-    timestamp: '3 ชั่วโมงที่แล้ว',
-    status: 'info'
-  }
-];
-
 export default function EnhancedDashboard() {
+  const { isAuthenticated } = useAuth();
+  const [stats, setStats] = useState<SystemStats>({
+    totalUsers: 0,
+    activeUsers: 0,
+    totalOrganizations: 0,
+    activeOrganizations: 0,
+    totalEmails: 0,
+    totalMessages: 0,
+    totalMeetings: 0,
+    storageUsed: 0,
+    storageTotal: 1000,
+    uptime: 99.9
+  });
+  const [activities, setActivities] = useState<Activity[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      fetchDashboardData();
+    }
+  }, [isAuthenticated]);
+
+  const fetchDashboardData = async () => {
+    try {
+      setLoading(true);
+
+      // Fetch organizations count
+      const { data: orgs, count: totalOrgs } = await supabase
+        .from('organizations')
+        .select('*', { count: 'exact' });
+
+      const activeOrgs = orgs?.filter(o => o.status === 'active').length || 0;
+
+      // Fetch profiles count
+      const { count: totalUsers } = await supabase
+        .from('profiles')
+        .select('*', { count: 'exact' });
+
+      const { count: activeUsers } = await supabase
+        .from('profiles')
+        .select('*', { count: 'exact' })
+        .eq('status', 'active');
+
+      // Fetch storage usage
+      const { data: storageData } = await supabase
+        .from('storage_quotas')
+        .select('used_mb')
+        .is('user_id', null);
+
+      const totalStorageUsed = storageData?.reduce((sum, quota) => sum + (quota.used_mb || 0), 0) || 0;
+      const storageUsedGB = Math.round(totalStorageUsed / 1024);
+
+      // Fetch recent activity logs
+      const { data: activityData } = await supabase
+        .from('activity_logs')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(5);
+
+      const mappedActivities: Activity[] = activityData?.map(log => ({
+        id: log.id,
+        type: log.entity_type as 'user' | 'organization' | 'email' | 'meeting' | 'system',
+        title: log.action,
+        description: log.action,
+        timestamp: new Date(log.created_at).toLocaleString('th-TH'),
+        status: 'info' as const
+      })) || [];
+
+      setStats({
+        totalUsers: totalUsers || 0,
+        activeUsers: activeUsers || 0,
+        totalOrganizations: totalOrgs || 0,
+        activeOrganizations: activeOrgs,
+        totalEmails: 45623, // This would need a mail service integration
+        totalMessages: 12456, // This would need a chat service integration
+        totalMeetings: 234, // This would need a meeting service integration
+        storageUsed: storageUsedGB,
+        storageTotal: 1000,
+        uptime: 99.9
+      });
+
+      setActivities(mappedActivities);
+    } catch (error) {
+      console.error('Error fetching dashboard data:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
   const getActivityIcon = (type: string) => {
     switch (type) {
       case 'user': return <Users className="h-4 w-4" />;
@@ -153,7 +187,7 @@ export default function EnhancedDashboard() {
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{mockStats.totalUsers.toLocaleString()}</div>
+            <div className="text-2xl font-bold">{loading ? '...' : stats.totalUsers.toLocaleString()}</div>
             <p className="text-xs text-muted-foreground">
               <span className="text-green-600 flex items-center">
                 <TrendingUp className="w-3 h-3 mr-1" />
@@ -169,9 +203,9 @@ export default function EnhancedDashboard() {
             <Building className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{mockStats.activeOrganizations}</div>
+            <div className="text-2xl font-bold">{loading ? '...' : stats.activeOrganizations}</div>
             <p className="text-xs text-muted-foreground">
-              จาก {mockStats.totalOrganizations} องค์กรทั้งหมด
+              จาก {stats.totalOrganizations} องค์กรทั้งหมด
             </p>
           </CardContent>
         </Card>
@@ -182,7 +216,7 @@ export default function EnhancedDashboard() {
             <Mail className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{mockStats.totalEmails.toLocaleString()}</div>
+            <div className="text-2xl font-bold">{loading ? '...' : stats.totalEmails.toLocaleString()}</div>
             <p className="text-xs text-muted-foreground">
               <span className="text-green-600 flex items-center">
                 <TrendingUp className="w-3 h-3 mr-1" />
@@ -198,7 +232,7 @@ export default function EnhancedDashboard() {
             <MessageSquare className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{mockStats.totalMeetings}</div>
+            <div className="text-2xl font-bold">{loading ? '...' : stats.totalMeetings}</div>
             <p className="text-xs text-muted-foreground">
               ห้องประชุมที่เปิดอยู่ในขณะนี้
             </p>
@@ -219,19 +253,19 @@ export default function EnhancedDashboard() {
             <div className="space-y-2">
               <div className="flex justify-between items-center">
                 <span className="text-sm font-medium">ประสิทธิภาพระบบ</span>
-                <span className="text-sm text-muted-foreground">{mockStats.uptime}%</span>
+                <span className="text-sm text-muted-foreground">{loading ? '...' : stats.uptime}%</span>
               </div>
-              <Progress value={mockStats.uptime} className="w-full" />
+              <Progress value={stats.uptime} className="w-full" />
             </div>
             
             <div className="space-y-2">
               <div className="flex justify-between items-center">
                 <span className="text-sm font-medium">ผู้ใช้งานออนไลน์</span>
                 <span className="text-sm text-muted-foreground">
-                  {mockStats.activeUsers}/{mockStats.totalUsers}
+                  {loading ? '...' : `${stats.activeUsers}/${stats.totalUsers}`}
                 </span>
               </div>
-              <Progress value={(mockStats.activeUsers / mockStats.totalUsers) * 100} className="w-full" />
+              <Progress value={stats.totalUsers > 0 ? (stats.activeUsers / stats.totalUsers) * 100 : 0} className="w-full" />
             </div>
 
             <div className="flex items-center justify-between pt-2">
@@ -259,20 +293,20 @@ export default function EnhancedDashboard() {
               <div className="flex justify-between items-center">
                 <span className="text-sm font-medium">พื้นที่ใช้งาน</span>
                 <span className="text-sm text-muted-foreground">
-                  {mockStats.storageUsed} GB / {mockStats.storageTotal} GB
+                  {loading ? '...' : `${stats.storageUsed} GB / ${stats.storageTotal} GB`}
                 </span>
               </div>
-              <Progress value={(mockStats.storageUsed / mockStats.storageTotal) * 100} className="w-full" />
+              <Progress value={(stats.storageUsed / stats.storageTotal) * 100} className="w-full" />
             </div>
 
             <div className="grid grid-cols-2 gap-4 pt-2">
               <div className="text-center">
-                <div className="text-2xl font-bold text-primary">{mockStats.storageUsed}</div>
+                <div className="text-2xl font-bold text-primary">{loading ? '...' : stats.storageUsed}</div>
                 <div className="text-xs text-muted-foreground">GB ใช้งาน</div>
               </div>
               <div className="text-center">
                 <div className="text-2xl font-bold text-muted-foreground">
-                  {mockStats.storageTotal - mockStats.storageUsed}
+                  {loading ? '...' : stats.storageTotal - stats.storageUsed}
                 </div>
                 <div className="text-xs text-muted-foreground">GB ว่าง</div>
               </div>
@@ -297,7 +331,11 @@ export default function EnhancedDashboard() {
           <CardContent>
             <ScrollArea className="h-[300px]">
               <div className="space-y-4">
-                {mockActivities.map((activity) => (
+                {loading ? (
+                  <div className="text-center py-8 text-muted-foreground">กำลังโหลดข้อมูล...</div>
+                ) : activities.length === 0 ? (
+                  <div className="text-center py-8 text-muted-foreground">ไม่มีกิจกรรมล่าสุด</div>
+                ) : activities.map((activity) => (
                   <div key={activity.id} className="flex items-start space-x-4">
                     <div className={`p-2 rounded-full bg-muted ${getActivityStatusColor(activity.status)}`}>
                       {getActivityIcon(activity.type)}

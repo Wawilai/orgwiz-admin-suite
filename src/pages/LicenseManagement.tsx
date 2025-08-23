@@ -66,12 +66,9 @@ interface LicenseUsage {
   features_used?: string[];
 }
 
-// Mock usage logs (will be replaced with real data later)
-const mockUsageLogs: LicenseUsage[] = [];
-
 export default function LicenseManagement() {
   const [licenses, setLicenses] = useState<License[]>([]);
-  const [usageLogs] = useState<LicenseUsage[]>(mockUsageLogs);
+  const [usageLogs, setUsageLogs] = useState<LicenseUsage[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');

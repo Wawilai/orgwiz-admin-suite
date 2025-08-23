@@ -1,4 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -36,29 +38,44 @@ interface SecurityPolicy {
   appliedTo: string[];
 }
 
-const mockPolicies: SecurityPolicy[] = [
-  {
-    id: '1',
-    name: 'Web Server Firewall',
-    type: 'Firewall',
-    description: 'กำหนดกฎไฟร์วอลล์สำหรับเว็บเซิร์ฟเวอร์',
-    status: 'Enabled',
-    lastModified: '2024-01-20T10:30:00',
-    appliedTo: ['WEB-SRV-01']
-  },
-  {
-    id: '2',
-    name: 'Strong Password Policy',
-    type: 'Authentication',
-    description: 'กำหนดนโยบายรหัสผ่านที่เข้มงวด',
-    status: 'Enabled', 
-    lastModified: '2024-01-15T14:00:00',
-    appliedTo: ['All Servers']
-  }
-];
-
 export function SecurityPolicyManagement() {
-  const [policies] = useState<SecurityPolicy[]>(mockPolicies);
+  const { isAuthenticated } = useAuth();
+  const [policies, setPolicies] = useState<SecurityPolicy[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      fetchSecurityPolicies();
+    }
+  }, [isAuthenticated]);
+
+  const fetchSecurityPolicies = async () => {
+    try {
+      setLoading(true);
+      const { data, error } = await supabase
+        .from('security_policies')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+
+      const mappedPolicies: SecurityPolicy[] = data?.map(policy => ({
+        id: policy.id,
+        name: policy.name,
+        type: policy.policy_type as 'Firewall' | 'SSL/TLS' | 'Authentication' | 'Access Control',
+        description: policy.description || '',
+        status: policy.status === 'enabled' ? 'Enabled' : 'Disabled',
+        lastModified: policy.updated_at,
+        appliedTo: Array.isArray(policy.applied_to) ? policy.applied_to as string[] : []
+      })) || [];
+
+      setPolicies(mappedPolicies);
+    } catch (error) {
+      console.error('Error fetching security policies:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
   const [selectedPolicy, setSelectedPolicy] = useState<SecurityPolicy | null>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isCloneDialogOpen, setIsCloneDialogOpen] = useState(false);
@@ -141,6 +158,9 @@ export function SecurityPolicyManagement() {
           </CardTitle>
         </CardHeader>
         <CardContent>
+          {loading ? (
+            <div className="text-center py-8">กำลังโหลดข้อมูล...</div>
+          ) : (
           <Table>
             <TableHeader>
               <TableRow>
@@ -224,6 +244,7 @@ export function SecurityPolicyManagement() {
               ))}
             </TableBody>
           </Table>
+          )}
         </CardContent>
       </Card>
 

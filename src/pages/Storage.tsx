@@ -170,12 +170,41 @@ export default function Storage() {
   const [quotas, setQuotas] = useState<StorageQuota[]>([]);
   const [usageLogs] = useState<UsageLog[]>([]);
   const [loading, setLoading] = useState(true);
+  const [departments] = useState<string[]>([
+    'ฝ่ายไอที',
+    'ฝ่ายทรัพยากรบุคคล', 
+    'ฝ่ายการเงิน',
+    'ฝ่ายการตลาด',
+    'ฝ่ายขาย',
+    'ฝ่ายปฏิบัติการ',
+    'ฝ่ายกฎหมาย',
+    'ฝ่ายบัญชี',
+    'ฝ่ายผลิต',
+    'ฝ่ายคุณภาพ',
+    'ฝ่ายธุรการ'
+  ]);
+  const [organizations, setOrganizations] = useState<string[]>([]);
 
   useEffect(() => {
     if (isAuthenticated) {
       fetchStorageQuotas();
+      fetchOrganizations();
     }
   }, [isAuthenticated]);
+
+  const fetchOrganizations = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('organizations')
+        .select('name')
+        .eq('status', 'active');
+      
+      if (error) throw error;
+      setOrganizations(data?.map(org => org.name) || []);
+    } catch (error) {
+      console.error('Error fetching organizations:', error);
+    }
+  };
 
   const fetchStorageQuotas = async () => {
     try {
@@ -523,7 +552,7 @@ export default function Storage() {
                           <SelectValue placeholder="เลือกองค์กร" />
                         </SelectTrigger>
                         <SelectContent>
-                          {mockOrganizations.map((org) => (
+                        {organizations.map((org) => (
                             <SelectItem key={org} value={org}>
                               {org}
                             </SelectItem>
@@ -904,7 +933,7 @@ export default function Storage() {
                       <SelectValue placeholder="เลือกองค์กร" />
                     </SelectTrigger>
                     <SelectContent>
-                      {mockOrganizations.map((org) => (
+                      {organizations.map((org) => (
                         <SelectItem key={org} value={org}>
                           {org}
                         </SelectItem>
