@@ -16,6 +16,7 @@ const Index = lazy(() => import("./pages/Index"));
 const Auth = lazy(() => import("./pages/Auth"));
 const Dashboard = lazy(() => import("./pages/Dashboard"));
 const UserManagement = lazy(() => import("./pages/UserManagement"));
+const UserRoleAssignment = lazy(() => import("./pages/UserRoleAssignment"));
 const GroupManagement = lazy(() => import("./pages/GroupManagement"));
 const OrganizationManagement = lazy(() => import("./pages/OrganizationManagement"));
 const OrganizationUnits = lazy(() => import("./pages/OrganizationUnits"));
@@ -92,6 +93,16 @@ function App() {
                       <ProtectedRoute requiredModule="users">
                         <Suspense fallback={<LoadingFallback />}>
                           <UserManagement />
+                        </Suspense>
+                      </ProtectedRoute>
+                    </Layout>
+                  } />
+                  
+                  <Route path="/user-roles" element={
+                    <Layout>
+                      <ProtectedRoute requiredModule="roles">
+                        <Suspense fallback={<LoadingFallback />}>
+                          <UserRoleAssignment />
                         </Suspense>
                       </ProtectedRoute>
                     </Layout>
