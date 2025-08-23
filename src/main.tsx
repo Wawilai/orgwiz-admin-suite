@@ -21,13 +21,9 @@ if (rootElement) {
     <React.StrictMode>
       <BrowserRouter>
         <ThemeProvider defaultTheme="light" storageKey="vite-ui-theme">
-          <AuthProvider>
-            <MasterDataProvider>
-              <App />
-              <Toaster />
-              <Sonner />
-            </MasterDataProvider>
-          </AuthProvider>
+          <App />
+          <Toaster />
+          <Sonner />
         </ThemeProvider>
       </BrowserRouter>
     </React.StrictMode>
