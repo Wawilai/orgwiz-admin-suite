@@ -12,6 +12,18 @@ const UserManagement = () => {
   const { isAuthenticated } = useAuth();
   const [users, setUsers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isAddUserOpen, setIsAddUserOpen] = useState(false);
+  const [isEditUserOpen, setIsEditUserOpen] = useState(false);
+  const [selectedUser, setSelectedUser] = useState<any>(null);
+  const [submitting, setSubmitting] = useState(false);
+  const [formData, setFormData] = useState({
+    first_name: "",
+    last_name: "",
+    email: "",
+    phone: "",
+    position: "",
+    user_type: "user"
+  });
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -52,23 +64,6 @@ const UserManagement = () => {
       setLoading(false);
     }
   };
-
-  if (loading) {
-    return <div className="p-8 text-center">กำลังโหลดข้อมูล...</div>;
-  }
-
-  const [isAddUserOpen, setIsAddUserOpen] = useState(false);
-  const [isEditUserOpen, setIsEditUserOpen] = useState(false);
-  const [selectedUser, setSelectedUser] = useState<any>(null);
-  const [submitting, setSubmitting] = useState(false);
-  const [formData, setFormData] = useState({
-    first_name: "",
-    last_name: "",
-    email: "",
-    phone: "",
-    position: "",
-    user_type: "user"
-  });
 
   const handleAddUser = async () => {
     if (!formData.first_name || !formData.last_name || !formData.email) return;
@@ -151,6 +146,10 @@ const UserManagement = () => {
     });
     setIsEditUserOpen(true);
   };
+
+  if (loading) {
+    return <div className="p-8 text-center">กำลังโหลดข้อมูล...</div>;
+  }
 
   return (
     <div className="space-y-6">
