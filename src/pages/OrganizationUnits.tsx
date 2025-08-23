@@ -66,6 +66,12 @@ const OrganizationUnits = () => {
   });
   const [users, setUsers] = useState<any[]>([]);
   const [currentOrgId, setCurrentOrgId] = useState<string | null>(null);
+  const [stats, setStats] = useState({
+    total: 0,
+    topLevel: 0,
+    subUnits: 0,
+    totalMembers: 0
+  });
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -142,6 +148,19 @@ const OrganizationUnits = () => {
       if (error) throw error;
       
       console.log('Fetched organization units:', data);
+      
+      // Calculate statistics
+      const total = data?.length || 0;
+      const topLevel = data?.filter(unit => !unit.parent_unit_id).length || 0;
+      const subUnits = total - topLevel;
+      const totalMembers = data?.reduce((sum, unit) => sum + (unit.profiles?.[0]?.count || 0), 0) || 0;
+      
+      setStats({
+        total,
+        topLevel,
+        subUnits,
+        totalMembers
+      });
       
       // Add user count to each OU
       const unitsWithCount = (data || []).map(unit => ({
@@ -249,18 +268,26 @@ const OrganizationUnits = () => {
           return;
         }
 
+        // For main OU, parent_unit_id should be null
+        const parentId = formData.parent_unit_id === "none" ? null : formData.parent_unit_id;
+        const managerId = formData.manager_user_id === "none" ? null : formData.manager_user_id;
+
+        const insertData = {
+          name: formData.name.trim(),
+          name_en: formData.name_en?.trim() || null,
+          code: formData.code.trim().toUpperCase(),
+          parent_unit_id: parentId,
+          manager_user_id: managerId,
+          description: formData.description?.trim() || null,
+          status: formData.status,
+          organization_id: currentOrgId,
+        };
+
+        console.log('Inserting OU data:', insertData);
+
         const { data, error } = await supabase
           .from('organization_units')
-          .insert([{
-            name: formData.name,
-            name_en: formData.name_en || null,
-            code: formData.code,
-            parent_unit_id: formData.parent_unit_id,
-            manager_user_id: formData.manager_user_id === "none" ? null : formData.manager_user_id,
-            description: formData.description,
-            status: formData.status,
-            organization_id: currentOrgId,
-          }])
+          .insert([insertData])
           .select()
           .single();
         
@@ -277,6 +304,8 @@ const OrganizationUnits = () => {
         console.error('Error adding organization unit:', error);
         alert('เกิดข้อผิดพลาดในการเพิ่ม OU: ' + (error as any).message);
       }
+    } else {
+      alert('กรุณากรอกชื่อ OU และรหัส OU');
     }
   };
 
@@ -450,7 +479,7 @@ const OrganizationUnits = () => {
             <Network className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">10</div>
+            <div className="text-2xl font-bold">{stats.total}</div>
             <p className="text-xs text-muted-foreground">หน่วยงาน</p>
           </CardContent>
         </Card>
@@ -460,7 +489,7 @@ const OrganizationUnits = () => {
             <Folder className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">1</div>
+            <div className="text-2xl font-bold">{stats.topLevel}</div>
             <p className="text-xs text-muted-foreground">องค์กรหลัก</p>
           </CardContent>
         </Card>
@@ -470,7 +499,7 @@ const OrganizationUnits = () => {
             <Building2 className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">9</div>
+            <div className="text-2xl font-bold">{stats.subUnits}</div>
             <p className="text-xs text-muted-foreground">หน่วยงานย่อย</p>
           </CardContent>
         </Card>
@@ -480,7 +509,7 @@ const OrganizationUnits = () => {
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">150</div>
+            <div className="text-2xl font-bold">{stats.totalMembers}</div>
             <p className="text-xs text-muted-foreground">ผู้ใช้งาน</p>
           </CardContent>
         </Card>
