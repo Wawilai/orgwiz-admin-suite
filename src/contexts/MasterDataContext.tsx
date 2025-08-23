@@ -99,7 +99,7 @@ export const MasterDataProvider: React.FC<{ children: ReactNode }> = ({ children
         fetchMasterDataByType('ตำแหน่ง'),
         fetchMasterDataByType('บทบาทผู้ใช้'),
         fetchMasterDataByType('ประเทศ'),
-        fetchMasterDataByType('contact_type'),
+        fetchMasterDataByType('ประเภทของผู้ติดต่อ'),
         fetchMasterDataByType('ประเภทใบอนุญาต'),
         fetchMasterDataByType('สถานะใบอนุญาต'),
         fetchMasterDataByType('สกุลเงิน'),
