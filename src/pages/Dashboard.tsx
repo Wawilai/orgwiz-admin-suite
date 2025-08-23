@@ -23,7 +23,9 @@ import {
 } from "lucide-react";
 
 const Dashboard = () => {
+  console.log('🚀 Dashboard component initializing...');
   const { isAuthenticated } = useAuth();
+  console.log('🔐 Authentication status:', isAuthenticated);
   const [orgStats, setOrgStats] = useState<any>(null);
   const [recentActivities, setRecentActivities] = useState<any[]>([]);
   const [systemStatus, setSystemStatus] = useState<any[]>([]);
@@ -275,6 +277,7 @@ const Dashboard = () => {
   };
 
   if (loading) {
+    console.log('🔄 Dashboard is loading...');
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
@@ -284,6 +287,8 @@ const Dashboard = () => {
       </div>
     );
   }
+
+  console.log('✅ Dashboard rendering with data:', { orgStats, recentActivities, systemStatus, growthStats });
 
   return (
     <div className="space-y-6">
