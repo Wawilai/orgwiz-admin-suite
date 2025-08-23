@@ -27,6 +27,7 @@ const Dashboard = () => {
   const [orgStats, setOrgStats] = useState<any>(null);
   const [recentActivities, setRecentActivities] = useState<any[]>([]);
   const [systemStatus, setSystemStatus] = useState<any[]>([]);
+  const [growthStats, setGrowthStats] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -63,14 +64,19 @@ const Dashboard = () => {
       }
       
       // Fetch all dashboard data in parallel
-      const [statsResult, activitiesResult] = await Promise.all([
+      const [statsResult, activitiesResult, growthResult, servicesResult] = await Promise.all([
         supabase.rpc('get_organization_stats', { org_id: orgId }),
         supabase
           .from('activity_logs')
           .select('*')
           .eq('organization_id', orgId)
           .order('created_at', { ascending: false })
-          .limit(5)
+          .limit(5),
+        supabase.rpc('get_organization_growth_stats', { org_id: orgId }),
+        supabase
+          .from('system_services')
+          .select('*')
+          .order('service_name')
       ]);
       
       // Set organization stats
@@ -102,13 +108,36 @@ const Dashboard = () => {
         setRecentActivities(formattedActivities);
       }
       
-      // Set system status (mock data for now)
-      setSystemStatus([
-        { service: "Mail Service", status: "online", uptime: "99.9%" },
-        { service: "Chat Service", status: "online", uptime: "99.8%" },
-        { service: "Storage Service", status: "maintenance", uptime: "98.5%" },
-        { service: "Meeting Service", status: "online", uptime: "99.7%" }
-      ]);
+      // Set growth statistics
+      if (growthResult.error) {
+        console.error('Error getting growth stats:', growthResult.error);
+        setGrowthStats({
+          users_growth: 0,
+          active_users_growth: 0,
+          domains_growth: 0,
+          licenses_growth: 0
+        });
+      } else {
+        setGrowthStats(growthResult.data || {
+          users_growth: 0,
+          active_users_growth: 0,
+          domains_growth: 0,
+          licenses_growth: 0
+        });
+      }
+      
+      // Set system status
+      if (servicesResult.error) {
+        console.error('Error getting services:', servicesResult.error);
+        setSystemStatus([]);
+      } else {
+        const formattedServices = (servicesResult.data || []).map((service: any) => ({
+          service: service.service_name,
+          status: service.status,
+          uptime: `${service.uptime_percentage}%`
+        }));
+        setSystemStatus(formattedServices);
+      }
       
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
@@ -121,6 +150,12 @@ const Dashboard = () => {
         active_licenses: 0
       });
       setRecentActivities([]);
+      setGrowthStats({
+        users_growth: 0,
+        active_users_growth: 0,
+        domains_growth: 0,
+        licenses_growth: 0
+      });
       setSystemStatus([]);
     } finally {
       setLoading(false);
@@ -167,14 +202,20 @@ const Dashboard = () => {
     return `${diffInDays} วันที่แล้ว`;
   };
 
+  const formatGrowthPercentage = (growth: number) => {
+    if (growth === 0) return "0%";
+    const sign = growth > 0 ? "+" : "";
+    return `${sign}${growth}%`;
+  };
+
   const stats = [
     {
       title: "ผู้ใช้งานทั้งหมด",
       value: orgStats?.total_users || "0",
       subtitle: "ในองค์กร",
-      change: "+12.5%",
+      change: formatGrowthPercentage(growthStats?.users_growth || 0),
       changeText: "เดือนที่ผ่านมา", 
-      trend: "up",
+      trend: (growthStats?.users_growth || 0) >= 0 ? "up" : "down",
       icon: Users,
       bgColor: "bg-gradient-to-br from-blue-500 to-blue-600",
       textColor: "text-white"
@@ -183,9 +224,9 @@ const Dashboard = () => {
       title: "โดเมนทั้งหมด",
       value: orgStats?.total_domains || "0",
       subtitle: "ในองค์กร", 
-      change: "+5%",
+      change: formatGrowthPercentage(growthStats?.domains_growth || 0),
       changeText: "เดือนที่ผ่านมา",
-      trend: "up",
+      trend: (growthStats?.domains_growth || 0) >= 0 ? "up" : "down",
       icon: Building2,
       bgColor: "bg-gradient-to-br from-green-500 to-green-600",
       textColor: "text-white"
@@ -194,9 +235,9 @@ const Dashboard = () => {
       title: "ใบอนุญาตใช้งาน",
       value: orgStats?.active_licenses || "0",
       subtitle: "ใช้งานอยู่",
-      change: "+10%", 
+      change: formatGrowthPercentage(growthStats?.licenses_growth || 0), 
       changeText: "เดือนที่ผ่านมา",
-      trend: "up",
+      trend: (growthStats?.licenses_growth || 0) >= 0 ? "up" : "down",
       icon: CheckCircle,
       bgColor: "bg-gradient-to-br from-purple-500 to-purple-600",
       textColor: "text-white"
@@ -205,9 +246,9 @@ const Dashboard = () => {
       title: "ผู้ใช้ที่ใช้งาน",
       value: orgStats?.active_users || "0",
       subtitle: "ใช้งานปัจจุบัน",
-      change: "+8.2%",
+      change: formatGrowthPercentage(growthStats?.active_users_growth || 0),
       changeText: "เดือนที่ผ่านมา",
-      trend: "up", 
+      trend: (growthStats?.active_users_growth || 0) >= 0 ? "up" : "down", 
       icon: TrendingUp,
       bgColor: "bg-gradient-to-br from-orange-500 to-orange-600",
       textColor: "text-white"
@@ -314,7 +355,11 @@ const Dashboard = () => {
                     {stat.subtitle}
                   </div>
                   <div className={`text-sm ${stat.textColor} opacity-90 flex items-center gap-1`}>
-                    <TrendingUp className="h-3 w-3" />
+                    {stat.trend === "up" ? (
+                      <TrendingUp className="h-3 w-3" />
+                    ) : (
+                      <TrendingUp className="h-3 w-3 rotate-180" />
+                    )}
                     <span className="font-medium">{stat.change}</span>
                     <span className="opacity-75">{stat.changeText}</span>
                   </div>

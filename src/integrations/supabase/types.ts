@@ -1101,6 +1101,42 @@ export type Database = {
           },
         ]
       }
+      system_services: {
+        Row: {
+          created_at: string
+          id: string
+          last_check: string
+          organization_id: string | null
+          service_name: string
+          service_type: string
+          status: string
+          updated_at: string
+          uptime_percentage: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          last_check?: string
+          organization_id?: string | null
+          service_name: string
+          service_type: string
+          status?: string
+          updated_at?: string
+          uptime_percentage?: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          last_check?: string
+          organization_id?: string | null
+          service_name?: string
+          service_type?: string
+          status?: string
+          updated_at?: string
+          uptime_percentage?: number
+        }
+        Relationships: []
+      }
       tenants: {
         Row: {
           created_at: string
@@ -1198,6 +1234,10 @@ export type Database = {
       get_full_email_address: {
         Args: { domain_id: string; local_part: string }
         Returns: string
+      }
+      get_organization_growth_stats: {
+        Args: { org_id: string }
+        Returns: Json
       }
       get_organization_stats: {
         Args: { org_id: string }
