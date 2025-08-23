@@ -520,7 +520,6 @@ const UserManagement = () => {
                     <SelectValue placeholder="เลือกผู้บังคับบัญชา" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">ไม่มี</SelectItem>
                     {managers.map((manager) => (
                       <SelectItem key={manager.id} value={manager.id}>
                         {manager.first_name} {manager.last_name} {manager.position && `(${manager.position})`}
@@ -579,7 +578,6 @@ const UserManagement = () => {
                     <SelectValue placeholder="เลือกบทบาท" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">ไม่กำหนด</SelectItem>
                     {roles.map((role) => (
                       <SelectItem key={role.id} value={role.id}>
                         {role.name} {role.description && `(${role.description})`}
