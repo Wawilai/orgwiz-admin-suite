@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -8,490 +8,166 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { Progress } from '@/components/ui/progress';
-import { Switch } from '@/components/ui/switch';
-import { toast } from '@/hooks/use-toast';
+import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
 import { 
   Package, 
   Plus, 
   Search, 
-  Download, 
-  Upload, 
   Crown, 
   Star,
   Clock,
   Users,
-  MoreHorizontal,
   Edit2,
   Trash2,
   CheckCircle,
   XCircle,
-  TrendingUp,
-  Calendar
+  TrendingUp
 } from 'lucide-react';
 
-interface PackagePlan {
+interface License {
   id: string;
-  name: string;
-  description: string;
-  type: 'Basic' | 'Standard' | 'Premium' | 'Enterprise';
-  price: number;
-  billingCycle: 'Monthly' | 'Yearly';
-  features: PackageFeature[];
-  maxUsers: number;
-  storageGB: number;
-  emailAccounts: number;
-  supportLevel: 'Basic' | 'Priority' | '24/7';
-  status: 'Active' | 'Inactive' | 'Deprecated';
-  isPopular: boolean;
-  createdAt: string;
-  updatedAt: string;
+  organization_id: string;
+  product_name: string;
+  license_type: string;
+  license_key: string;
+  max_users: number;
+  usage_count: number;
+  issue_date: string;
+  expiry_date: string;
+  status: string;
+  features: string[];
+  notes?: string;
+  last_used?: string;
+  auto_renew: boolean;
+  organizations?: { name: string };
 }
 
-interface PackageFeature {
-  id: string;
-  name: string;
-  included: boolean;
-  limit?: number;
-  unit?: string;
-}
-
-interface Subscription {
-  id: string;
-  organizationId: string;
-  organizationName: string;
-  packageId: string;
-  packageName: string;
-  status: 'Active' | 'Expired' | 'Suspended' | 'Cancelled';
-  startDate: string;
-  endDate: string;
-  price: number;
-  billingCycle: 'Monthly' | 'Yearly';
-  autoRenew: boolean;
-  usedUsers: number;
-  usedStorage: number;
-  lastPayment: string;
-}
-
-const mockFeatures: PackageFeature[] = [
-  { id: '1', name: 'Email Service', included: true },
-  { id: '2', name: 'Chat & Messaging', included: true },
-  { id: '3', name: 'Video Conference', included: true, limit: 100, unit: 'participants' },
-  { id: '4', name: 'File Storage', included: true, limit: 100, unit: 'GB' },
-  { id: '5', name: 'Advanced Security', included: false },
-  { id: '6', name: 'API Access', included: false },
-  { id: '7', name: 'Custom Domain', included: false },
-  { id: '8', name: 'Priority Support', included: false }
-];
-
-const mockPackages: PackagePlan[] = [
-  {
-    id: '1',
-    name: 'Basic Plan',
-    description: 'เหมาะสำหรับธุรกิจเริ่มต้น',
-    type: 'Basic',
-    price: 299,
-    billingCycle: 'Monthly',
-    features: mockFeatures.slice(0, 4),
-    maxUsers: 10,
-    storageGB: 50,
-    emailAccounts: 10,
-    supportLevel: 'Basic',
-    status: 'Active',
-    isPopular: false,
-    createdAt: '2024-01-01',
-    updatedAt: '2024-01-20'
-  },
-  {
-    id: '2',
-    name: 'Standard Plan',
-    description: 'เหมาะสำหรับธุรกิจขนาดกลาง',
-    type: 'Standard',
-    price: 799,
-    billingCycle: 'Monthly',
-    features: mockFeatures.slice(0, 6),
-    maxUsers: 50,
-    storageGB: 200,
-    emailAccounts: 50,
-    supportLevel: 'Priority',
-    status: 'Active',
-    isPopular: true,
-    createdAt: '2024-01-01',
-    updatedAt: '2024-01-20'
-  },
-  {
-    id: '3',
-    name: 'Premium Plan',
-    description: 'เหมาะสำหรับธุรกิจขนาดใหญ่',
-    type: 'Premium',
-    price: 1499,
-    billingCycle: 'Monthly',
-    features: mockFeatures.slice(0, 7),
-    maxUsers: 200,
-    storageGB: 500,
-    emailAccounts: 200,
-    supportLevel: '24/7',
-    status: 'Active',
-    isPopular: false,
-    createdAt: '2024-01-01',
-    updatedAt: '2024-01-20'
-  },
-  {
-    id: '4',
-    name: 'Enterprise Plan',
-    description: 'เหมาะสำหรับองค์กรขนาดใหญ่',
-    type: 'Enterprise',
-    price: 2999,
-    billingCycle: 'Monthly',
-    features: mockFeatures,
-    maxUsers: 1000,
-    storageGB: 2000,
-    emailAccounts: 1000,
-    supportLevel: '24/7',
-    status: 'Active',
-    isPopular: false,
-    createdAt: '2024-01-01',
-    updatedAt: '2024-01-20'
-  }
-];
-
-const mockSubscriptions: Subscription[] = [
-  {
-    id: '1',
-    organizationId: 'org-001',
-    organizationName: 'บริษัท เทคโนโลยี จำกัด',
-    packageId: '2',
-    packageName: 'Standard Plan',
-    status: 'Active',
-    startDate: '2024-01-01',
-    endDate: '2024-12-31',
-    price: 799,
-    billingCycle: 'Monthly',
-    autoRenew: true,
-    usedUsers: 35,
-    usedStorage: 150,
-    lastPayment: '2024-01-20'
-  },
-  {
-    id: '2',
-    organizationId: 'org-002',
-    organizationName: 'บริษัท การตลาด จำกัด',
-    packageId: '1',
-    packageName: 'Basic Plan',
-    status: 'Active',
-    startDate: '2024-01-15',
-    endDate: '2024-07-15',
-    price: 299,
-    billingCycle: 'Monthly',
-    autoRenew: false,
-    usedUsers: 8,
-    usedStorage: 25,
-    lastPayment: '2024-01-15'
-  }
-];
-
-export default function PackageManagement() {
-  const [packages, setPackages] = useState<PackagePlan[]>(mockPackages);
-  const [subscriptions, setSubscriptions] = useState<Subscription[]>(mockSubscriptions);
+const PackageManagement = () => {
+  const { isAuthenticated } = useAuth();
+  const [licenses, setLicenses] = useState<License[]>([]);
+  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const [typeFilter, setTypeFilter] = useState<string>('all');
-  const [statusFilter, setStatusFilter] = useState<string>('all');
-  const [isAddPackageDialogOpen, setIsAddPackageDialogOpen] = useState(false);
-  const [editingPackage, setEditingPackage] = useState<PackagePlan | null>(null);
-  const [formData, setFormData] = useState<Partial<PackagePlan>>({
-    name: '',
-    description: '',
-    type: 'Basic',
-    price: 0,
-    billingCycle: 'Monthly',
-    features: [],
-    maxUsers: 10,
-    storageGB: 50,
-    emailAccounts: 10,
-    supportLevel: 'Basic',
-    status: 'Active',
-    isPopular: false
-  });
+  const [selectedStatus, setSelectedStatus] = useState('all');
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
 
-  const filteredPackages = packages.filter(pkg => {
-    const matchesSearch = pkg.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         pkg.description.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesType = typeFilter === 'all' || pkg.type === typeFilter;
-    const matchesStatus = statusFilter === 'all' || pkg.status === statusFilter;
-    return matchesSearch && matchesType && matchesStatus;
-  });
+  useEffect(() => {
+    if (isAuthenticated) {
+      fetchLicenses();
+    }
+  }, [isAuthenticated]);
 
-  const handleAddPackage = () => {
-    const newPackage: PackagePlan = {
-      id: Date.now().toString(),
-      ...formData as PackagePlan,
-      features: formData.features || [],
-      createdAt: new Date().toISOString().split('T')[0],
-      updatedAt: new Date().toISOString().split('T')[0]
-    };
-    setPackages([...packages, newPackage]);
-    setIsAddPackageDialogOpen(false);
-    resetForm();
-    toast({
-      title: "เพิ่มแพ็กเกจสำเร็จ",
-      description: "เพิ่มแพ็กเกจใหม่เรียบร้อยแล้ว",
-    });
-  };
-
-  const handleEditPackage = () => {
-    if (!editingPackage) return;
-    setPackages(packages.map(pkg => 
-      pkg.id === editingPackage.id 
-        ? { ...pkg, ...formData, updatedAt: new Date().toISOString().split('T')[0] }
-        : pkg
-    ));
-    setEditingPackage(null);
-    resetForm();
-    toast({
-      title: "แก้ไขสำเร็จ",
-      description: "แก้ไขแพ็กเกจเรียบร้อยแล้ว",
-    });
-  };
-
-  const handleDeletePackage = (id: string) => {
-    setPackages(packages.filter(pkg => pkg.id !== id));
-    toast({
-      title: "ลบสำเร็จ",
-      description: "ลบแพ็กเกจเรียบร้อยแล้ว",
-    });
-  };
-
-  const handleUpgradeSubscription = (subscriptionId: string, packageId: string) => {
-    const targetPackage = packages.find(pkg => pkg.id === packageId);
-    if (!targetPackage) return;
-
-    setSubscriptions(subscriptions.map(sub => 
-      sub.id === subscriptionId 
-        ? { 
-            ...sub, 
-            packageId: targetPackage.id,
-            packageName: targetPackage.name,
-            price: targetPackage.price,
-            endDate: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
-          }
-        : sub
-    ));
-    toast({
-      title: "อัปเกรดสำเร็จ",
-      description: `อัปเกรดเป็น ${targetPackage.name} เรียบร้อยแล้ว`,
-    });
-  };
-
-  const resetForm = () => {
-    setFormData({
-      name: '',
-      description: '',
-      type: 'Basic',
-      price: 0,
-      billingCycle: 'Monthly',
-      features: [],
-      maxUsers: 10,
-      storageGB: 50,
-      emailAccounts: 10,
-      supportLevel: 'Basic',
-      status: 'Active',
-      isPopular: false
-    });
-  };
-
-  const openEditDialog = (pkg: PackagePlan) => {
-    setEditingPackage(pkg);
-    setFormData(pkg);
-  };
-
-  const getTypeBadge = (type: string) => {
-    const variants: Record<string, "default" | "destructive" | "secondary" | "outline"> = {
-      Basic: "secondary",
-      Standard: "default",
-      Premium: "destructive",
-      Enterprise: "outline"
-    };
-    const colors = {
-      Basic: "text-gray-700",
-      Standard: "text-blue-700",
-      Premium: "text-purple-700",
-      Enterprise: "text-gold-700"
-    };
-    return <Badge variant={variants[type] || "default"} className={colors[type as keyof typeof colors]}>{type}</Badge>;
+  const fetchLicenses = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('licenses')
+        .select(`
+          *,
+          organizations!licenses_organization_id_fkey (name)
+        `)
+        .order('created_at', { ascending: false });
+      
+      if (error) throw error;
+      
+      // Transform data to match our interface
+      const formattedLicenses = (data || []).map(license => ({
+        ...license,
+        features: Array.isArray(license.features) ? license.features.map(f => String(f)) : []
+      }));
+      
+      setLicenses(formattedLicenses);
+    } catch (error) {
+      console.error('Error fetching licenses:', error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const getStatusBadge = (status: string) => {
-    const variants: Record<string, "default" | "destructive" | "secondary" | "outline"> = {
-      Active: "default",
-      Inactive: "secondary",
-      Deprecated: "destructive",
-      Expired: "destructive",
-      Suspended: "destructive",
-      Cancelled: "outline"
-    };
-    const statusText = {
-      Active: "เปิดใช้งาน",
-      Inactive: "ปิดใช้งาน",
-      Deprecated: "เลิกใช้",
-      Expired: "หมดอายุ",
-      Suspended: "ถูกระงับ",
-      Cancelled: "ยกเลิก"
-    };
-    return <Badge variant={variants[status] || "default"}>{statusText[status as keyof typeof statusText]}</Badge>;
+    const variants = {
+      active: 'default',
+      expired: 'secondary',
+      suspended: 'destructive',
+      inactive: 'outline'
+    } as const;
+    
+    const labels = {
+      active: 'ใช้งาน',
+      expired: 'หมดอายุ',
+      suspended: 'ระงับ',
+      inactive: 'ไม่ใช้งาน'
+    } as const;
+
+    return (
+      <Badge variant={variants[status as keyof typeof variants] || 'outline'}>
+        {labels[status as keyof typeof labels] || status}
+      </Badge>
+    );
   };
 
-  const totalRevenue = subscriptions.reduce((sum, sub) => sum + (sub.status === 'Active' ? sub.price : 0), 0);
-  const activeSubscriptions = subscriptions.filter(sub => sub.status === 'Active').length;
+  const getLicenseTypeIcon = (type: string) => {
+    switch (type.toLowerCase()) {
+      case 'premium':
+        return <Crown className="h-4 w-4 text-yellow-500" />;
+      case 'standard':
+        return <Star className="h-4 w-4 text-blue-500" />;
+      default:
+        return <Package className="h-4 w-4 text-gray-500" />;
+    }
+  };
+
+  const filteredLicenses = licenses.filter(license => {
+    const matchesSearch = license.product_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         license.license_type.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         (license.organizations?.name || '').toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesStatus = selectedStatus === 'all' || license.status === selectedStatus;
+    return matchesSearch && matchesStatus;
+  });
+
+  const getUsagePercentage = (used: number, max: number) => {
+    return max > 0 ? Math.round((used / max) * 100) : 0;
+  };
+
+  const isExpiringSoon = (expiryDate: string) => {
+    const today = new Date();
+    const expiry = new Date(expiryDate);
+    const daysUntilExpiry = Math.ceil((expiry.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+    return daysUntilExpiry <= 30 && daysUntilExpiry > 0;
+  };
+
+  if (loading) {
+    return <div className="p-8 text-center">กำลังโหลดข้อมูล...</div>;
+  }
 
   return (
     <div className="container mx-auto p-6 space-y-6">
-      {/* Header */}
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold">จัดการแพ็กเกจบริการ</h1>
-          <p className="text-muted-foreground">จัดการแผนบริการและการสมัครสมาชิก</p>
+          <h1 className="text-3xl font-bold">จัดการแพ็คเกจและใบอนุญาต</h1>
+          <p className="text-muted-foreground">จัดการแพ็คเกจบริการและใบอนุญาตการใช้งาน</p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline">
-            <Download className="h-4 w-4 mr-2" />
-            ส่งออก
-          </Button>
-          <Dialog open={isAddPackageDialogOpen} onOpenChange={setIsAddPackageDialogOpen}>
+          <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
             <DialogTrigger asChild>
               <Button>
                 <Plus className="h-4 w-4 mr-2" />
-                เพิ่มแพ็กเกจ
+                เพิ่มใบอนุญาต
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-2xl">
+            <DialogContent>
               <DialogHeader>
-                <DialogTitle>เพิ่มแพ็กเกจใหม่</DialogTitle>
+                <DialogTitle>เพิ่มใบอนุญาตใหม่</DialogTitle>
               </DialogHeader>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="name">ชื่อแพ็กเกจ *</Label>
-                  <Input
-                    id="name"
-                    value={formData.name}
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    placeholder="กรอกชื่อแพ็กเกจ"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="type">ประเภท</Label>
-                  <Select
-                    value={formData.type}
-                    onValueChange={(value) => setFormData({ ...formData, type: value as any })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Basic">Basic</SelectItem>
-                      <SelectItem value="Standard">Standard</SelectItem>
-                      <SelectItem value="Premium">Premium</SelectItem>
-                      <SelectItem value="Enterprise">Enterprise</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="price">ราคา (บาท)</Label>
-                  <Input
-                    id="price"
-                    type="number"
-                    value={formData.price}
-                    onChange={(e) => setFormData({ ...formData, price: parseFloat(e.target.value) })}
-                    min="0"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="billingCycle">รอบการเก็บเงิน</Label>
-                  <Select
-                    value={formData.billingCycle}
-                    onValueChange={(value) => setFormData({ ...formData, billingCycle: value as any })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Monthly">รายเดือน</SelectItem>
-                      <SelectItem value="Yearly">รายปี</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="maxUsers">จำนวนผู้ใช้สูงสุด</Label>
-                  <Input
-                    id="maxUsers"
-                    type="number"
-                    value={formData.maxUsers}
-                    onChange={(e) => setFormData({ ...formData, maxUsers: parseInt(e.target.value) })}
-                    min="1"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="storageGB">พื้นที่เก็บข้อมูล (GB)</Label>
-                  <Input
-                    id="storageGB"
-                    type="number"
-                    value={formData.storageGB}
-                    onChange={(e) => setFormData({ ...formData, storageGB: parseInt(e.target.value) })}
-                    min="1"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="emailAccounts">จำนวนอีเมลแอคเคาท์</Label>
-                  <Input
-                    id="emailAccounts"
-                    type="number"
-                    value={formData.emailAccounts}
-                    onChange={(e) => setFormData({ ...formData, emailAccounts: parseInt(e.target.value) })}
-                    min="1"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="supportLevel">ระดับการสนับสนุน</Label>
-                  <Select
-                    value={formData.supportLevel}
-                    onValueChange={(value) => setFormData({ ...formData, supportLevel: value as any })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Basic">Basic</SelectItem>
-                      <SelectItem value="Priority">Priority</SelectItem>
-                      <SelectItem value="24/7">24/7</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="col-span-2 space-y-2">
-                  <Label htmlFor="description">รายละเอียด</Label>
-                  <Textarea
-                    id="description"
-                    value={formData.description}
-                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                    placeholder="กรอกรายละเอียดแพ็กเกจ"
-                    rows={3}
-                  />
-                </div>
-                <div className="col-span-2 flex items-center space-x-2">
-                  <Switch
-                    id="isPopular"
-                    checked={formData.isPopular}
-                    onCheckedChange={(checked) => setFormData({ ...formData, isPopular: checked })}
-                  />
-                  <Label htmlFor="isPopular">แพ็กเกจยอดนิยม</Label>
-                </div>
+              <div className="space-y-4">
+                <p className="text-sm text-muted-foreground">
+                  สร้างใบอนุญาตใหม่สำหรับองค์กร
+                </p>
               </div>
               <div className="flex justify-end gap-2">
-                <Button variant="outline" onClick={() => setIsAddPackageDialogOpen(false)}>
+                <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>
                   ยกเลิก
                 </Button>
-                <Button onClick={handleAddPackage}>
-                  เพิ่มแพ็กเกจ
-                </Button>
+                <Button>เพิ่มใบอนุญาต</Button>
               </div>
             </DialogContent>
           </Dialog>
@@ -502,374 +178,263 @@ export default function PackageManagement() {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">แพ็กเกจทั้งหมด</CardTitle>
+            <CardTitle className="text-sm font-medium">ใบอนุญาตทั้งหมด</CardTitle>
             <Package className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{packages.length}</div>
+            <div className="text-2xl font-bold">{licenses.length}</div>
+            <p className="text-xs text-muted-foreground">ใบอนุญาตในระบบ</p>
           </CardContent>
         </Card>
+        
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">การสมัครสมาชิกที่ใช้งาน</CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium">ใช้งานอยู่</CardTitle>
+            <CheckCircle className="h-4 w-4 text-green-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-600">{activeSubscriptions}</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">รายได้รวม</CardTitle>
-            <TrendingUp className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">฿{totalRevenue.toLocaleString()}</div>
-            <div className="text-xs text-muted-foreground">ต่อเดือน</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">แพ็กเกจยอดนิยม</CardTitle>
-            <Crown className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {packages.filter(pkg => pkg.isPopular).length}
+            <div className="text-2xl font-bold text-green-600">
+              {licenses.filter(l => l.status === 'active').length}
             </div>
+            <p className="text-xs text-muted-foreground">ใบอนุญาตที่ใช้งานอยู่</p>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">หมดอายุ</CardTitle>
+            <XCircle className="h-4 w-4 text-red-500" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-red-600">
+              {licenses.filter(l => l.status === 'expired').length}
+            </div>
+            <p className="text-xs text-muted-foreground">ใบอนุญาตหมดอายุ</p>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">ใกล้หมดอายุ</CardTitle>
+            <Clock className="h-4 w-4 text-yellow-500" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-yellow-600">
+              {licenses.filter(l => isExpiringSoon(l.expiry_date)).length}
+            </div>
+            <p className="text-xs text-muted-foreground">ภายใน 30 วัน</p>
           </CardContent>
         </Card>
       </div>
 
-      {/* Package Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {packages.map((pkg) => (
-          <Card key={pkg.id} className={`relative ${pkg.isPopular ? 'border-primary shadow-lg' : ''}`}>
-            {pkg.isPopular && (
-              <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
-                <Badge className="bg-primary text-primary-foreground">
-                  <Star className="h-3 w-3 mr-1" />
-                  ยอดนิยม
-                </Badge>
-              </div>
-            )}
-            <CardHeader className="text-center">
-              <div className="flex justify-between items-start">
-                <div className="flex-1">
-                  <CardTitle className="text-xl">{pkg.name}</CardTitle>
-                  <p className="text-sm text-muted-foreground mt-2">{pkg.description}</p>
-                </div>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="sm">
-                      <MoreHorizontal className="h-4 w-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent>
-                    <DropdownMenuItem onClick={() => openEditDialog(pkg)}>
-                      <Edit2 className="mr-2 h-4 w-4" />
-                      แก้ไข
-                    </DropdownMenuItem>
-                    <DropdownMenuItem 
-                      onClick={() => handleDeletePackage(pkg.id)}
-                      className="text-red-600"
-                    >
-                      <Trash2 className="mr-2 h-4 w-4" />
-                      ลบ
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
-              <div className="py-4">
-                <div className="text-3xl font-bold">
-                  ฿{pkg.price.toLocaleString()}
-                  <span className="text-sm font-normal text-muted-foreground">
-                    /{pkg.billingCycle === 'Monthly' ? 'เดือน' : 'ปี'}
-                  </span>
-                </div>
-                {getTypeBadge(pkg.type)}
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                <div className="flex justify-between">
-                  <span className="text-sm">ผู้ใช้สูงสุด:</span>
-                  <span className="text-sm font-medium">{pkg.maxUsers} คน</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-sm">พื้นที่เก็บข้อมูล:</span>
-                  <span className="text-sm font-medium">{pkg.storageGB} GB</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-sm">อีเมลแอคเคาท์:</span>
-                  <span className="text-sm font-medium">{pkg.emailAccounts} บัญชี</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-sm">การสนับสนุน:</span>
-                  <span className="text-sm font-medium">{pkg.supportLevel}</span>
-                </div>
-                
-                <div className="pt-2">
-                  <h4 className="text-sm font-medium mb-2">ฟีเจอร์ที่รวม:</h4>
-                  <div className="space-y-1">
-                    {pkg.features.slice(0, 4).map((feature) => (
-                      <div key={feature.id} className="flex items-center gap-2 text-xs">
-                        {feature.included ? (
-                          <CheckCircle className="h-3 w-3 text-green-600" />
-                        ) : (
-                          <XCircle className="h-3 w-3 text-red-600" />
-                        )}
-                        <span>{feature.name}</span>
-                        {feature.limit && (
-                          <span className="text-muted-foreground">
-                            ({feature.limit} {feature.unit})
-                          </span>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="pt-2">
-                  {getStatusBadge(pkg.status)}
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-
-      {/* Subscriptions Table */}
+      {/* Filters */}
       <Card>
         <CardHeader>
-          <CardTitle>การสมัครสมาชิกปัจจุบัน</CardTitle>
+          <CardTitle>รายการใบอนุญาตและแพ็คเกจ</CardTitle>
+          <div className="flex gap-4">
+            <div className="relative flex-1">
+              <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="ค้นหาชื่อผลิตภัณฑ์, ประเภท, หรือองค์กร..."
+                className="pl-8"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+            </div>
+            <Select value={selectedStatus} onValueChange={setSelectedStatus}>
+              <SelectTrigger className="w-[200px]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">ทุกสถานะ</SelectItem>
+                <SelectItem value="active">ใช้งาน</SelectItem>
+                <SelectItem value="expired">หมดอายุ</SelectItem>
+                <SelectItem value="suspended">ระงับ</SelectItem>
+                <SelectItem value="inactive">ไม่ใช้งาน</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
         </CardHeader>
         <CardContent>
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead>ผลิตภัณฑ์</TableHead>
                 <TableHead>องค์กร</TableHead>
-                <TableHead>แพ็กเกจ</TableHead>
+                <TableHead>ประเภท</TableHead>
+                <TableHead>ผู้ใช้งาน</TableHead>
+                <TableHead>วันที่หมดอายุ</TableHead>
                 <TableHead>สถานะ</TableHead>
+                <TableHead>การต่ออายุอัตโนมัติ</TableHead>
                 <TableHead>การใช้งาน</TableHead>
-                <TableHead>วันหมดอายุ</TableHead>
-                <TableHead>ราคา</TableHead>
-                <TableHead>จัดการ</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {subscriptions.map((subscription) => {
-                const pkg = packages.find(p => p.id === subscription.packageId);
-                const userUtilization = (subscription.usedUsers / (pkg?.maxUsers || 1)) * 100;
-                const storageUtilization = (subscription.usedStorage / (pkg?.storageGB || 1)) * 100;
+              {filteredLicenses.map((license) => {
+                const usagePercentage = getUsagePercentage(license.usage_count, license.max_users);
+                const isExpiring = isExpiringSoon(license.expiry_date);
                 
                 return (
-                  <TableRow key={subscription.id}>
+                  <TableRow key={license.id}>
                     <TableCell>
-                      <div className="font-medium">{subscription.organizationName}</div>
-                      <div className="text-sm text-muted-foreground">{subscription.organizationId}</div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="font-medium">{subscription.packageName}</div>
-                      <div className="text-sm text-muted-foreground">
-                        {subscription.billingCycle === 'Monthly' ? 'รายเดือน' : 'รายปี'}
-                      </div>
-                    </TableCell>
-                    <TableCell>{getStatusBadge(subscription.status)}</TableCell>
-                    <TableCell>
-                      <div className="space-y-2">
-                        <div className="text-sm">
-                          <div className="flex justify-between">
-                            <span>ผู้ใช้:</span>
-                            <span>{subscription.usedUsers}/{pkg?.maxUsers}</span>
+                      <div className="flex items-center gap-2">
+                        {getLicenseTypeIcon(license.license_type)}
+                        <div>
+                          <div className="font-medium">{license.product_name}</div>
+                          <div className="text-xs text-muted-foreground">
+                            {license.license_key}
                           </div>
-                          <Progress value={userUtilization} className="h-1" />
-                        </div>
-                        <div className="text-sm">
-                          <div className="flex justify-between">
-                            <span>Storage:</span>
-                            <span>{subscription.usedStorage}/{pkg?.storageGB} GB</span>
-                          </div>
-                          <Progress value={storageUtilization} className="h-1" />
                         </div>
                       </div>
+                    </TableCell>
+                    <TableCell>
+                      {license.organizations?.name || 'ไม่ระบุ'}
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant="outline">{license.license_type}</Badge>
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">
-                        <Calendar className="h-4 w-4" />
-                        {subscription.endDate}
+                        <Users className="h-4 w-4" />
+                        <span>{license.usage_count}/{license.max_users}</span>
                       </div>
-                      {subscription.autoRenew && (
-                        <Badge variant="outline" className="text-xs mt-1">ต่ออายุอัตโนมัติ</Badge>
-                      )}
                     </TableCell>
                     <TableCell>
-                      <div className="font-medium">฿{subscription.price.toLocaleString()}</div>
+                      <div className={`text-sm ${isExpiring ? 'text-yellow-600 font-medium' : ''}`}>
+                        {new Date(license.expiry_date).toLocaleDateString('th-TH')}
+                        {isExpiring && (
+                          <div className="text-xs text-yellow-600">ใกล้หมดอายุ</div>
+                        )}
+                      </div>
                     </TableCell>
                     <TableCell>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" className="h-8 w-8 p-0">
-                            <MoreHorizontal className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => handleUpgradeSubscription(subscription.id, '3')}>
-                            <TrendingUp className="mr-2 h-4 w-4" />
-                            อัปเกรด
-                          </DropdownMenuItem>
-                          <DropdownMenuItem>
-                            <Clock className="mr-2 h-4 w-4" />
-                            ต่ออายุ
-                          </DropdownMenuItem>
-                          <DropdownMenuItem className="text-red-600">
-                            <XCircle className="mr-2 h-4 w-4" />
-                            ยกเลิก
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
+                      {getStatusBadge(license.status)}
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant={license.auto_renew ? 'default' : 'outline'}>
+                        {license.auto_renew ? 'เปิด' : 'ปิด'}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <div className="w-24">
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="text-xs">{usagePercentage}%</span>
+                        </div>
+                        <div className="w-full bg-muted rounded-full h-2">
+                          <div 
+                            className={`h-2 rounded-full ${
+                              usagePercentage >= 90 ? 'bg-red-500' :
+                              usagePercentage >= 70 ? 'bg-yellow-500' : 'bg-green-500'
+                            }`}
+                            style={{ width: `${usagePercentage}%` }}
+                          />
+                        </div>
+                      </div>
                     </TableCell>
                   </TableRow>
                 );
               })}
+              {filteredLicenses.length === 0 && (
+                <TableRow>
+                  <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
+                    {searchTerm || selectedStatus !== 'all' 
+                      ? 'ไม่พบข้อมูลที่ค้นหา' 
+                      : 'ยังไม่มีใบอนุญาตในระบบ'
+                    }
+                  </TableCell>
+                </TableRow>
+              )}
             </TableBody>
           </Table>
         </CardContent>
       </Card>
 
-      {/* Edit Dialog */}
-      <Dialog open={editingPackage !== null} onOpenChange={() => setEditingPackage(null)}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>แก้ไขแพ็กเกจ</DialogTitle>
-          </DialogHeader>
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="edit-name">ชื่อแพ็กเกจ *</Label>
-              <Input
-                id="edit-name"
-                value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                placeholder="กรอกชื่อแพ็กเกจ"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="edit-type">ประเภท</Label>
-              <Select
-                value={formData.type}
-                onValueChange={(value) => setFormData({ ...formData, type: value as any })}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Basic">Basic</SelectItem>
-                  <SelectItem value="Standard">Standard</SelectItem>
-                  <SelectItem value="Premium">Premium</SelectItem>
-                  <SelectItem value="Enterprise">Enterprise</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="edit-price">ราคา (บาท)</Label>
-              <Input
-                id="edit-price"
-                type="number"
-                value={formData.price}
-                onChange={(e) => setFormData({ ...formData, price: parseFloat(e.target.value) })}
-                min="0"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="edit-billingCycle">รอบการเก็บเงิน</Label>
-              <Select
-                value={formData.billingCycle}
-                onValueChange={(value) => setFormData({ ...formData, billingCycle: value as any })}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Monthly">รายเดือน</SelectItem>
-                  <SelectItem value="Yearly">รายปี</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="edit-maxUsers">จำนวนผู้ใช้สูงสุด</Label>
-              <Input
-                id="edit-maxUsers"
-                type="number"
-                value={formData.maxUsers}
-                onChange={(e) => setFormData({ ...formData, maxUsers: parseInt(e.target.value) })}
-                min="1"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="edit-storageGB">พื้นที่เก็บข้อมูล (GB)</Label>
-              <Input
-                id="edit-storageGB"
-                type="number"
-                value={formData.storageGB}
-                onChange={(e) => setFormData({ ...formData, storageGB: parseInt(e.target.value) })}
-                min="1"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="edit-emailAccounts">จำนวนอีเมลแอคเคาท์</Label>
-              <Input
-                id="edit-emailAccounts"
-                type="number"
-                value={formData.emailAccounts}
-                onChange={(e) => setFormData({ ...formData, emailAccounts: parseInt(e.target.value) })}
-                min="1"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="edit-supportLevel">ระดับการสนับสนุน</Label>
-              <Select
-                value={formData.supportLevel}
-                onValueChange={(value) => setFormData({ ...formData, supportLevel: value as any })}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Basic">Basic</SelectItem>
-                  <SelectItem value="Priority">Priority</SelectItem>
-                  <SelectItem value="24/7">24/7</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="col-span-2 space-y-2">
-              <Label htmlFor="edit-description">รายละเอียด</Label>
-              <Textarea
-                id="edit-description"
-                value={formData.description}
-                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                placeholder="กรอกรายละเอียดแพ็กเกจ"
-                rows={3}
-              />
-            </div>
-            <div className="col-span-2 flex items-center space-x-2">
-              <Switch
-                id="edit-isPopular"
-                checked={formData.isPopular}
-                onCheckedChange={(checked) => setFormData({ ...formData, isPopular: checked })}
-              />
-              <Label htmlFor="edit-isPopular">แพ็กเกจยอดนิยม</Label>
-            </div>
+      {/* Package Templates */}
+      <Card>
+        <CardHeader>
+          <CardTitle>แพ็คเกจแนะนำ</CardTitle>
+          <p className="text-sm text-muted-foreground">
+            แพ็คเกจบริการที่พร้อมใช้งานสำหรับองค์กรต่างๆ
+          </p>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <Card className="relative">
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-lg">Basic Plan</CardTitle>
+                  <Package className="h-5 w-5 text-gray-500" />
+                </div>
+                <p className="text-2xl font-bold">฿299<span className="text-sm font-normal">/เดือน</span></p>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                <p className="text-sm text-muted-foreground">เหมาะสำหรับธุรกิจเริ่มต้น</p>
+                <ul className="space-y-1 text-sm">
+                  <li>• ผู้ใช้งาน 10 คน</li>
+                  <li>• พื้นที่จัดเก็บ 50 GB</li>
+                  <li>• บัญชีอีเมล 10 บัญชี</li>
+                  <li>• การสนับสนุนพื้นฐาน</li>
+                </ul>
+                <Button className="w-full mt-4" variant="outline">
+                  เลือกแพ็คเกจนี้
+                </Button>
+              </CardContent>
+            </Card>
+
+            <Card className="relative border-primary">
+              <div className="absolute -top-2 left-1/2 transform -translate-x-1/2">
+                <Badge className="bg-primary text-primary-foreground">แนะนำ</Badge>
+              </div>
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-lg">Standard Plan</CardTitle>
+                  <Star className="h-5 w-5 text-blue-500" />
+                </div>
+                <p className="text-2xl font-bold">฿799<span className="text-sm font-normal">/เดือน</span></p>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                <p className="text-sm text-muted-foreground">เหมาะสำหรับธุรกิจขนาดกลาง</p>
+                <ul className="space-y-1 text-sm">
+                  <li>• ผู้ใช้งาน 50 คน</li>
+                  <li>• พื้นที่จัดเก็บ 500 GB</li>
+                  <li>• บัญชีอีเมล 100 บัญชี</li>
+                  <li>• การสนับสนุนแบบเร็ว</li>
+                  <li>• ระบบรักษาความปลอดภัยขั้นสูง</li>
+                </ul>
+                <Button className="w-full mt-4">
+                  เลือกแพ็คเกจนี้
+                </Button>
+              </CardContent>
+            </Card>
+
+            <Card className="relative">
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-lg">Premium Plan</CardTitle>
+                  <Crown className="h-5 w-5 text-yellow-500" />
+                </div>
+                <p className="text-2xl font-bold">฿1,999<span className="text-sm font-normal">/เดือน</span></p>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                <p className="text-sm text-muted-foreground">เหมาะสำหรับองค์กรขนาดใหญ่</p>
+                <ul className="space-y-1 text-sm">
+                  <li>• ผู้ใช้งานไม่จำกัด</li>
+                  <li>• พื้นที่จัดเก็บ 2 TB</li>
+                  <li>• บัญชีอีเมลไม่จำกัด</li>
+                  <li>• การสนับสนุน 24/7</li>
+                  <li>• ฟีเจอร์ขั้นสูงทั้งหมด</li>
+                  <li>• API Access</li>
+                </ul>
+                <Button className="w-full mt-4" variant="outline">
+                  เลือกแพ็คเกจนี้
+                </Button>
+              </CardContent>
+            </Card>
           </div>
-          <div className="flex justify-end gap-2">
-            <Button variant="outline" onClick={() => setEditingPackage(null)}>
-              ยกเลิก
-            </Button>
-            <Button onClick={handleEditPackage}>
-              บันทึก
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
+        </CardContent>
+      </Card>
     </div>
   );
-}
+};
+
+export default PackageManagement;

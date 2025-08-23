@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -9,10 +9,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Separator } from '@/components/ui/separator';
-import { toast } from '@/hooks/use-toast';
-import { useMasterData } from '@/contexts/MasterDataContext';
+import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
 import { 
   User, 
   Mail, 
@@ -32,257 +30,126 @@ import {
   EyeOff,
   CheckCircle,
   AlertTriangle,
-  Download,
-  Upload,
   Settings
 } from 'lucide-react';
 
 interface UserProfile {
   id: string;
+  user_id: string;
   username?: string;
-  firstName: string;
-  lastName: string;
-  firstNameEn?: string;
-  lastNameEn?: string;
-  nationalId?: string;
+  first_name: string;
+  last_name: string;
+  first_name_en?: string;
+  last_name_en?: string;
+  national_id?: string;
   email: string;
-  backupEmail?: string;
-  phone: string;
-  phoneOffice?: string;
-  position: string;
-  department: string;
-  departmentEn?: string;
-  organization: string;
-  address: string;
-  avatar: string;
-  joinDate: string;
-  lastLogin: string;
-  timezone: string;
-  language: string;
-  userType?: string;
+  backup_email?: string;
+  phone?: string;
+  phone_office?: string;
+  phone_mobile?: string;
+  position?: string;
+  organization_id: string;
+  organization_unit_id?: string;
+  address?: string;
+  avatar_url?: string;
+  start_date?: string;
+  last_login?: string;
+  timezone?: string;
+  language?: string;
+  user_type?: string;
+  status: string;
 }
-
-interface SecuritySettings {
-  twoFactorEnabled: boolean;
-  passwordLastChanged: string;
-  loginNotifications: boolean;
-  sessionTimeout: number;
-  trustedDevices: TrustedDevice[];
-  loginHistory: LoginHistory[];
-}
-
-interface TrustedDevice {
-  id: string;
-  name: string;
-  deviceType: 'Desktop' | 'Mobile' | 'Tablet';
-  browser: string;
-  ipAddress: string;
-  lastAccess: string;
-  isCurrent: boolean;
-}
-
-interface LoginHistory {
-  id: string;
-  timestamp: string;
-  ipAddress: string;
-  location: string;
-  device: string;
-  browser: string;
-  success: boolean;
-}
-
-interface NotificationSettings {
-  emailNotifications: boolean;
-  pushNotifications: boolean;
-  smsNotifications: boolean;
-  weeklyReports: boolean;
-  systemAlerts: boolean;
-  marketingEmails: boolean;
-}
-
-const mockProfile: UserProfile = {
-  id: 'user-001',
-  firstName: 'สมชาย',
-  lastName: 'ใจดี',
-  email: 'somchai@company.com',
-  phone: '081-234-5678',
-  position: 'ผู้จัดการฝ่ายไอที',
-  department: 'ฝ่ายไอที',
-  organization: 'บริษัท เทคโนโลยี จำกัด',
-  address: '123 ถนนเทคโนโลยี กรุงเทพฯ 10110',
-  avatar: '',
-  joinDate: '2023-01-15',
-  lastLogin: '2024-01-25T14:30:00',
-  timezone: 'Asia/Bangkok',
-  language: 'th'
-};
-
-const mockSecuritySettings: SecuritySettings = {
-  twoFactorEnabled: true,
-  passwordLastChanged: '2024-01-01',
-  loginNotifications: true,
-  sessionTimeout: 30,
-  trustedDevices: [
-    {
-      id: '1',
-      name: 'MacBook Pro',
-      deviceType: 'Desktop',
-      browser: 'Chrome 120',
-      ipAddress: '192.168.1.100',
-      lastAccess: '2024-01-25T14:30:00',
-      isCurrent: true
-    },
-    {
-      id: '2', 
-      name: 'iPhone 15',
-      deviceType: 'Mobile',
-      browser: 'Safari 17',
-      ipAddress: '192.168.1.101',
-      lastAccess: '2024-01-24T08:15:00',
-      isCurrent: false
-    }
-  ],
-  loginHistory: [
-    {
-      id: '1',
-      timestamp: '2024-01-25T14:30:00',
-      ipAddress: '192.168.1.100',
-      location: 'กรุงเทพฯ, ประเทศไทย',
-      device: 'MacBook Pro',
-      browser: 'Chrome 120',
-      success: true
-    },
-    {
-      id: '2',
-      timestamp: '2024-01-24T08:15:00', 
-      ipAddress: '192.168.1.101',
-      location: 'กรุงเทพฯ, ประเทศไทย',
-      device: 'iPhone 15',
-      browser: 'Safari 17',
-      success: true
-    },
-    {
-      id: '3',
-      timestamp: '2024-01-23T18:45:00',
-      ipAddress: '103.22.200.15',
-      location: 'เชียงใหม่, ประเทศไทย',
-      device: 'Unknown Device',
-      browser: 'Firefox 121',
-      success: false
-    }
-  ]
-};
-
-const mockNotificationSettings: NotificationSettings = {
-  emailNotifications: true,
-  pushNotifications: true,
-  smsNotifications: false,
-  weeklyReports: true,
-  systemAlerts: true,
-  marketingEmails: false
-};
 
 const AccountSettings = () => {
-  const { getActiveItems } = useMasterData();
-  const [profile, setProfile] = useState<UserProfile>(mockProfile);
-  const [securitySettings, setSecuritySettings] = useState<SecuritySettings>(mockSecuritySettings);
-  const [notificationSettings, setNotificationSettings] = useState<NotificationSettings>(mockNotificationSettings);
+  const { user, isAuthenticated } = useAuth();
+  const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
   const [currentTab, setCurrentTab] = useState('profile');
-  const [isChangePasswordDialogOpen, setIsChangePasswordDialogOpen] = useState(false);
-  const [isMFADialogOpen, setIsMFADialogOpen] = useState(false);
-  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
-  const [showNewPassword, setShowNewPassword] = useState(false);
-  const [passwordForm, setPasswordForm] = useState({
-    currentPassword: '',
-    newPassword: '',
-    confirmPassword: ''
-  });
-  
-  // Get master data
-  const organizationTypes = getActiveItems('organizationTypes');
-  const departments = getActiveItems('departments');
-  const positions = getActiveItems('positions');
-  const userRoles = getActiveItems('userRoles');
 
-  const handleSaveProfile = () => {
-    toast({
-      title: "บันทึกข้อมูลสำเร็จ",
-      description: "ข้อมูลโปรไฟล์ได้รับการอัปเดตเรียบร้อยแล้ว",
-    });
-  };
+  // Security settings
+  const [twoFactorEnabled, setTwoFactorEnabled] = useState(false);
+  const [loginNotifications, setLoginNotifications] = useState(true);
+  const [sessionTimeout, setSessionTimeout] = useState(30);
 
-  const handleChangePassword = () => {
-    if (passwordForm.newPassword !== passwordForm.confirmPassword) {
-      toast({
-        title: "รหัสผ่านไม่ตรงกัน",
-        description: "กรุณาตรวจสอบรหัสผ่านใหม่และการยืนยัน",
-        variant: "destructive"
-      });
-      return;
+  // Notification settings
+  const [emailNotifications, setEmailNotifications] = useState(true);
+  const [pushNotifications, setPushNotifications] = useState(true);
+  const [smsNotifications, setSmsNotifications] = useState(false);
+  const [weeklyReports, setWeeklyReports] = useState(true);
+  const [systemAlerts, setSystemAlerts] = useState(true);
+
+  useEffect(() => {
+    if (isAuthenticated && user) {
+      fetchProfile();
     }
+  }, [isAuthenticated, user]);
+
+  const fetchProfile = async () => {
+    if (!user?.id) return;
     
-    setSecuritySettings({
-      ...securitySettings,
-      passwordLastChanged: new Date().toISOString().split('T')[0]
-    });
-    setIsChangePasswordDialogOpen(false);
-    setPasswordForm({ currentPassword: '', newPassword: '', confirmPassword: '' });
-    toast({
-      title: "เปลี่ยนรหัสผ่านสำเร็จ",
-      description: "รหัสผ่านใหม่ได้รับการบันทึกเรียบร้อยแล้ว",
-    });
-  };
-
-  const handleToggleMFA = () => {
-    setSecuritySettings({
-      ...securitySettings,
-      twoFactorEnabled: !securitySettings.twoFactorEnabled
-    });
-    toast({
-      title: securitySettings.twoFactorEnabled ? "ปิด MFA สำเร็จ" : "เปิด MFA สำเร็จ",
-      description: securitySettings.twoFactorEnabled ? "ปิดการรักษาความปลอดภัยสองขั้นตอน" : "เปิดการรักษาความปลอดภัยสองขั้นตอน",
-    });
-  };
-
-  const handleRemoveTrustedDevice = (deviceId: string) => {
-    setSecuritySettings({
-      ...securitySettings,
-      trustedDevices: securitySettings.trustedDevices.filter(device => device.id !== deviceId)
-    });
-    toast({
-      title: "ลบอุปกรณ์สำเร็จ",
-      description: "อุปกรณ์ถูกลบออกจากรายการที่เชื่อถือแล้ว",
-    });
-  };
-
-  const handleSaveNotifications = () => {
-    toast({
-      title: "บันทึกการตั้งค่าสำเร็จ",
-      description: "การตั้งค่าการแจ้งเตือนได้รับการอัปเดตเรียบร้อยแล้ว",
-    });
-  };
-
-  const getDeviceIcon = (deviceType: string) => {
-    switch (deviceType) {
-      case 'Mobile': return <Smartphone className="h-4 w-4" />;
-      case 'Desktop': return <Settings className="h-4 w-4" />;
-      default: return <Settings className="h-4 w-4" />;
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('user_id', user.id)
+        .single();
+      
+      if (error && error.code !== 'PGRST116') throw error;
+      
+      if (data) {
+        setProfile(data);
+      }
+    } catch (error) {
+      console.error('Error fetching profile:', error);
+    } finally {
+      setLoading(false);
     }
   };
 
-  const getLoginStatusBadge = (success: boolean) => {
-    return success ? (
-      <Badge className="bg-green-100 text-green-800">
-        <CheckCircle className="h-3 w-3 mr-1" />
-        สำเร็จ
-      </Badge>
-    ) : (
-      <Badge variant="destructive">
-        <AlertTriangle className="h-3 w-3 mr-1" />
-        ล้มเหลว
-      </Badge>
-    );
+  const handleSaveProfile = async () => {
+    if (!profile || !user?.id) return;
+    
+    setSaving(true);
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({
+          first_name: profile.first_name,
+          last_name: profile.last_name,
+          first_name_en: profile.first_name_en,
+          last_name_en: profile.last_name_en,
+          phone_mobile: profile.phone_mobile,
+          phone_office: profile.phone_office,
+          backup_email: profile.backup_email,
+          position: profile.position,
+          timezone: profile.timezone,
+          language: profile.language,
+        })
+        .eq('user_id', user.id);
+      
+      if (error) throw error;
+      
+      // Show success message
+      console.log('Profile updated successfully');
+    } catch (error) {
+      console.error('Error updating profile:', error);
+    } finally {
+      setSaving(false);
+    }
   };
+
+  const handleAvatarUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      // Handle avatar upload logic
+      console.log('Uploading avatar:', file.name);
+    }
+  };
+
+  if (loading) {
+    return <div className="p-8 text-center">กำลังโหลดข้อมูล...</div>;
+  }
 
   return (
     <div className="container mx-auto p-6 space-y-6">
@@ -290,626 +157,173 @@ const AccountSettings = () => {
         <div className="flex justify-between items-center">
           <div>
             <h1 className="text-3xl font-bold">ตั้งค่าบัญชี</h1>
-            <p className="text-muted-foreground">จัดการข้อมูลส่วนตัว ความปลอดภัย และการแจ้งเตือน</p>
+            <p className="text-muted-foreground">จัดการข้อมูลส่วนตัวและการตั้งค่าบัญชีผู้ใช้</p>
           </div>
         </div>
 
         <TabsList>
-          <TabsTrigger value="profile">โปรไฟล์</TabsTrigger>
+          <TabsTrigger value="profile">ข้อมูลส่วนตัว</TabsTrigger>
           <TabsTrigger value="security">ความปลอดภัย</TabsTrigger>
           <TabsTrigger value="notifications">การแจ้งเตือน</TabsTrigger>
-          <TabsTrigger value="preferences">การตั้งค่า</TabsTrigger>
+          <TabsTrigger value="preferences">ความต้องการ</TabsTrigger>
         </TabsList>
 
         <TabsContent value="profile" className="space-y-6">
+          {/* Profile Header */}
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <User className="h-5 w-5" />
-                ข้อมูลส่วนตัว
-              </CardTitle>
+              <CardTitle>ข้อมูลโปรไฟล์</CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
-              {/* Profile Picture */}
-              <div className="flex items-center gap-6">
-                <Avatar className="h-24 w-24">
-                  <AvatarImage src={profile.avatar} />
-                  <AvatarFallback className="text-lg">
-                    {profile.firstName.charAt(0)}{profile.lastName.charAt(0)}
+              {/* Avatar Section */}
+              <div className="flex items-center space-x-4">
+                <Avatar className="h-20 w-20">
+                  <AvatarImage src={profile?.avatar_url} />
+                  <AvatarFallback>
+                    <User className="h-8 w-8" />
                   </AvatarFallback>
                 </Avatar>
                 <div className="space-y-2">
-                  <Button variant="outline" onClick={() => {
-                    // Simulate file upload
-                    const input = document.createElement('input');
-                    input.type = 'file';
-                    input.accept = 'image/*';
-                    input.onchange = (e) => {
-                      const file = (e.target as HTMLInputElement).files?.[0];
-                      if (file) {
-                        const reader = new FileReader();
-                        reader.onload = (e) => {
-                          const result = e.target?.result as string;
-                          setProfile({ ...profile, avatar: result });
-                          toast({
-                            title: "อัปโหลดรูปภาพสำเร็จ",
-                            description: "รูปโปรไฟล์ใหม่ได้รับการบันทึกแล้ว",
-                          });
-                        };
-                        reader.readAsDataURL(file);
-                      }
-                    };
-                    input.click();
-                  }}>
-                    <Camera className="h-4 w-4 mr-2" />
-                    เปลี่ยนรูปโปรไฟล์
-                  </Button>
-                  <p className="text-sm text-muted-foreground">
-                    ไฟล์ JPG, PNG หรือ GIF ขนาดไม่เกิน 2MB
+                  <h3 className="font-medium">รูปโปรไฟล์</h3>
+                  <div className="flex space-x-2">
+                    <Button size="sm" variant="outline" asChild>
+                      <label className="cursor-pointer">
+                        <Camera className="h-4 w-4 mr-2" />
+                        อัปโหลดรูป
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={handleAvatarUpload}
+                          className="hidden"
+                        />
+                      </label>
+                    </Button>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    ไฟล์ JPG, PNG ขนาดไม่เกิน 2MB
                   </p>
                 </div>
               </div>
 
-              <Separator />
-
-              {/* Basic Information */}
+              {/* Personal Information */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">
-                  <Label htmlFor="firstName">ชื่อ (ไทย)</Label>
+                  <Label htmlFor="firstName">ชื่อ *</Label>
                   <Input
                     id="firstName"
-                    value={profile.firstName}
-                    onChange={(e) => setProfile({ ...profile, firstName: e.target.value })}
+                    value={profile?.first_name || ''}
+                    onChange={(e) => setProfile(prev => 
+                      prev ? { ...prev, first_name: e.target.value } : null
+                    )}
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="lastName">นามสกุล (ไทย)</Label>
+                  <Label htmlFor="lastName">นามสกุล *</Label>
                   <Input
                     id="lastName"
-                    value={profile.lastName}
-                    onChange={(e) => setProfile({ ...profile, lastName: e.target.value })}
+                    value={profile?.last_name || ''}
+                    onChange={(e) => setProfile(prev => 
+                      prev ? { ...prev, last_name: e.target.value } : null
+                    )}
                   />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="firstNameEn">ชื่อ (อังกฤษ)</Label>
                   <Input
                     id="firstNameEn"
-                    placeholder="First Name"
-                    value={profile.firstNameEn || ""}
-                    onChange={(e) => setProfile({ ...profile, firstNameEn: e.target.value })}
+                    value={profile?.first_name_en || ''}
+                    onChange={(e) => setProfile(prev => 
+                      prev ? { ...prev, first_name_en: e.target.value } : null
+                    )}
                   />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="lastNameEn">นามสกุล (อังกฤษ)</Label>
                   <Input
                     id="lastNameEn"
-                    placeholder="Last Name"
-                    value={profile.lastNameEn || ""}
-                    onChange={(e) => setProfile({ ...profile, lastNameEn: e.target.value })}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="username">ชื่อผู้ใช้</Label>
-                  <Input
-                    id="username"
-                    value={profile.username || ""}
-                    onChange={(e) => setProfile({ ...profile, username: e.target.value })}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="nationalId">เลขบัตรประชาชน</Label>
-                  <Input
-                    id="nationalId"
-                    placeholder="1234567890123"
-                    maxLength={13}
-                    value={profile.nationalId || ""}
-                    onChange={(e) => setProfile({ ...profile, nationalId: e.target.value })}
+                    value={profile?.last_name_en || ''}
+                    onChange={(e) => setProfile(prev => 
+                      prev ? { ...prev, last_name_en: e.target.value } : null
+                    )}
                   />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="email">อีเมล</Label>
-                  <div className="flex gap-2">
-                    <Input
-                      id="email"
-                      type="email"
-                      value={profile.email}
-                      onChange={(e) => setProfile({ ...profile, email: e.target.value })}
-                    />
-                    <Button variant="outline" size="sm">
-                      ยืนยัน
-                    </Button>
-                  </div>
+                  <Input
+                    id="email"
+                    type="email"
+                    value={profile?.email || ''}
+                    disabled
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="backupEmail">อีเมลสำรอง</Label>
                   <Input
                     id="backupEmail"
                     type="email"
-                    value={profile.backupEmail || ""}
-                    onChange={(e) => setProfile({ ...profile, backupEmail: e.target.value })}
+                    value={profile?.backup_email || ''}
+                    onChange={(e) => setProfile(prev => 
+                      prev ? { ...prev, backup_email: e.target.value } : null
+                    )}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="phoneMobile">โทรศัพท์มือถือ</Label>
+                  <Input
+                    id="phoneMobile"
+                    value={profile?.phone_mobile || ''}
+                    onChange={(e) => setProfile(prev => 
+                      prev ? { ...prev, phone_mobile: e.target.value } : null
+                    )}
                   />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="phoneOffice">โทรศัพท์สำนักงาน</Label>
                   <Input
                     id="phoneOffice"
-                    placeholder="02-123-4567"
-                    value={profile.phoneOffice || ""}
-                    onChange={(e) => setProfile({ ...profile, phoneOffice: e.target.value })}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="phone">โทรศัพท์มือถือ</Label>
-                  <Input
-                    id="phone"
-                    placeholder="081-234-5678"
-                    value={profile.phone}
-                    onChange={(e) => setProfile({ ...profile, phone: e.target.value })}
+                    value={profile?.phone_office || ''}
+                    onChange={(e) => setProfile(prev => 
+                      prev ? { ...prev, phone_office: e.target.value } : null
+                    )}
                   />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="position">ตำแหน่ง</Label>
-                  <Select
-                    value={profile.position}
-                    onValueChange={(value) => setProfile({ ...profile, position: value })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="เลือกตำแหน่ง" />
-                    </SelectTrigger>
-                    <SelectContent className="bg-popover">
-                      {positions.map((pos) => (
-                        <SelectItem key={pos.id} value={pos.code}>
-                          {pos.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="department">แผนก (ไทย)</Label>
-                  <Select
-                    value={profile.department}
-                    onValueChange={(value) => setProfile({ ...profile, department: value })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="เลือกแผนก" />
-                    </SelectTrigger>
-                    <SelectContent className="bg-popover">
-                      {departments.map((dept) => (
-                        <SelectItem key={dept.id} value={dept.code}>
-                          {dept.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="departmentEn">แผนก (อังกฤษ)</Label>
                   <Input
-                    id="departmentEn"
-                    placeholder="Department Name"
-                    value={profile.departmentEn || ""}
-                    onChange={(e) => setProfile({ ...profile, departmentEn: e.target.value })}
+                    id="position"
+                    value={profile?.position || ''}
+                    onChange={(e) => setProfile(prev => 
+                      prev ? { ...prev, position: e.target.value } : null
+                    )}
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="userType">ประเภทผู้ใช้</Label>
+                  <Label htmlFor="timezone">เขตเวลา</Label>
                   <Select
-                    value={profile.userType || "user"}
-                    onValueChange={(value) => setProfile({ ...profile, userType: value })}
+                    value={profile?.timezone || 'Asia/Bangkok'}
+                    onValueChange={(value) => setProfile(prev => 
+                      prev ? { ...prev, timezone: value } : null
+                    )}
                   >
                     <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent className="bg-popover">
-                      <SelectItem value="user">ผู้ใช้งานทั่วไป</SelectItem>
-                      <SelectItem value="admin">ผู้ดูแลระบบ</SelectItem>
-                      <SelectItem value="manager">ผู้จัดการ</SelectItem>
-                      <SelectItem value="supervisor">หัวหน้างาน</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="organization">องค์กร</Label>
-                <Select
-                  value={profile.organization}
-                  onValueChange={(value) => setProfile({ ...profile, organization: value })}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="เลือกองค์กร" />
-                  </SelectTrigger>
-                  <SelectContent className="bg-popover">
-                    {organizationTypes.map((org) => (
-                      <SelectItem key={org.id} value={org.code}>
-                        {org.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="address">ที่อยู่</Label>
-                <Textarea
-                  id="address"
-                  value={profile.address}
-                  onChange={(e) => setProfile({ ...profile, address: e.target.value })}
-                  rows={3}
-                />
-              </div>
-
-              {/* Account Information */}
-              <Separator />
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-2">
-                  <Label>วันที่เข้าร่วม</Label>
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <Calendar className="h-4 w-4" />
-                    {new Date(profile.joinDate).toLocaleDateString('th-TH')}
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <Label>เข้าสู่ระบบล่าสุด</Label>
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <Clock className="h-4 w-4" />
-                    {new Date(profile.lastLogin).toLocaleString('th-TH')}
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex justify-end">
-                <Button onClick={handleSaveProfile}>บันทึกการเปลี่ยนแปลง</Button>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="security" className="space-y-6">
-          {/* Password & Authentication */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Key className="h-5 w-5" />
-                รหัสผ่านและการยืนยันตัวตน
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="flex justify-between items-center">
-                <div>
-                  <h4 className="font-medium">รหัสผ่าน</h4>
-                  <p className="text-sm text-muted-foreground">
-                    เปลี่ยนแปลงล่าสุด: {new Date(securitySettings.passwordLastChanged).toLocaleDateString('th-TH')}
-                  </p>
-                </div>
-                <Dialog open={isChangePasswordDialogOpen} onOpenChange={setIsChangePasswordDialogOpen}>
-                  <DialogTrigger asChild>
-                    <Button variant="outline">เปลี่ยนรหัสผ่าน</Button>
-                  </DialogTrigger>
-                  <DialogContent>
-                    <DialogHeader>
-                      <DialogTitle>เปลี่ยนรหัสผ่าน</DialogTitle>
-                    </DialogHeader>
-                    <div className="space-y-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="currentPassword">รหัสผ่านปัจจุบัน</Label>
-                        <div className="relative">
-                          <Input
-                            id="currentPassword"
-                            type={showCurrentPassword ? 'text' : 'password'}
-                            value={passwordForm.currentPassword}
-                            onChange={(e) => setPasswordForm({ ...passwordForm, currentPassword: e.target.value })}
-                          />
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
-                            onClick={() => setShowCurrentPassword(!showCurrentPassword)}
-                          >
-                            {showCurrentPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                          </Button>
-                        </div>
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="newPassword">รหัสผ่านใหม่</Label>
-                        <div className="relative">
-                          <Input
-                            id="newPassword"
-                            type={showNewPassword ? 'text' : 'password'}
-                            value={passwordForm.newPassword}
-                            onChange={(e) => setPasswordForm({ ...passwordForm, newPassword: e.target.value })}
-                          />
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
-                            onClick={() => setShowNewPassword(!showNewPassword)}
-                          >
-                            {showNewPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                          </Button>
-                        </div>
-                        <p className="text-xs text-muted-foreground">
-                          รหัสผ่านต้องมีอย่างน้อย 8 ตัวอักษร และประกอบด้วยตัวอักษรใหญ่ เล็ก ตัวเลข และสัญลักษณ์
-                        </p>
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="confirmPassword">ยืนยันรหัสผ่านใหม่</Label>
-                        <Input
-                          id="confirmPassword"
-                          type="password"
-                          value={passwordForm.confirmPassword}
-                          onChange={(e) => setPasswordForm({ ...passwordForm, confirmPassword: e.target.value })}
-                        />
-                      </div>
-                    </div>
-                    <div className="flex justify-end gap-2">
-                      <Button variant="outline" onClick={() => setIsChangePasswordDialogOpen(false)}>
-                        ยกเลิก
-                      </Button>
-                      <Button onClick={handleChangePassword}>
-                        เปลี่ยนรหัสผ่าน
-                      </Button>
-                    </div>
-                  </DialogContent>
-                </Dialog>
-              </div>
-
-              <Separator />
-
-              <div className="flex justify-between items-center">
-                <div>
-                  <h4 className="font-medium">การรักษาความปลอดภัยสองขั้นตอน (MFA)</h4>
-                  <p className="text-sm text-muted-foreground">
-                    เพิ่มความปลอดภัยให้กับบัญชีด้วยการยืนยันตัวตนสองขั้นตอน
-                  </p>
-                </div>
-                <div className="flex items-center gap-2">
-                  {securitySettings.twoFactorEnabled ? (
-                    <Badge className="bg-green-100 text-green-800">
-                      <CheckCircle className="h-3 w-3 mr-1" />
-                      เปิดใช้งาน
-                    </Badge>
-                  ) : (
-                    <Badge variant="outline">
-                      <AlertTriangle className="h-3 w-3 mr-1" />
-                      ปิดใช้งาน
-                    </Badge>
-                  )}
-                  <Switch
-                    checked={securitySettings.twoFactorEnabled}
-                    onCheckedChange={handleToggleMFA}
-                  />
-                </div>
-              </div>
-
-              <Separator />
-
-              <div className="space-y-4">
-                <div className="flex justify-between items-center">
-                  <h4 className="font-medium">การแจ้งเตือนการเข้าสู่ระบบ</h4>
-                  <Switch
-                    checked={securitySettings.loginNotifications}
-                    onCheckedChange={(checked) => 
-                      setSecuritySettings({ ...securitySettings, loginNotifications: checked })
-                    }
-                  />
-                </div>
-                <div className="flex justify-between items-center">
-                  <div>
-                    <h4 className="font-medium">หมดเวลาเซสชัน</h4>
-                    <p className="text-sm text-muted-foreground">ระยะเวลาที่ไม่ได้ใช้งานก่อนออกจากระบบอัตโนมัติ</p>
-                  </div>
-                  <Select
-                    value={securitySettings.sessionTimeout.toString()}
-                    onValueChange={(value) => 
-                      setSecuritySettings({ ...securitySettings, sessionTimeout: parseInt(value) })
-                    }
-                  >
-                    <SelectTrigger className="w-32">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="15">15 นาที</SelectItem>
-                      <SelectItem value="30">30 นาที</SelectItem>
-                      <SelectItem value="60">1 ชั่วโมง</SelectItem>
-                      <SelectItem value="120">2 ชั่วโมง</SelectItem>
+                      <SelectItem value="Asia/Bangkok">เอเชีย/กรุงเทพฯ</SelectItem>
+                      <SelectItem value="UTC">UTC</SelectItem>
+                      <SelectItem value="America/New_York">อเมริกา/นิวยอร์ก</SelectItem>
+                      <SelectItem value="Europe/London">ยุโรป/ลอนดอน</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Trusted Devices */}
-          <Card>
-            <CardHeader>
-              <CardTitle>อุปกรณ์ที่เชื่อถือ</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {securitySettings.trustedDevices.map((device) => (
-                  <div key={device.id} className="flex justify-between items-center p-4 border rounded-lg">
-                    <div className="flex items-center gap-3">
-                      {getDeviceIcon(device.deviceType)}
-                      <div>
-                        <div className="font-medium flex items-center gap-2">
-                          {device.name}
-                          {device.isCurrent && (
-                            <Badge variant="outline" className="text-xs">ปัจจุบัน</Badge>
-                          )}
-                        </div>
-                        <div className="text-sm text-muted-foreground">
-                          {device.browser} • {device.ipAddress}
-                        </div>
-                        <div className="text-xs text-muted-foreground">
-                          เข้าใช้ล่าสุด: {new Date(device.lastAccess).toLocaleString('th-TH')}
-                        </div>
-                      </div>
-                    </div>
-                    {!device.isCurrent && (
-                      <Button 
-                        variant="outline" 
-                        size="sm"
-                        onClick={() => handleRemoveTrustedDevice(device.id)}
-                      >
-                        ลบ
-                      </Button>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Login History */}
-          <Card>
-            <CardHeader>
-              <CardTitle>ประวัติการเข้าสู่ระบบ</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                {securitySettings.loginHistory.map((login) => (
-                  <div key={login.id} className="flex justify-between items-center p-3 border rounded-lg">
-                    <div className="space-y-1">
-                      <div className="flex items-center gap-2">
-                        <div className="text-sm font-medium">
-                          {new Date(login.timestamp).toLocaleString('th-TH')}
-                        </div>
-                        {getLoginStatusBadge(login.success)}
-                      </div>
-                      <div className="text-xs text-muted-foreground">
-                        {login.device} • {login.browser} • {login.ipAddress}
-                      </div>
-                      <div className="text-xs text-muted-foreground">
-                        <MapPin className="inline h-3 w-3 mr-1" />
-                        {login.location}
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="notifications" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Bell className="h-5 w-5" />
-                การแจ้งเตือน
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="space-y-4">
-                <div className="flex justify-between items-center">
-                  <div>
-                    <h4 className="font-medium">การแจ้งเตือนทางอีเมล</h4>
-                    <p className="text-sm text-muted-foreground">รับการแจ้งเตือนสำคัญทางอีเมล</p>
-                  </div>
-                  <Switch
-                    checked={notificationSettings.emailNotifications}
-                    onCheckedChange={(checked) => 
-                      setNotificationSettings({ ...notificationSettings, emailNotifications: checked })
-                    }
-                  />
-                </div>
-
-                <div className="flex justify-between items-center">
-                  <div>
-                    <h4 className="font-medium">การแจ้งเตือนแบบ Push</h4>
-                    <p className="text-sm text-muted-foreground">รับการแจ้งเตือนในเบราว์เซอร์</p>
-                  </div>
-                  <Switch
-                    checked={notificationSettings.pushNotifications}
-                    onCheckedChange={(checked) => 
-                      setNotificationSettings({ ...notificationSettings, pushNotifications: checked })
-                    }
-                  />
-                </div>
-
-                <div className="flex justify-between items-center">
-                  <div>
-                    <h4 className="font-medium">การแจ้งเตือนทาง SMS</h4>
-                    <p className="text-sm text-muted-foreground">รับการแจ้งเตือนสำคัญทางข้อความ</p>
-                  </div>
-                  <Switch
-                    checked={notificationSettings.smsNotifications}
-                    onCheckedChange={(checked) => 
-                      setNotificationSettings({ ...notificationSettings, smsNotifications: checked })
-                    }
-                  />
-                </div>
-              </div>
-
-              <Separator />
-
-              <div className="space-y-4">
-                <h4 className="font-medium">ประเภทการแจ้งเตือน</h4>
-                
-                <div className="flex justify-between items-center">
-                  <div>
-                    <h5 className="font-medium">รายงานประจำสัปดาห์</h5>
-                    <p className="text-sm text-muted-foreground">สรุปกิจกรรมและสถิติประจำสัปดาห์</p>
-                  </div>
-                  <Switch
-                    checked={notificationSettings.weeklyReports}
-                    onCheckedChange={(checked) => 
-                      setNotificationSettings({ ...notificationSettings, weeklyReports: checked })
-                    }
-                  />
-                </div>
-
-                <div className="flex justify-between items-center">
-                  <div>
-                    <h5 className="font-medium">การแจ้งเตือนระบบ</h5>
-                    <p className="text-sm text-muted-foreground">การแจ้งเตือนเกี่ยวกับระบบและการบำรุงรักษา</p>
-                  </div>
-                  <Switch
-                    checked={notificationSettings.systemAlerts}
-                    onCheckedChange={(checked) => 
-                      setNotificationSettings({ ...notificationSettings, systemAlerts: checked })
-                    }
-                  />
-                </div>
-
-                <div className="flex justify-between items-center">
-                  <div>
-                    <h5 className="font-medium">อีเมลการตลาด</h5>
-                    <p className="text-sm text-muted-foreground">ข่าวสารและโปรโมชั่นจากเรา</p>
-                  </div>
-                  <Switch
-                    checked={notificationSettings.marketingEmails}
-                    onCheckedChange={(checked) => 
-                      setNotificationSettings({ ...notificationSettings, marketingEmails: checked })
-                    }
-                  />
-                </div>
-              </div>
-
-              <div className="flex justify-end">
-                <Button onClick={handleSaveNotifications}>บันทึกการตั้งค่า</Button>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="preferences" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Settings className="h-5 w-5" />
-                การตั้งค่าทั่วไป
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">
                   <Label htmlFor="language">ภาษา</Label>
-                  <Select value={profile.language} onValueChange={(value) => setProfile({ ...profile, language: value })}>
+                  <Select
+                    value={profile?.language || 'th'}
+                    onValueChange={(value) => setProfile(prev => 
+                      prev ? { ...prev, language: value } : null
+                    )}
+                  >
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
@@ -919,56 +333,230 @@ const AccountSettings = () => {
                     </SelectContent>
                   </Select>
                 </div>
+              </div>
+
+              <div className="flex justify-end">
+                <Button onClick={handleSaveProfile} disabled={saving}>
+                  {saving ? 'กำลังบันทึก...' : 'บันทึกการเปลี่ยนแปลง'}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="security" className="space-y-6">
+          {/* Security Settings */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Shield className="h-5 w-5" />
+                การตั้งค่าความปลอดภัย
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <Label>การยืนยันตัวตนสองขั้นตอน (2FA)</Label>
+                  <p className="text-sm text-muted-foreground">
+                    เพิ่มความปลอดภัยด้วยการยืนยันตัวตนสองขั้นตอน
+                  </p>
+                </div>
+                <Switch
+                  checked={twoFactorEnabled}
+                  onCheckedChange={setTwoFactorEnabled}
+                />
+              </div>
+
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <Label>แจ้งเตือนการเข้าสู่ระบบ</Label>
+                  <p className="text-sm text-muted-foreground">
+                    รับการแจ้งเตือนเมื่อมีการเข้าสู่ระบบใหม่
+                  </p>
+                </div>
+                <Switch
+                  checked={loginNotifications}
+                  onCheckedChange={setLoginNotifications}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label>หมดเวลาการใช้งาน (นาที)</Label>
+                <Select
+                  value={sessionTimeout.toString()}
+                  onValueChange={(value) => setSessionTimeout(parseInt(value))}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="15">15 นาที</SelectItem>
+                    <SelectItem value="30">30 นาที</SelectItem>
+                    <SelectItem value="60">1 ชั่วโมง</SelectItem>
+                    <SelectItem value="240">4 ชั่วโมง</SelectItem>
+                    <SelectItem value="480">8 ชั่วโมง</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="pt-4 space-y-2">
+                <Button variant="outline" className="w-full">
+                  <Key className="h-4 w-4 mr-2" />
+                  เปลี่ยนรหัสผ่าน
+                </Button>
+                <Button variant="outline" className="w-full">
+                  <Smartphone className="h-4 w-4 mr-2" />
+                  จัดการอุปกรณ์ที่เชื่อถือได้
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="notifications" className="space-y-6">
+          {/* Notification Settings */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Bell className="h-5 w-5" />
+                การตั้งค่าการแจ้งเตือน
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <Label>การแจ้งเตือนทางอีเมล</Label>
+                  <p className="text-sm text-muted-foreground">
+                    รับการแจ้งเตือนสำคัญทางอีเมล
+                  </p>
+                </div>
+                <Switch
+                  checked={emailNotifications}
+                  onCheckedChange={setEmailNotifications}
+                />
+              </div>
+
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <Label>การแจ้งเตือนแบบ Push</Label>
+                  <p className="text-sm text-muted-foreground">
+                    รับการแจ้งเตือนแบบทันทีบนเบราว์เซอร์
+                  </p>
+                </div>
+                <Switch
+                  checked={pushNotifications}
+                  onCheckedChange={setPushNotifications}
+                />
+              </div>
+
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <Label>การแจ้งเตือนทาง SMS</Label>
+                  <p className="text-sm text-muted-foreground">
+                    รับการแจ้งเตือนฉุกเฉินทาง SMS
+                  </p>
+                </div>
+                <Switch
+                  checked={smsNotifications}
+                  onCheckedChange={setSmsNotifications}
+                />
+              </div>
+
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <Label>รายงานประจำสัปดาห์</Label>
+                  <p className="text-sm text-muted-foreground">
+                    รับสรุปการใช้งานประจำสัปดาห์
+                  </p>
+                </div>
+                <Switch
+                  checked={weeklyReports}
+                  onCheckedChange={setWeeklyReports}
+                />
+              </div>
+
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <Label>การแจ้งเตือนระบบ</Label>
+                  <p className="text-sm text-muted-foreground">
+                    รับการแจ้งเตือนเกี่ยวกับการอัปเดตระบบ
+                  </p>
+                </div>
+                <Switch
+                  checked={systemAlerts}
+                  onCheckedChange={setSystemAlerts}
+                />
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="preferences" className="space-y-6">
+          {/* Preference Settings */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Settings className="h-5 w-5" />
+                ความต้องการส่วนตัว
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">
-                  <Label htmlFor="timezone">เขตเวลา</Label>
-                  <Select value={profile.timezone} onValueChange={(value) => setProfile({ ...profile, timezone: value })}>
+                  <Label>ธีมการแสดงผล</Label>
+                  <Select defaultValue="system">
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="Asia/Bangkok">Asia/Bangkok (GMT+7)</SelectItem>
-                      <SelectItem value="UTC">UTC (GMT+0)</SelectItem>
-                      <SelectItem value="America/New_York">America/New_York (GMT-5)</SelectItem>
+                      <SelectItem value="light">สว่าง</SelectItem>
+                      <SelectItem value="dark">มืด</SelectItem>
+                      <SelectItem value="system">ตามระบบ</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
-              </div>
-
-              <Separator />
-
-              <div className="space-y-4">
-                <h4 className="font-medium">การดาวน์โหลดข้อมูล</h4>
-                <div className="flex gap-2">
-                  <Button variant="outline">
-                    <Download className="h-4 w-4 mr-2" />
-                    ดาวน์โหลดข้อมูลส่วนตัว
-                  </Button>
-                  <Button variant="outline">
-                    <Download className="h-4 w-4 mr-2" />
-                    ดาวน์โหลดกิจกรรม
-                  </Button>
-                </div>
-                <p className="text-sm text-muted-foreground">
-                  ดาวน์โหลดข้อมูลของคุณในรูปแบบ JSON หรือ CSV
-                </p>
-              </div>
-
-              <Separator />
-
-              <div className="space-y-4">
-                <h4 className="font-medium text-red-600">โซนอันตราย</h4>
+                
                 <div className="space-y-2">
-                  <Button variant="destructive" disabled>
-                    ลบบัญชี
-                  </Button>
-                  <p className="text-sm text-muted-foreground">
-                    การลบบัญชีจะไม่สามารถยกเลิกได้ กรุณาติดต่อผู้ดูแลระบบหากต้องการลบบัญชี
-                  </p>
+                  <Label>รูปแบบวันที่</Label>
+                  <Select defaultValue="dd/mm/yyyy">
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="dd/mm/yyyy">DD/MM/YYYY</SelectItem>
+                      <SelectItem value="mm/dd/yyyy">MM/DD/YYYY</SelectItem>
+                      <SelectItem value="yyyy-mm-dd">YYYY-MM-DD</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
-              </div>
-
-              <div className="flex justify-end">
-                <Button onClick={handleSaveProfile}>บันทึกการตั้งค่า</Button>
+                
+                <div className="space-y-2">
+                  <Label>รูปแบบเวลา</Label>
+                  <Select defaultValue="24">
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="12">12 ชั่วโมง (AM/PM)</SelectItem>
+                      <SelectItem value="24">24 ชั่วโมง</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <div className="space-y-2">
+                  <Label>จำนวนรายการต่อหน้า</Label>
+                  <Select defaultValue="20">
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="10">10 รายการ</SelectItem>
+                      <SelectItem value="20">20 รายการ</SelectItem>
+                      <SelectItem value="50">50 รายการ</SelectItem>
+                      <SelectItem value="100">100 รายการ</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
             </CardContent>
           </Card>
