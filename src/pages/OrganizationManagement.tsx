@@ -130,32 +130,24 @@ const OrganizationManagement = () => {
       fetchOrganizations();
       fetchTenants();
     }
-  }, [isAuthenticated]);
+  }, [isAuthenticated, permissions]);
 
   const fetchOrganizations = async () => {
     try {
-      let query = supabase
-        .from('organizations')
-        .select('*');
+      console.log('Current permissions:', permissions);
       
-      // Tenant admin can see all organizations, super admin can see all,
-      // others only see their own organization
-      if (!permissions.isSuperAdmin && !permissions.isTenantAdmin) {
-        // For regular users, they can only see their own organization
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('organization_id')
-          .eq('user_id', (await supabase.auth.getUser()).data.user?.id)
-          .single();
-        
-        if (profile?.organization_id) {
-          query = query.eq('id', profile.organization_id);
-        }
+      // Super Admin และ Tenant Admin สามารถเห็นองค์กรทั้งหมด
+      const { data, error } = await supabase
+        .from('organizations')
+        .select('*')
+        .order('created_at', { ascending: false });
+      
+      if (error) {
+        console.error('Supabase error:', error);
+        throw error;
       }
       
-      const { data, error } = await query.order('created_at', { ascending: false });
-      
-      if (error) throw error;
+      console.log('Fetched organizations:', data);
       setOrganizations(data || []);
     } catch (error) {
       console.error('Error fetching organizations:', error);
@@ -500,9 +492,9 @@ const OrganizationManagement = () => {
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
-              {organizations.reduce((sum, org) => sum + org.userCount, 0)}
-            </div>
+             <div className="text-2xl font-bold">
+               {organizations.reduce((sum, org) => sum + (org.userCount || 0), 0)}
+             </div>
             <p className="text-xs text-muted-foreground">ทุกองค์กร</p>
           </CardContent>
         </Card>
@@ -569,47 +561,49 @@ const OrganizationManagement = () => {
               <TableBody>
                 {filteredOrganizations.map((org) => (
                   <TableRow key={org.id}>
-                    <TableCell className="font-medium">
-                      <div className="flex items-center space-x-3">
-                        <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center">
-                          <Building className="w-5 h-5 text-primary" />
-                        </div>
-                        <div>
-                          <div className="font-medium">{org.name}</div>
-                          <div className="text-sm text-muted-foreground flex items-center">
-                            <Mail className="w-3 h-3 mr-1" />
-                            {org.email}
-                          </div>
-                          <div className="text-sm text-muted-foreground flex items-center">
-                            <MapPin className="w-3 h-3 mr-1" />
-                            {org.address.length > 50 ? org.address.substring(0, 50) + '...' : org.address}
-                          </div>
-                        </div>
-                      </div>
-                    </TableCell>
+                     <TableCell className="font-medium">
+                       <div className="flex items-center space-x-3">
+                         <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center">
+                           <Building className="w-5 h-5 text-primary" />
+                         </div>
+                         <div>
+                           <div className="font-medium">{org.name}</div>
+                           <div className="text-sm text-muted-foreground flex items-center">
+                             <Mail className="w-3 h-3 mr-1" />
+                             {org.email}
+                           </div>
+                           {org.address && (
+                             <div className="text-sm text-muted-foreground flex items-center">
+                               <MapPin className="w-3 h-3 mr-1" />
+                               {org.address.length > 50 ? org.address.substring(0, 50) + '...' : org.address}
+                             </div>
+                           )}
+                         </div>
+                       </div>
+                     </TableCell>
                     <TableCell>
                       {getTypeBadge(org.type)}
                     </TableCell>
-                    <TableCell>
-                      <div>
-                        <div className="font-medium">{org.admin}</div>
-                        <div className="text-sm text-muted-foreground">{org.adminEmail}</div>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="text-center">
-                        <div className="font-medium">{org.userCount}</div>
-                        <div className="text-xs text-muted-foreground">คน</div>
-                      </div>
-                    </TableCell>
+                     <TableCell>
+                       <div>
+                         <div className="font-medium">{org.admin || 'ไม่ระบุ'}</div>
+                         <div className="text-sm text-muted-foreground">{org.adminEmail || 'ไม่ระบุ'}</div>
+                       </div>
+                     </TableCell>
+                     <TableCell>
+                       <div className="text-center">
+                         <div className="font-medium">{org.userCount || 0}</div>
+                         <div className="text-xs text-muted-foreground">คน</div>
+                       </div>
+                     </TableCell>
                     <TableCell>
                       {getStatusBadge(org.status)}
                     </TableCell>
-                    <TableCell>
-                      <div className="text-sm">
-                        {org.createdAt}
-                      </div>
-                    </TableCell>
+                     <TableCell>
+                       <div className="text-sm">
+                         {new Date(org.created_at).toLocaleDateString('th-TH')}
+                       </div>
+                     </TableCell>
                     <TableCell className="text-right">
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
