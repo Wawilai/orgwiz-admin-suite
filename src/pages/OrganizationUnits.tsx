@@ -63,8 +63,10 @@ const OrganizationUnits = () => {
     manager_user_id: null as string | null,
     description: "",
     status: "active",
+    organization_id: "" as string,
   });
   const [users, setUsers] = useState<any[]>([]);
+  const [organizations, setOrganizations] = useState<any[]>([]);
   const [currentOrgId, setCurrentOrgId] = useState<string | null>(null);
   const [stats, setStats] = useState({
     total: 0,
@@ -75,6 +77,7 @@ const OrganizationUnits = () => {
 
   useEffect(() => {
     if (isAuthenticated) {
+      fetchOrganizations();
       fetchOrganizationUnits();
     }
   }, [isAuthenticated]);
@@ -84,6 +87,22 @@ const OrganizationUnits = () => {
       fetchUsers();
     }
   }, [currentOrgId]);
+
+  const fetchOrganizations = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('organizations')
+        .select('id, name, type, status')
+        .eq('status', 'active')
+        .order('name');
+
+      if (error) throw error;
+      console.log('Fetched organizations:', data);
+      setOrganizations(data || []);
+    } catch (error) {
+      console.error('Error fetching organizations:', error);
+    }
+  };
 
   const fetchUsers = async () => {
     try {
@@ -110,7 +129,7 @@ const OrganizationUnits = () => {
     try {
       console.log('Fetching organization units...');
       
-      // Get current user's organization ID
+      // Get current user's organization ID for default filtering
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
         console.error('No authenticated user found');
@@ -125,21 +144,18 @@ const OrganizationUnits = () => {
 
       if (profileError) {
         console.error('Error fetching user profile:', profileError);
-        throw profileError;
+        // Don't throw error, just log it
       }
 
-      if (!profileData?.organization_id) {
-        console.error('No organization_id found in user profile');
-        return;
+      if (profileData?.organization_id) {
+        console.log('Current organization ID:', profileData.organization_id);
+        setCurrentOrgId(profileData.organization_id);
       }
 
-      console.log('Current organization ID:', profileData.organization_id);
-      setCurrentOrgId(profileData.organization_id);
-
+      // Fetch all organization units (or filter by organization if needed)
       const { data, error } = await supabase
         .from('organization_units')
         .select('*')
-        .eq('organization_id', profileData.organization_id)
         .order('created_at', { ascending: false });
       
       if (error) throw error;
@@ -265,15 +281,9 @@ const OrganizationUnits = () => {
   };
 
   const handleAddOU = async () => {
-    if (formData.name && formData.code) {
+    if (formData.name && formData.code && formData.organization_id) {
       try {
-        console.log('Adding OU with organization_id:', currentOrgId);
-        
-        if (!currentOrgId) {
-          console.error('No organization ID available');
-          alert('ไม่สามารถหา Organization ID ได้ กรุณาลองใหม่อีกครั้ง');
-          return;
-        }
+        console.log('Adding OU with organization_id:', formData.organization_id);
 
         // For main OU, parent_unit_id should be null
         const parentId = formData.parent_unit_id === "none" ? null : formData.parent_unit_id;
@@ -287,7 +297,7 @@ const OrganizationUnits = () => {
           manager_user_id: managerId,
           description: formData.description?.trim() || null,
           status: formData.status,
-          organization_id: currentOrgId,
+          organization_id: formData.organization_id,
         };
 
         console.log('Inserting OU data:', insertData);
@@ -305,14 +315,14 @@ const OrganizationUnits = () => {
         
         console.log('Successfully added OU:', data);
         fetchOrganizationUnits(); // Refresh to rebuild tree
-        setFormData({ name: "", name_en: "", code: "", parent_unit_id: null, manager_user_id: null, description: "", status: "active" });
+        setFormData({ name: "", name_en: "", code: "", parent_unit_id: null, manager_user_id: null, description: "", status: "active", organization_id: "" });
         setIsAddDialogOpen(false);
       } catch (error) {
         console.error('Error adding organization unit:', error);
         alert('เกิดข้อผิดพลาดในการเพิ่ม OU: ' + (error as any).message);
       }
     } else {
-      alert('กรุณากรอกชื่อ OU และรหัส OU');
+      alert('กรุณากรอกข้อมูลที่จำเป็น: ชื่อ OU, รหัส OU และเลือกองค์กร');
     }
   };
 
@@ -366,7 +376,8 @@ const OrganizationUnits = () => {
       parent_unit_id: ou.parent_unit_id,
       manager_user_id: (ou as any).manager_user_id || null,
       description: ou.description || "",
-      status: ou.status || "active"
+      status: ou.status || "active",
+      organization_id: ou.organization_id || "",
     });
     setIsEditDialogOpen(true);
   };
@@ -419,7 +430,7 @@ const OrganizationUnits = () => {
               size="sm"
               onClick={() => {
                 setSelectedOU(ou);
-                setFormData({ name: "", name_en: "", code: "", parent_unit_id: ou.id, manager_user_id: null, description: "", status: "active" });
+                setFormData({ name: "", name_en: "", code: "", parent_unit_id: ou.id, manager_user_id: null, description: "", status: "active", organization_id: ou.organization_id || "" });
                 setIsAddDialogOpen(true);
               }}
             >
@@ -470,7 +481,7 @@ const OrganizationUnits = () => {
         </div>
         <Button onClick={() => {
           setSelectedOU(null);
-          setFormData({ name: "", name_en: "", code: "", parent_unit_id: null, manager_user_id: null, description: "", status: "active" });
+          setFormData({ name: "", name_en: "", code: "", parent_unit_id: null, manager_user_id: null, description: "", status: "active", organization_id: currentOrgId || "" });
           setIsAddDialogOpen(true);
         }}>
           <Plus className="w-4 h-4 mr-2" />
@@ -547,6 +558,26 @@ const OrganizationUnits = () => {
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="ou-organization" className="text-right">
+                องค์กร *
+              </Label>
+              <Select
+                value={formData.organization_id}
+                onValueChange={(value) => setFormData({...formData, organization_id: value})}
+              >
+                <SelectTrigger className="col-span-3">
+                  <SelectValue placeholder="เลือกองค์กร" />
+                </SelectTrigger>
+                <SelectContent>
+                  {organizations.map((org) => (
+                    <SelectItem key={org.id} value={org.id}>
+                      {org.name} ({org.type})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="ou-name" className="text-right">
                 ชื่อ OU *
@@ -666,6 +697,26 @@ const OrganizationUnits = () => {
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="edit-ou-organization" className="text-right">
+                องค์กร *
+              </Label>
+              <Select
+                value={formData.organization_id}
+                onValueChange={(value) => setFormData({...formData, organization_id: value})}
+              >
+                <SelectTrigger className="col-span-3">
+                  <SelectValue placeholder="เลือกองค์กร" />
+                </SelectTrigger>
+                <SelectContent>
+                  {organizations.map((org) => (
+                    <SelectItem key={org.id} value={org.id}>
+                      {org.name} ({org.type})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="edit-ou-name" className="text-right">
                 ชื่อ OU *
