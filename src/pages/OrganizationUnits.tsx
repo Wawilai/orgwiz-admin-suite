@@ -65,31 +65,35 @@ const OrganizationUnits = () => {
     status: "active",
   });
   const [users, setUsers] = useState<any[]>([]);
+  const [currentOrgId, setCurrentOrgId] = useState<string | null>(null);
 
   useEffect(() => {
     if (isAuthenticated) {
       fetchOrganizationUnits();
-      fetchUsers();
     }
   }, [isAuthenticated]);
 
+  useEffect(() => {
+    if (currentOrgId) {
+      fetchUsers();
+    }
+  }, [currentOrgId]);
+
   const fetchUsers = async () => {
     try {
-      const { data: profileData, error: profileError } = await supabase
-        .from('profiles')
-        .select('organization_id')
-        .eq('user_id', (await supabase.auth.getUser()).data.user?.id)
-        .single();
-
-      if (profileError) throw profileError;
+      if (!currentOrgId) {
+        console.log('No organization ID available for fetching users');
+        return;
+      }
 
       const { data, error } = await supabase
         .from('profiles')
         .select('user_id, first_name, last_name, display_name, email')
-        .eq('organization_id', profileData.organization_id)
+        .eq('organization_id', currentOrgId)
         .eq('status', 'active');
 
       if (error) throw error;
+      console.log('Fetched users for organization:', data);
       setUsers(data || []);
     } catch (error) {
       console.error('Error fetching users:', error);
@@ -98,14 +102,33 @@ const OrganizationUnits = () => {
 
   const fetchOrganizationUnits = async () => {
     try {
+      console.log('Fetching organization units...');
+      
       // Get current user's organization ID
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        console.error('No authenticated user found');
+        return;
+      }
+
       const { data: profileData, error: profileError } = await supabase
         .from('profiles')
         .select('organization_id')
-        .eq('user_id', (await supabase.auth.getUser()).data.user?.id)
+        .eq('user_id', user.id)
         .single();
 
-      if (profileError) throw profileError;
+      if (profileError) {
+        console.error('Error fetching user profile:', profileError);
+        throw profileError;
+      }
+
+      if (!profileData?.organization_id) {
+        console.error('No organization_id found in user profile');
+        return;
+      }
+
+      console.log('Current organization ID:', profileData.organization_id);
+      setCurrentOrgId(profileData.organization_id);
 
       const { data, error } = await supabase
         .from('organization_units')
@@ -117,6 +140,8 @@ const OrganizationUnits = () => {
         .order('created_at', { ascending: false });
       
       if (error) throw error;
+      
+      console.log('Fetched organization units:', data);
       
       // Add user count to each OU
       const unitsWithCount = (data || []).map(unit => ({
@@ -216,14 +241,13 @@ const OrganizationUnits = () => {
   const handleAddOU = async () => {
     if (formData.name && formData.code) {
       try {
-        // Get current user's organization ID
-        const { data: profileData, error: profileError } = await supabase
-          .from('profiles')
-          .select('organization_id')
-          .eq('user_id', (await supabase.auth.getUser()).data.user?.id)
-          .single();
-
-        if (profileError) throw profileError;
+        console.log('Adding OU with organization_id:', currentOrgId);
+        
+        if (!currentOrgId) {
+          console.error('No organization ID available');
+          alert('ไม่สามารถหา Organization ID ได้ กรุณาลองใหม่อีกครั้ง');
+          return;
+        }
 
         const { data, error } = await supabase
           .from('organization_units')
@@ -232,21 +256,26 @@ const OrganizationUnits = () => {
             name_en: formData.name_en || null,
             code: formData.code,
             parent_unit_id: formData.parent_unit_id,
-            manager_user_id: formData.manager_user_id,
+            manager_user_id: formData.manager_user_id === "none" ? null : formData.manager_user_id,
             description: formData.description,
             status: formData.status,
-            organization_id: profileData.organization_id,
+            organization_id: currentOrgId,
           }])
           .select()
           .single();
         
-        if (error) throw error;
+        if (error) {
+          console.error('Error inserting OU:', error);
+          throw error;
+        }
         
+        console.log('Successfully added OU:', data);
         fetchOrganizationUnits(); // Refresh to rebuild tree
         setFormData({ name: "", name_en: "", code: "", parent_unit_id: null, manager_user_id: null, description: "", status: "active" });
         setIsAddDialogOpen(false);
       } catch (error) {
         console.error('Error adding organization unit:', error);
+        alert('เกิดข้อผิดพลาดในการเพิ่ม OU: ' + (error as any).message);
       }
     }
   };
