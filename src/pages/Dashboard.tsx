@@ -35,22 +35,61 @@ const Dashboard = () => {
 
   const fetchOrganizationStats = async () => {
     try {
-      const { data, error } = await supabase.rpc('get_organization_stats', {
-        org_id: await getCurrentUserOrgId()
+      setLoading(true);
+      
+      // First get the current user's organization ID
+      const { data: orgId, error: orgError } = await supabase.rpc('get_current_user_organization_id');
+      
+      if (orgError) {
+        console.error('Error getting organization ID:', orgError);
+        return;
+      }
+      
+      if (!orgId) {
+        console.log('No organization ID found for user');
+        setOrgStats({
+          total_users: 0,
+          active_users: 0,
+          total_domains: 0,
+          active_domains: 0,
+          total_licenses: 0,
+          active_licenses: 0
+        });
+        return;
+      }
+      
+      // Then get the organization stats
+      const { data: statsData, error: statsError } = await supabase.rpc('get_organization_stats', {
+        org_id: orgId
       });
       
-      if (error) throw error;
-      setOrgStats(data);
+      if (statsError) {
+        console.error('Error getting organization stats:', statsError);
+        return;
+      }
+      
+      setOrgStats(statsData || {
+        total_users: 0,
+        active_users: 0,
+        total_domains: 0,
+        active_domains: 0,
+        total_licenses: 0,
+        active_licenses: 0
+      });
     } catch (error) {
       console.error('Error fetching organization stats:', error);
+      // Set default stats to prevent UI issues
+      setOrgStats({
+        total_users: 0,
+        active_users: 0,
+        total_domains: 0,
+        active_domains: 0,
+        total_licenses: 0,
+        active_licenses: 0
+      });
     } finally {
       setLoading(false);
     }
-  };
-
-  const getCurrentUserOrgId = async () => {
-    const { data } = await supabase.rpc('get_current_user_organization_id');
-    return data;
   };
 
   const stats = [
@@ -155,6 +194,17 @@ const Dashboard = () => {
       default: return <Clock className="w-4 h-4 text-muted-foreground" />;
     }
   };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-muted-foreground">กำลังโหลดข้อมูล...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
