@@ -70,15 +70,34 @@ const OrganizationUnits = () => {
 
   const fetchOrganizationUnits = async () => {
     try {
+      // Get current user's organization ID
+      const { data: profileData, error: profileError } = await supabase
+        .from('profiles')
+        .select('organization_id')
+        .eq('user_id', (await supabase.auth.getUser()).data.user?.id)
+        .single();
+
+      if (profileError) throw profileError;
+
       const { data, error } = await supabase
         .from('organization_units')
-        .select('*')
+        .select(`
+          *,
+          profiles(count)
+        `)
+        .eq('organization_id', profileData.organization_id)
         .order('created_at', { ascending: false });
       
       if (error) throw error;
       
+      // Add user count to each OU
+      const unitsWithCount = (data || []).map(unit => ({
+        ...unit,
+        userCount: unit.profiles?.[0]?.count || 0
+      }));
+      
       // Organize into tree structure
-      const treeData = buildTree(data || []);
+      const treeData = buildTree(unitsWithCount);
       setOUs(treeData);
     } catch (error) {
       console.error('Error fetching organization units:', error);
@@ -169,6 +188,15 @@ const OrganizationUnits = () => {
   const handleAddOU = async () => {
     if (formData.name && formData.code) {
       try {
+        // Get current user's organization ID
+        const { data: profileData, error: profileError } = await supabase
+          .from('profiles')
+          .select('organization_id')
+          .eq('user_id', (await supabase.auth.getUser()).data.user?.id)
+          .single();
+
+        if (profileError) throw profileError;
+
         const { data, error } = await supabase
           .from('organization_units')
           .insert([{
@@ -176,7 +204,7 @@ const OrganizationUnits = () => {
             code: formData.code,
             parent_unit_id: formData.parent_unit_id,
             description: formData.description,
-            organization_id: 'temp-org-id', // Will be replaced with actual org ID
+            organization_id: profileData.organization_id,
           }])
           .select()
           .single();
@@ -441,6 +469,18 @@ const OrganizationUnits = () => {
                 className="col-span-3"
               />
             </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="ou-description" className="text-right">
+                คำอธิบาย
+              </Label>
+              <Input
+                id="ou-description"
+                value={formData.description}
+                onChange={(e) => setFormData({...formData, description: e.target.value})}
+                placeholder="คำอธิบาย (ไม่บังคับ)"
+                className="col-span-3"
+              />
+            </div>
             {formData.parent_unit_id && (
               <div className="grid grid-cols-4 items-center gap-4">
                 <Label className="text-right">
@@ -492,6 +532,18 @@ const OrganizationUnits = () => {
                 id="edit-ou-code"
                 value={formData.code}
                 onChange={(e) => setFormData({...formData, code: e.target.value.toUpperCase()})}
+                className="col-span-3"
+              />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="edit-ou-description" className="text-right">
+                คำอธิบาย
+              </Label>
+              <Input
+                id="edit-ou-description"
+                value={formData.description}
+                onChange={(e) => setFormData({...formData, description: e.target.value})}
+                placeholder="คำอธิบาย (ไม่บังคับ)"
                 className="col-span-3"
               />
             </div>
