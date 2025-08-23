@@ -1231,6 +1231,10 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: string
       }
+      get_current_user_tenant_id: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
       get_full_email_address: {
         Args: { domain_id: string; local_part: string }
         Returns: string
