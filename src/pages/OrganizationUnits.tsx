@@ -138,10 +138,7 @@ const OrganizationUnits = () => {
 
       const { data, error } = await supabase
         .from('organization_units')
-        .select(`
-          *,
-          profiles(count)
-        `)
+        .select('*')
         .eq('organization_id', profileData.organization_id)
         .order('created_at', { ascending: false });
       
@@ -149,11 +146,21 @@ const OrganizationUnits = () => {
       
       console.log('Fetched organization units:', data);
       
-      // Calculate statistics
+      // Calculate statistics  
       const total = data?.length || 0;
       const topLevel = data?.filter(unit => !unit.parent_unit_id).length || 0;
       const subUnits = total - topLevel;
-      const totalMembers = data?.reduce((sum, unit) => sum + (unit.profiles?.[0]?.count || 0), 0) || 0;
+      
+      // Get user counts for each OU
+      const userCounts = await Promise.all((data || []).map(async (unit) => {
+        const { count } = await supabase
+          .from('profiles')
+          .select('*', { count: 'exact', head: true })
+          .eq('organization_unit_id', unit.id);
+        return count || 0;
+      }));
+      
+      const totalMembers = userCounts.reduce((sum, count) => sum + count, 0);
       
       setStats({
         total,
@@ -163,9 +170,9 @@ const OrganizationUnits = () => {
       });
       
       // Add user count to each OU
-      const unitsWithCount = (data || []).map(unit => ({
+      const unitsWithCount = (data || []).map((unit, index) => ({
         ...unit,
-        userCount: unit.profiles?.[0]?.count || 0
+        userCount: userCounts[index] || 0
       }));
       
       // Organize into tree structure
