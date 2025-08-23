@@ -3,15 +3,25 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
-import { Users, UserPlus, Edit, Trash2 } from "lucide-react";
+import { Users, UserPlus, Edit, Trash2, Calendar, Building, User } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useMasterData } from "@/contexts/MasterDataContext";
+import { toast } from "sonner";
 
 const UserManagement = () => {
   const { isAuthenticated } = useAuth();
+  const { 
+    positions, 
+    userRoles, 
+    languages, 
+    getActiveItems,
+    loading: masterDataLoading 
+  } = useMasterData();
   const [users, setUsers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [isAddUserOpen, setIsAddUserOpen] = useState(false);
@@ -155,7 +165,10 @@ const UserManagement = () => {
   };
 
   const handleAddUser = async () => {
-    if (!formData.first_name || !formData.last_name || !formData.email || !formData.organization_id) return;
+    if (!formData.first_name || !formData.last_name || !formData.email || !formData.organization_id) {
+      toast.error("กรุณากรอกข้อมูลที่จำเป็นให้ครบถ้วน");
+      return;
+    }
     
     setSubmitting(true);
     try {
@@ -191,8 +204,10 @@ const UserManagement = () => {
       await fetchUsers();
       setIsAddUserOpen(false);
       resetFormData();
+      toast.success("เพิ่มผู้ใช้งานเรียบร้อยแล้ว");
     } catch (error) {
       console.error('Error adding user:', error);
+      toast.error("เกิดข้อผิดพลาดในการเพิ่มผู้ใช้งาน");
     } finally {
       setSubmitting(false);
     }
@@ -325,279 +340,327 @@ const UserManagement = () => {
                 เพิ่มผู้ใช้งานใหม่เข้าสู่ระบบ
               </DialogDescription>
             </DialogHeader>
-            <div className="grid gap-4 py-4 max-h-96 overflow-y-auto">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="first_name">ชื่อ *</Label>
-                  <Input
-                    id="first_name"
-                    value={formData.first_name}
-                    onChange={(e) => setFormData({...formData, first_name: e.target.value})}
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="last_name">นามสกุล *</Label>
-                  <Input
-                    id="last_name"
-                    value={formData.last_name}
-                    onChange={(e) => setFormData({...formData, last_name: e.target.value})}
-                  />
-                </div>
-              </div>
-              
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="first_name_en">ชื่อ (อังกฤษ)</Label>
-                  <Input
-                    id="first_name_en"
-                    value={formData.first_name_en}
-                    onChange={(e) => setFormData({...formData, first_name_en: e.target.value})}
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="last_name_en">นามสกุล (อังกฤษ)</Label>
-                  <Input
-                    id="last_name_en"
-                    value={formData.last_name_en}
-                    onChange={(e) => setFormData({...formData, last_name_en: e.target.value})}
-                  />
-                </div>
-              </div>
+            <Tabs defaultValue="personal" className="w-full">
+              <TabsList className="grid w-full grid-cols-4">
+                <TabsTrigger value="personal" className="flex items-center gap-1">
+                  <User className="w-3 h-3" />
+                  ข้อมูลส่วนตัว
+                </TabsTrigger>
+                <TabsTrigger value="contact" className="flex items-center gap-1">
+                  <Building className="w-3 h-3" />
+                  ข้อมูลติดต่อ
+                </TabsTrigger>
+                <TabsTrigger value="work" className="flex items-center gap-1">
+                  <Calendar className="w-3 h-3" />
+                  ข้อมูลงาน
+                </TabsTrigger>
+                <TabsTrigger value="system">ระบบ</TabsTrigger>
+              </TabsList>
 
-              <div>
-                <Label htmlFor="display_name">ชื่อแสดง</Label>
-                <Input
-                  id="display_name"
-                  value={formData.display_name}
-                  onChange={(e) => setFormData({...formData, display_name: e.target.value})}
-                />
-              </div>
+              <TabsContent value="personal" className="space-y-4 mt-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="first_name">ชื่อ *</Label>
+                    <Input
+                      id="first_name"
+                      value={formData.first_name}
+                      onChange={(e) => setFormData({...formData, first_name: e.target.value})}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="last_name">นามสกุล *</Label>
+                    <Input
+                      id="last_name"
+                      value={formData.last_name}
+                      onChange={(e) => setFormData({...formData, last_name: e.target.value})}
+                    />
+                  </div>
+                </div>
+                
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="first_name_en">ชื่อ (อังกฤษ)</Label>
+                    <Input
+                      id="first_name_en"
+                      value={formData.first_name_en}
+                      onChange={(e) => setFormData({...formData, first_name_en: e.target.value})}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="last_name_en">นามสกุล (อังกฤษ)</Label>
+                    <Input
+                      id="last_name_en"
+                      value={formData.last_name_en}
+                      onChange={(e) => setFormData({...formData, last_name_en: e.target.value})}
+                    />
+                  </div>
+                </div>
 
-              <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="display_name">ชื่อแสดง</Label>
+                    <Input
+                      id="display_name"
+                      value={formData.display_name}
+                      onChange={(e) => setFormData({...formData, display_name: e.target.value})}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="national_id">เลขบัตรประชาชน</Label>
+                    <Input
+                      id="national_id"
+                      value={formData.national_id}
+                      onChange={(e) => setFormData({...formData, national_id: e.target.value})}
+                    />
+                  </div>
+                </div>
+
                 <div>
-                  <Label htmlFor="username">ชื่อผู้ใช้</Label>
-                  <Input
-                    id="username"
-                    value={formData.username}
-                    onChange={(e) => setFormData({...formData, username: e.target.value})}
+                  <Label htmlFor="bio">ข้อมูลเพิ่มเติม</Label>
+                  <Textarea
+                    id="bio"
+                    value={formData.bio}
+                    onChange={(e) => setFormData({...formData, bio: e.target.value})}
+                    placeholder="ข้อมูลเพิ่มเติมเกี่ยวกับผู้ใช้"
                   />
                 </div>
+              </TabsContent>
+
+              <TabsContent value="contact" className="space-y-4 mt-4">
                 <div>
-                  <Label htmlFor="employee_id">รหัสพนักงาน</Label>
+                  <Label htmlFor="email">อีเมล *</Label>
                   <Input
-                    id="employee_id"
-                    value={formData.employee_id}
-                    onChange={(e) => setFormData({...formData, employee_id: e.target.value})}
+                    id="email"
+                    type="email"
+                    value={formData.email}
+                    onChange={(e) => setFormData({...formData, email: e.target.value})}
                   />
                 </div>
-              </div>
 
-              <div>
-                <Label htmlFor="email">อีเมล *</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  value={formData.email}
-                  onChange={(e) => setFormData({...formData, email: e.target.value})}
-                />
-              </div>
-
-              <div>
-                <Label htmlFor="backup_email">อีเมลสำรอง</Label>
-                <Input
-                  id="backup_email"
-                  type="email"
-                  value={formData.backup_email}
-                  onChange={(e) => setFormData({...formData, backup_email: e.target.value})}
-                />
-              </div>
-
-              <div className="grid grid-cols-3 gap-4">
                 <div>
-                  <Label htmlFor="phone">เบอร์โทรศัพท์</Label>
+                  <Label htmlFor="backup_email">อีเมลสำรอง</Label>
                   <Input
-                    id="phone"
-                    value={formData.phone}
-                    onChange={(e) => setFormData({...formData, phone: e.target.value})}
+                    id="backup_email"
+                    type="email"
+                    value={formData.backup_email}
+                    onChange={(e) => setFormData({...formData, backup_email: e.target.value})}
                   />
                 </div>
-                <div>
-                  <Label htmlFor="phone_mobile">มือถือ</Label>
-                  <Input
-                    id="phone_mobile"
-                    value={formData.phone_mobile}
-                    onChange={(e) => setFormData({...formData, phone_mobile: e.target.value})}
-                  />
+
+                <div className="grid grid-cols-3 gap-4">
+                  <div>
+                    <Label htmlFor="phone">เบอร์โทรศัพท์</Label>
+                    <Input
+                      id="phone"
+                      value={formData.phone}
+                      onChange={(e) => setFormData({...formData, phone: e.target.value})}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="phone_mobile">มือถือ</Label>
+                    <Input
+                      id="phone_mobile"
+                      value={formData.phone_mobile}
+                      onChange={(e) => setFormData({...formData, phone_mobile: e.target.value})}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="phone_office">โทรศัพท์ออฟฟิศ</Label>
+                    <Input
+                      id="phone_office"
+                      value={formData.phone_office}
+                      onChange={(e) => setFormData({...formData, phone_office: e.target.value})}
+                    />
+                  </div>
                 </div>
-                <div>
-                  <Label htmlFor="phone_office">โทรศัพท์ออฟฟิศ</Label>
-                  <Input
-                    id="phone_office"
-                    value={formData.phone_office}
-                    onChange={(e) => setFormData({...formData, phone_office: e.target.value})}
-                  />
+              </TabsContent>
+
+              <TabsContent value="work" className="space-y-4 mt-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="employee_id">รหัสพนักงาน</Label>
+                    <Input
+                      id="employee_id"
+                      value={formData.employee_id}
+                      onChange={(e) => setFormData({...formData, employee_id: e.target.value})}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="username">ชื่อผู้ใช้</Label>
+                    <Input
+                      id="username"
+                      value={formData.username}
+                      onChange={(e) => setFormData({...formData, username: e.target.value})}
+                    />
+                  </div>
                 </div>
-              </div>
 
-              <div>
-                <Label htmlFor="position">ตำแหน่ง</Label>
-                <Input
-                  id="position"
-                  value={formData.position}
-                  onChange={(e) => setFormData({...formData, position: e.target.value})}
-                />
-              </div>
-
-              <div>
-                <Label htmlFor="national_id">เลขบัตรประชาชน</Label>
-                <Input
-                  id="national_id"
-                  value={formData.national_id}
-                  onChange={(e) => setFormData({...formData, national_id: e.target.value})}
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="organization_id">องค์กร *</Label>
-                  <Select value={formData.organization_id} onValueChange={(value) => setFormData({...formData, organization_id: value})}>
+                  <Label htmlFor="position">ตำแหน่ง</Label>
+                  <Select value={formData.position} onValueChange={(value) => setFormData({...formData, position: value})}>
                     <SelectTrigger>
-                      <SelectValue placeholder="เลือกองค์กร" />
+                      <SelectValue placeholder="เลือกตำแหน่ง" />
                     </SelectTrigger>
                     <SelectContent>
-                      {organizations.map((org) => (
-                        <SelectItem key={org.id} value={org.id}>
-                          {org.name}
+                      {getActiveItems('positions').map((position) => (
+                        <SelectItem key={position.id} value={position.code}>
+                          {position.name}
                         </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
                 </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="organization_id">องค์กร *</Label>
+                    <Select value={formData.organization_id} onValueChange={(value) => setFormData({...formData, organization_id: value})}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="เลือกองค์กร" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {organizations.map((org) => (
+                          <SelectItem key={org.id} value={org.id}>
+                            {org.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label htmlFor="organization_unit_id">หน่วยงาน</Label>
+                    <Select value={formData.organization_unit_id} onValueChange={(value) => setFormData({...formData, organization_unit_id: value})}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="เลือกหน่วยงาน" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {organizationUnits
+                          .filter(unit => !formData.organization_id || unit.organization_id === formData.organization_id)
+                          .map((unit) => (
+                          <SelectItem key={unit.id} value={unit.id}>
+                            {unit.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
                 <div>
-                  <Label htmlFor="organization_unit_id">หน่วยงาน</Label>
-                  <Select value={formData.organization_unit_id} onValueChange={(value) => setFormData({...formData, organization_unit_id: value})}>
+                  <Label htmlFor="manager_id">ผู้บังคับบัญชา</Label>
+                  <Select value={formData.manager_id} onValueChange={(value) => setFormData({...formData, manager_id: value})}>
                     <SelectTrigger>
-                      <SelectValue placeholder="เลือกหน่วยงาน" />
+                      <SelectValue placeholder="เลือกผู้บังคับบัญชา" />
                     </SelectTrigger>
                     <SelectContent>
-                      {organizationUnits
-                        .filter(unit => !formData.organization_id || unit.organization_id === formData.organization_id)
-                        .map((unit) => (
-                        <SelectItem key={unit.id} value={unit.id}>
-                          {unit.name}
+                      {managers.map((manager) => (
+                        <SelectItem key={manager.id} value={manager.id}>
+                          {manager.first_name} {manager.last_name} - {manager.position}
                         </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
                 </div>
-              </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="start_date">วันที่เริ่มงาน</Label>
-                  <Input
-                    id="start_date"
-                    type="date"
-                    value={formData.start_date}
-                    onChange={(e) => setFormData({...formData, start_date: e.target.value})}
-                  />
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="start_date">วันที่เริ่มงาน</Label>
+                    <Input
+                      id="start_date"
+                      type="date"
+                      value={formData.start_date}
+                      onChange={(e) => setFormData({...formData, start_date: e.target.value})}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="end_date">วันที่สิ้นสุดงาน</Label>
+                    <Input
+                      id="end_date"
+                      type="date"
+                      value={formData.end_date}
+                      onChange={(e) => setFormData({...formData, end_date: e.target.value})}
+                    />
+                  </div>
                 </div>
-                <div>
-                  <Label htmlFor="end_date">วันที่สิ้นสุดงาน</Label>
-                  <Input
-                    id="end_date"
-                    type="date"
-                    value={formData.end_date}
-                    onChange={(e) => setFormData({...formData, end_date: e.target.value})}
-                  />
+
+              </TabsContent>
+
+              <TabsContent value="system" className="space-y-4 mt-4">
+                <div className="grid grid-cols-3 gap-4">
+                  <div>
+                    <Label htmlFor="user_type">ประเภทผู้ใช้</Label>
+                    <Select value={formData.user_type} onValueChange={(value) => setFormData({...formData, user_type: value})}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="เลือกประเภทผู้ใช้" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="user">ผู้ใช้ทั่วไป</SelectItem>
+                        <SelectItem value="admin">ผู้ดูแลระบบ</SelectItem>
+                        <SelectItem value="manager">ผู้จัดการ</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label htmlFor="language">ภาษา</Label>
+                    <Select value={formData.language} onValueChange={(value) => setFormData({...formData, language: value})}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="เลือกภาษา" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="th">ภาษาไทย</SelectItem>
+                        <SelectItem value="en">English</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label htmlFor="timezone">เขตเวลา</Label>
+                    <Select value={formData.timezone} onValueChange={(value) => setFormData({...formData, timezone: value})}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="เลือกเขตเวลา" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Asia/Bangkok">เวลาไทย (GMT+7)</SelectItem>
+                        <SelectItem value="UTC">UTC (GMT+0)</SelectItem>
+                        <SelectItem value="America/New_York">Eastern Time (GMT-5/-4)</SelectItem>
+                        <SelectItem value="Europe/London">London Time (GMT+0/+1)</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
-              </div>
 
-              <div>
-                <Label htmlFor="manager_id">ผู้บังคับบัญชา</Label>
-                <Select value={formData.manager_id} onValueChange={(value) => setFormData({...formData, manager_id: value})}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="เลือกผู้บังคับบัญชา" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {managers.map((manager) => (
-                      <SelectItem key={manager.id} value={manager.id}>
-                        {manager.first_name} {manager.last_name} {manager.position && `(${manager.position})`}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="grid grid-cols-3 gap-4">
                 <div>
-                  <Label htmlFor="user_type">ประเภทผู้ใช้</Label>
-                  <Select value={formData.user_type} onValueChange={(value) => setFormData({...formData, user_type: value})}>
+                  <Label htmlFor="selected_role_id">บทบาท/สิทธิ์</Label>
+                  <Select value={formData.selected_role_id} onValueChange={(value) => setFormData({...formData, selected_role_id: value})}>
                     <SelectTrigger>
-                      <SelectValue placeholder="เลือกประเภทผู้ใช้" />
+                      <SelectValue placeholder="เลือกบทบาท" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="user">ผู้ใช้ทั่วไป</SelectItem>
-                      <SelectItem value="admin">ผู้ดูแลระบบ</SelectItem>
-                      <SelectItem value="manager">ผู้จัดการ</SelectItem>
+                      {roles.map((role) => (
+                        <SelectItem key={role.id} value={role.id}>
+                          {role.name} {role.description && `(${role.description})`}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>
+
                 <div>
-                  <Label htmlFor="language">ภาษา</Label>
-                  <Select value={formData.language} onValueChange={(value) => setFormData({...formData, language: value})}>
+                  <Label htmlFor="status">สถานะ</Label>
+                  <Select value={formData.status} onValueChange={(value) => setFormData({...formData, status: value})}>
                     <SelectTrigger>
-                      <SelectValue placeholder="เลือกภาษา" />
+                      <SelectValue placeholder="เลือกสถานะ" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="th">ภาษาไทย</SelectItem>
-                      <SelectItem value="en">English</SelectItem>
+                      <SelectItem value="active">ใช้งานอยู่</SelectItem>
+                      <SelectItem value="inactive">ไม่ใช้งาน</SelectItem>
+                      <SelectItem value="pending">รอการอนุมัติ</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
-                <div>
-                  <Label htmlFor="timezone">เขตเวลา</Label>
-                  <Select value={formData.timezone} onValueChange={(value) => setFormData({...formData, timezone: value})}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="เลือกเขตเวลา" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Asia/Bangkok">เวลาไทย (GMT+7)</SelectItem>
-                      <SelectItem value="UTC">UTC (GMT+0)</SelectItem>
-                      <SelectItem value="America/New_York">Eastern Time (GMT-5/-4)</SelectItem>
-                      <SelectItem value="Europe/London">London Time (GMT+0/+1)</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-
-              <div>
-                <Label htmlFor="selected_role_id">บทบาท/สิทธิ์</Label>
-                <Select value={formData.selected_role_id} onValueChange={(value) => setFormData({...formData, selected_role_id: value})}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="เลือกบทบาท" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {roles.map((role) => (
-                      <SelectItem key={role.id} value={role.id}>
-                        {role.name} {role.description && `(${role.description})`}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div>
-                <Label htmlFor="bio">หมายเหตุ</Label>
-                <Textarea
-                  id="bio"
-                  value={formData.bio}
-                  onChange={(e) => setFormData({...formData, bio: e.target.value})}
-                  placeholder="ข้อมูลเพิ่มเติมเกี่ยวกับผู้ใช้"
-                />
-              </div>
-            </div>
-            <div className="flex justify-end space-x-2">
+              </TabsContent>
+            </Tabs>
+            
+            <div className="flex justify-end space-x-2 mt-6">
               <Button variant="outline" onClick={() => setIsAddUserOpen(false)}>
                 ยกเลิก
               </Button>
