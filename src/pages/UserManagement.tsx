@@ -102,11 +102,18 @@ const UserManagement = () => {
 
   const fetchManagers = async () => {
     try {
+      // ดึงผู้ใช้ทั้งหมดในองค์กรเดียวกันมาให้เลือกเป็นผู้บังคับบัญชา
       const { data, error } = await supabase
         .from('profiles')
-        .select('id, first_name, last_name, position')
+        .select(`
+          id, 
+          user_id, 
+          first_name, 
+          last_name, 
+          position,
+          organization_units!profiles_organization_unit_id_fkey (name)
+        `)
         .eq('status', 'active')
-        .in('user_type', ['admin', 'manager'])
         .order('first_name');
       
       if (error) throw error;
@@ -118,9 +125,12 @@ const UserManagement = () => {
 
   const fetchRoles = async () => {
     try {
+      // ใช้ข้อมูลจาก roles table (ไม่ใช่ master_data_items) 
+      // เพราะเป็นระบบ roles ที่เชื่อมกับ user_roles table
       const { data, error } = await supabase
         .from('roles')
-        .select('id, name, role_type, description')
+        .select('id, name, role_type, description, is_system_role')
+        .eq('is_system_role', true)
         .order('name');
       
       if (error) throw error;
