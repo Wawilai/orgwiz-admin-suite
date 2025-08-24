@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -9,8 +9,6 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { toast } from '@/hooks/use-toast';
-import { useAuth } from '@/contexts/AuthContext';
-import { supabase } from '@/integrations/supabase/client';
 import { 
   CreditCard, 
   Search, 
@@ -119,30 +117,11 @@ interface PaymentHistoryProps {
 }
 
 export default function PaymentHistory({ organizationId, organizationName, onBack }: PaymentHistoryProps) {
-  const { user, isAuthenticated } = useAuth();
-  const [payments, setPayments] = useState<PaymentRecord[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    if (isAuthenticated) {
-      fetchPaymentHistory();
-    }
-  }, [isAuthenticated, organizationId]);
-
-  const fetchPaymentHistory = async () => {
-    try {
-      // For now, use simplified structure since we don't have payments table yet
-      // You would create a payment_history table with proper schema
-      const filteredData = organizationId 
-        ? mockPaymentHistory.filter(p => p.organizationId === organizationId)
-        : mockPaymentHistory;
-      setPayments(filteredData);
-      setLoading(false);
-    } catch (error) {
-      console.error('Error fetching payment history:', error);
-      setLoading(false);
-    }
-  };
+  const [payments] = useState<PaymentRecord[]>(
+    organizationId 
+      ? mockPaymentHistory.filter(p => p.organizationId === organizationId)
+      : mockPaymentHistory
+  );
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [methodFilter, setMethodFilter] = useState<string>('all');

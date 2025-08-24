@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -10,10 +10,6 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { toast } from '@/hooks/use-toast';
-import { useMasterData } from '@/contexts/MasterDataContext';
-import { useAuth } from '@/contexts/AuthContext';
-import { supabase } from '@/integrations/supabase/client';
-import { LoadingButton } from '@/components/ui/loading-button';
 import { 
   Search, 
   Plus, 
@@ -31,116 +27,72 @@ import {
 
 interface Contact {
   id: string;
-  first_name: string;
-  last_name: string;
+  name: string;
   email: string;
   phone: string;
-  company?: string;
-  department?: string;
-  position?: string;
+  company: string;
+  department: string;
+  position: string;
   tags: string[];
-  notes?: string;
-  contact_type: 'business' | 'personal';
-  address?: string;
-  is_vip: boolean;
-  last_contact_date?: string;
-  created_at: string;
-  updated_at: string;
-  organization_id: string;
-  created_by: string;
+  notes: string;
+  type: 'Personal' | 'Business' | 'Emergency';
+  createdAt: string;
+  lastContact: string;
 }
 
-// Real database functions
-const fetchContacts = async () => {
-  const { data, error } = await supabase
-    .from('contacts')
-    .select('*')
-    .order('created_at', { ascending: false });
-  
-  if (error) {
-    console.error('Error fetching contacts:', error);
-    toast({
-      title: "เกิดข้อผิดพลาด",
-      description: "ไม่สามารถโหลดข้อมูลรายชื่อติดต่อได้",
-      variant: "destructive",
-    });
-    return [];
+const mockContacts: Contact[] = [
+  {
+    id: '1',
+    name: 'สมชาย ใจดี',
+    email: 'somchai@company.com',
+    phone: '081-234-5678',
+    company: 'บริษัท เทคโนโลยี จำกัด',
+    department: 'ฝ่ายไอที',
+    position: 'ผู้จัดการฝ่าย',
+    tags: ['VIP', 'ไอที'],
+    notes: 'ติดต่อเรื่องโครงการใหม่',
+    type: 'Business',
+    createdAt: '2024-01-15',
+    lastContact: '2024-01-20'
+  },
+  {
+    id: '2',
+    name: 'นภา สว่างใส',
+    email: 'napa@email.com',
+    phone: '082-345-6789',
+    company: 'บริษัท การตลาด จำกัด',
+    department: 'ฝ่ายขาย',
+    position: 'หัวหน้าทีม',
+    tags: ['ลูกค้า', 'ขาย'],
+    notes: 'ลูกค้าสำคัญ ติดต่อประจำ',
+    type: 'Business',
+    createdAt: '2024-01-10',
+    lastContact: '2024-01-22'
+  },
+  {
+    id: '3',
+    name: 'วิชัย เก่งกาจ',
+    email: 'wichai@personal.com',
+    phone: '083-456-7890',
+    company: '-',
+    department: '-',
+    position: '-',
+    tags: ['เพื่อน'],
+    notes: 'เพื่อนสนิท',
+    type: 'Personal',
+    createdAt: '2024-01-05',
+    lastContact: '2024-01-18'
   }
-  
-  return data || [];
-};
-
-const createContact = async (contactData: any) => {
-  const { data, error } = await supabase
-    .from('contacts')
-    .insert([contactData])
-    .select()
-    .single();
-  
-  if (error) {
-    console.error('Error creating contact:', error);
-    toast({
-      title: "เกิดข้อผิดพลาด",
-      description: "ไม่สามารถเพิ่มรายชื่อติดต่อได้",
-      variant: "destructive",
-    });
-    return null;
-  }
-  
-  return data;
-};
-
-const updateContact = async (id: string, contactData: Partial<Contact>) => {
-  const { error } = await supabase
-    .from('contacts')
-    .update(contactData)
-    .eq('id', id);
-  
-  if (error) {
-    console.error('Error updating contact:', error);
-    toast({
-      title: "เกิดข้อผิดพลาด", 
-      description: "ไม่สามารถอัปเดตรายชื่อติดต่อได้",
-      variant: "destructive",
-    });
-    return false;
-  }
-  
-  return true;
-};
-
-const deleteContact = async (id: string) => {
-  const { error } = await supabase
-    .from('contacts')
-    .delete()
-    .eq('id', id);
-  
-  if (error) {
-    console.error('Error deleting contact:', error);
-    toast({
-      title: "เกิดข้อผิดพลาด",
-      description: "ไม่สามารถลบรายชื่อติดต่อได้",
-      variant: "destructive",
-    });
-    return false;
-  }
-  
-  return true;
-};
+];
 
 export default function AddressBook() {
-  const { user } = useAuth();
-  const masterData = useMasterData();
-  const [contacts, setContacts] = useState<Contact[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [submitting, setSubmitting] = useState(false);
+  const [contacts, setContacts] = useState<Contact[]>(mockContacts);
   const [searchTerm, setSearchTerm] = useState('');
   const [typeFilter, setTypeFilter] = useState<string>('all');
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [editingContact, setEditingContact] = useState<Contact | null>(null);
   const [formData, setFormData] = useState<Partial<Contact>>({
-    first_name: '',
-    last_name: '',
+    name: '',
     email: '',
     phone: '',
     company: '',
@@ -148,92 +100,58 @@ export default function AddressBook() {
     position: '',
     tags: [],
     notes: '',
-    contact_type: 'business'
+    type: 'Business'
   });
 
-  // Load contacts on component mount
-  useEffect(() => {
-    loadContacts();
-  }, []);
-
-  const loadContacts = async () => {
-    setLoading(true);
-    const data = await fetchContacts();
-    // Transform the data to match our interface
-    const transformedData = data.map((contact: any) => ({
-      ...contact,
-      tags: Array.isArray(contact.tags) ? contact.tags : []
-    }));
-    setContacts(transformedData);
-    setLoading(false);
-  };
-
   const filteredContacts = contacts.filter(contact => {
-    const fullName = `${contact.first_name} ${contact.last_name}`;
-    const matchesSearch = fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         contact.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         contact.company?.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesType = typeFilter === 'all' || contact.contact_type === typeFilter;
+    const matchesSearch = contact.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         contact.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         contact.company.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesType = typeFilter === 'all' || contact.type === typeFilter;
     return matchesSearch && matchesType;
   });
 
-  const handleAddContact = async () => {
-    if (!user) return;
-    
-    setSubmitting(true);
-    const contactData = {
-      ...formData,
-      organization_id: '8a6c4c9d-69f2-4582-b7d4-b72238637b2b', // Use current organization ID
-      created_by: user.id,
+  const handleAddContact = () => {
+    const newContact: Contact = {
+      id: Date.now().toString(),
+      ...formData as Contact,
       tags: formData.tags || [],
-      is_vip: false
+      createdAt: new Date().toISOString().split('T')[0],
+      lastContact: new Date().toISOString().split('T')[0]
     };
-    
-    const newContact = await createContact(contactData);
-    if (newContact) {
-      await loadContacts();
-      setIsAddDialogOpen(false);
-      resetForm();
-      toast({
-        title: "เพิ่มรายชื่อสำเร็จ",
-        description: "เพิ่มรายชื่อใหม่เรียบร้อยแล้ว",
-      });
-    }
-    setSubmitting(false);
+    setContacts([...contacts, newContact]);
+    setIsAddDialogOpen(false);
+    resetForm();
+    toast({
+      title: "เพิ่มรายชื่อสำเร็จ",
+      description: "เพิ่มรายชื่อใหม่เรียบร้อยแล้ว",
+    });
   };
 
-  const handleEditContact = async () => {
+  const handleEditContact = () => {
     if (!editingContact) return;
-    
-    setSubmitting(true);
-    const success = await updateContact(editingContact.id, formData);
-    if (success) {
-      await loadContacts();
-      setEditingContact(null);
-      resetForm();
-      toast({
-        title: "แก้ไขสำเร็จ",
-        description: "แก้ไขข้อมูลรายชื่อเรียบร้อยแล้ว",
-      });
-    }
-    setSubmitting(false);
+    setContacts(contacts.map(contact => 
+      contact.id === editingContact.id ? { ...editingContact, ...formData } : contact
+    ));
+    setEditingContact(null);
+    resetForm();
+    toast({
+      title: "แก้ไขสำเร็จ",
+      description: "แก้ไขข้อมูลรายชื่อเรียบร้อยแล้ว",
+    });
   };
 
-  const handleDeleteContact = async (id: string) => {
-    const success = await deleteContact(id);
-    if (success) {
-      await loadContacts();
-      toast({
-        title: "ลบสำเร็จ",
-        description: "ลบรายชื่อเรียบร้อยแล้ว",
-      });
-    }
+  const handleDeleteContact = (id: string) => {
+    setContacts(contacts.filter(contact => contact.id !== id));
+    toast({
+      title: "ลบสำเร็จ",
+      description: "ลบรายชื่อเรียบร้อยแล้ว",
+    });
   };
 
   const resetForm = () => {
     setFormData({
-      first_name: '',
-      last_name: '',
+      name: '',
       email: '',
       phone: '',
       company: '',
@@ -241,36 +159,22 @@ export default function AddressBook() {
       position: '',
       tags: [],
       notes: '',
-      contact_type: 'business'
+      type: 'Business'
     });
   };
 
   const openEditDialog = (contact: Contact) => {
     setEditingContact(contact);
-    setFormData({
-      first_name: contact.first_name,
-      last_name: contact.last_name,
-      email: contact.email,
-      phone: contact.phone,
-      company: contact.company || '',
-      department: contact.department || '',
-      position: contact.position || '',
-      tags: contact.tags || [],
-      notes: contact.notes || '',
-      contact_type: contact.contact_type
-    });
+    setFormData(contact);
   };
 
   const getTypeBadge = (type: string) => {
     const variants: Record<string, "default" | "destructive" | "secondary" | "outline"> = {
-      'personal': "secondary",
-      'business': "default",
+      Personal: "secondary",
+      Business: "default",
+      Emergency: "destructive"
     };
-    const labels: Record<string, string> = {
-      'personal': "ส่วนตัว",
-      'business': "ธุรกิจ",
-    };
-    return <Badge variant={variants[type] || "default"}>{labels[type] || type}</Badge>;
+    return <Badge variant={variants[type] || "default"}>{type}</Badge>;
   };
 
   return (
@@ -306,21 +210,12 @@ export default function AddressBook() {
               </DialogHeader>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="first_name">ชื่อ *</Label>
+                  <Label htmlFor="name">ชื่อ-นามสกุล *</Label>
                   <Input
-                    id="first_name"
-                    value={formData.first_name}
-                    onChange={(e) => setFormData({ ...formData, first_name: e.target.value })}
-                    placeholder="กรอกชื่อ"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="last_name">นามสกุล *</Label>
-                  <Input
-                    id="last_name"
-                    value={formData.last_name}
-                    onChange={(e) => setFormData({ ...formData, last_name: e.target.value })}
-                    placeholder="กรอกนามสกุล"
+                    id="name"
+                    value={formData.name}
+                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    placeholder="กรอกชื่อ-นามสกุล"
                   />
                 </div>
                 <div className="space-y-2">
@@ -343,17 +238,18 @@ export default function AddressBook() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="contact_type">ประเภท</Label>
+                  <Label htmlFor="type">ประเภท</Label>
                   <Select
-                    value={formData.contact_type}
-                    onValueChange={(value: 'business' | 'personal') => setFormData({ ...formData, contact_type: value })}
+                    value={formData.type}
+                    onValueChange={(value) => setFormData({ ...formData, type: value as any })}
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder="ธุรกิจ" />
+                      <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="personal">ส่วนตัว</SelectItem>
-                      <SelectItem value="business">ธุรกิจ</SelectItem>
+                      <SelectItem value="Personal">ส่วนตัว</SelectItem>
+                      <SelectItem value="Business">ธุรกิจ</SelectItem>
+                      <SelectItem value="Emergency">ฉุกเฉิน</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -368,39 +264,21 @@ export default function AddressBook() {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="department">แผนก</Label>
-                  <Select
+                  <Input
+                    id="department"
                     value={formData.department}
-                    onValueChange={(value) => setFormData({ ...formData, department: value })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="เลือกแผนก" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {masterData.getActiveItems('departments').map((dept) => (
-                        <SelectItem key={dept.code} value={dept.name}>
-                          {dept.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                    onChange={(e) => setFormData({ ...formData, department: e.target.value })}
+                    placeholder="กรอกแผนก"
+                  />
                 </div>
-                <div className="space-y-2">
+                <div className="col-span-2 space-y-2">
                   <Label htmlFor="position">ตำแหน่ง</Label>
-                  <Select
+                  <Input
+                    id="position"
                     value={formData.position}
-                    onValueChange={(value) => setFormData({ ...formData, position: value })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="เลือกตำแหน่ง" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {masterData.getActiveItems('positions').map((pos) => (
-                        <SelectItem key={pos.code} value={pos.name}>
-                          {pos.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                    onChange={(e) => setFormData({ ...formData, position: e.target.value })}
+                    placeholder="กรอกตำแหน่ง"
+                  />
                 </div>
                 <div className="col-span-2 space-y-2">
                   <Label htmlFor="notes">หมายเหตุ</Label>
@@ -417,12 +295,9 @@ export default function AddressBook() {
                 <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>
                   ยกเลิก
                 </Button>
-                <LoadingButton
-                  loading={submitting}
-                  onClick={handleAddContact}
-                >
+                <Button onClick={handleAddContact}>
                   เพิ่มรายชื่อ
-                </LoadingButton>
+                </Button>
               </div>
             </DialogContent>
           </Dialog>
@@ -447,7 +322,7 @@ export default function AddressBook() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {contacts.filter(c => c.contact_type === 'business').length}
+              {contacts.filter(c => c.type === 'Business').length}
             </div>
           </CardContent>
         </Card>
@@ -458,18 +333,18 @@ export default function AddressBook() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {contacts.filter(c => c.contact_type === 'personal').length}
+              {contacts.filter(c => c.type === 'Personal').length}
             </div>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">VIP</CardTitle>
+            <CardTitle className="text-sm font-medium">ฉุกเฉิน</CardTitle>
             <Mail className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {contacts.filter(c => c.is_vip).length}
+              {contacts.filter(c => c.type === 'Emergency').length}
             </div>
           </CardContent>
         </Card>
@@ -495,8 +370,9 @@ export default function AddressBook() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">ทั้งหมด</SelectItem>
-                <SelectItem value="personal">ส่วนตัว</SelectItem>
-                <SelectItem value="business">ธุรกิจ</SelectItem>
+                <SelectItem value="Personal">ส่วนตัว</SelectItem>
+                <SelectItem value="Business">ธุรกิจ</SelectItem>
+                <SelectItem value="Emergency">ฉุกเฉิน</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -518,31 +394,26 @@ export default function AddressBook() {
             <TableBody>
               {filteredContacts.map((contact) => (
                 <TableRow key={contact.id}>
-                  <TableCell className="font-medium">{`${contact.first_name} ${contact.last_name}`}</TableCell>
+                  <TableCell className="font-medium">{contact.name}</TableCell>
                   <TableCell>{contact.email}</TableCell>
                   <TableCell>{contact.phone}</TableCell>
                   <TableCell>{contact.company}</TableCell>
-                  <TableCell>{getTypeBadge(contact.contact_type)}</TableCell>
+                  <TableCell>{getTypeBadge(contact.type)}</TableCell>
                   <TableCell>
                     <div className="flex gap-1">
-                      {contact.tags?.slice(0, 2).map((tag, index) => (
+                      {contact.tags.slice(0, 2).map((tag, index) => (
                         <Badge key={index} variant="outline" className="text-xs">
                           {tag}
                         </Badge>
                       ))}
-                      {contact.tags && contact.tags.length > 2 && (
+                      {contact.tags.length > 2 && (
                         <Badge variant="outline" className="text-xs">
                           +{contact.tags.length - 2}
                         </Badge>
                       )}
                     </div>
                   </TableCell>
-                  <TableCell>
-                    {contact.last_contact_date 
-                      ? new Date(contact.last_contact_date).toLocaleDateString('th-TH')
-                      : '-'
-                    }
-                  </TableCell>
+                  <TableCell>{contact.lastContact}</TableCell>
                   <TableCell>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
@@ -583,21 +454,12 @@ export default function AddressBook() {
           </DialogHeader>
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="edit-first_name">ชื่อ *</Label>
+              <Label htmlFor="edit-name">ชื่อ-นามสกุล *</Label>
               <Input
-                id="edit-first_name"
-                value={formData.first_name}
-                onChange={(e) => setFormData({ ...formData, first_name: e.target.value })}
-                placeholder="กรอกชื่อ"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="edit-last_name">นามสกุล *</Label>
-              <Input
-                id="edit-last_name"
-                value={formData.last_name}
-                onChange={(e) => setFormData({ ...formData, last_name: e.target.value })}
-                placeholder="กรอกนามสกุล"
+                id="edit-name"
+                value={formData.name}
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                placeholder="กรอกชื่อ-นามสกุล"
               />
             </div>
             <div className="space-y-2">
@@ -620,17 +482,18 @@ export default function AddressBook() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="edit-contact_type">ประเภท</Label>
+              <Label htmlFor="edit-type">ประเภท</Label>
               <Select
-                value={formData.contact_type}
-                onValueChange={(value: 'business' | 'personal') => setFormData({ ...formData, contact_type: value })}
+                value={formData.type}
+                onValueChange={(value) => setFormData({ ...formData, type: value as any })}
               >
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="personal">ส่วนตัว</SelectItem>
-                  <SelectItem value="business">ธุรกิจ</SelectItem>
+                  <SelectItem value="Personal">ส่วนตัว</SelectItem>
+                  <SelectItem value="Business">ธุรกิจ</SelectItem>
+                  <SelectItem value="Emergency">ฉุกเฉิน</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -645,39 +508,21 @@ export default function AddressBook() {
             </div>
             <div className="space-y-2">
               <Label htmlFor="edit-department">แผนก</Label>
-              <Select
+              <Input
+                id="edit-department"
                 value={formData.department}
-                onValueChange={(value) => setFormData({ ...formData, department: value })}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="เลือกแผนก" />
-                </SelectTrigger>
-                <SelectContent>
-                  {masterData.getActiveItems('departments').map((dept) => (
-                    <SelectItem key={dept.code} value={dept.name}>
-                      {dept.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                onChange={(e) => setFormData({ ...formData, department: e.target.value })}
+                placeholder="กรอกแผนก"
+              />
             </div>
-            <div className="space-y-2">
+            <div className="col-span-2 space-y-2">
               <Label htmlFor="edit-position">ตำแหน่ง</Label>
-              <Select
+              <Input
+                id="edit-position"
                 value={formData.position}
-                onValueChange={(value) => setFormData({ ...formData, position: value })}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="เลือกตำแหน่ง" />
-                </SelectTrigger>
-                <SelectContent>
-                  {masterData.getActiveItems('positions').map((pos) => (
-                    <SelectItem key={pos.code} value={pos.name}>
-                      {pos.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                onChange={(e) => setFormData({ ...formData, position: e.target.value })}
+                placeholder="กรอกตำแหน่ง"
+              />
             </div>
             <div className="col-span-2 space-y-2">
               <Label htmlFor="edit-notes">หมายเหตุ</Label>
@@ -690,17 +535,14 @@ export default function AddressBook() {
               />
             </div>
           </div>
-              <div className="flex justify-end gap-2">
-                <Button variant="outline" onClick={() => setEditingContact(null)}>
-                  ยกเลิก
-                </Button>
-                <LoadingButton
-                  loading={submitting}
-                  onClick={handleEditContact}
-                >
-                  บันทึก
-                </LoadingButton>
-              </div>
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" onClick={() => setEditingContact(null)}>
+              ยกเลิก
+            </Button>
+            <Button onClick={handleEditContact}>
+              บันทึก
+            </Button>
+          </div>
         </DialogContent>
       </Dialog>
     </div>

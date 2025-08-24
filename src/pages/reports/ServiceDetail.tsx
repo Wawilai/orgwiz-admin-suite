@@ -1,13 +1,11 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { ChartContainer } from '@/components/ui/chart';
-import { ArrowLeft, Mail, MessageSquare, Video, HardDrive, Calendar, Download, Users, Clock, TrendingUp, Star } from 'lucide-react';
+import { ArrowLeft, Mail, MessageSquare, Video, HardDrive, Calendar, Download, Users, Clock, TrendingUp } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/contexts/AuthContext';
 import {
   AreaChart,
   Area,
@@ -71,60 +69,8 @@ const mockDepartmentUsage = [
 ];
 
 export default function ServiceDetail() {
-  const { isAuthenticated } = useAuth();
   const navigate = useNavigate();
-  const [loading, setLoading] = useState(true);
-  const [departmentServiceData, setDepartmentServiceData] = useState<any[]>([]);
   const [selectedService, setSelectedService] = useState('email');
-
-  useEffect(() => {
-    if (isAuthenticated) {
-      fetchServiceData();
-    }
-  }, [isAuthenticated]);
-
-  const fetchServiceData = async () => {
-    try {
-      setLoading(true);
-      
-      // Get organization ID
-      const { data: orgId, error: orgError } = await supabase.rpc('get_current_user_organization_id');
-      
-      if (orgError) {
-        console.error('Error getting organization ID:', orgError);
-        return;
-      }
-      
-      if (!orgId) {
-        console.log('No organization ID found for user');
-        return;
-      }
-
-      // Get service usage by units
-      const { data: serviceStats, error: serviceError } = await supabase.rpc('get_service_usage_by_units', {
-        org_id: orgId
-      });
-
-      if (serviceError) {
-        console.error('Error getting service stats:', serviceError);
-      } else {
-        const formattedData = Array.isArray(serviceStats) ? serviceStats.map((unit: any) => ({
-          department: unit.unit_name,
-          email: unit.services?.email?.total_usage || 0,
-          chat: unit.services?.chat?.total_usage || 0,
-          meeting: unit.services?.meeting?.total_usage || 0,
-          storage: unit.services?.storage?.used_gb || 0,
-          satisfaction: unit.satisfaction_score || 4.0
-        })) : [];
-        setDepartmentServiceData(formattedData);
-      }
-      
-    } catch (error) {
-      console.error('Error fetching service data:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const getCurrentServiceData = () => {
     switch (selectedService) {
@@ -362,7 +308,7 @@ export default function ServiceDetail() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {departmentServiceData.length > 0 ? departmentServiceData.map((dept, index) => (
+              {mockDepartmentUsage.map((dept, index) => (
                 <TableRow key={index}>
                   <TableCell className="font-medium">{dept.department}</TableCell>
                   <TableCell>
@@ -386,23 +332,19 @@ export default function ServiceDetail() {
                   <TableCell>
                     <div className="flex items-center gap-2">
                       <HardDrive className="h-4 w-4 text-orange-600" />
-                      {dept.storage.toFixed(1)} GB
+                      {dept.storage} GB
                     </div>
                   </TableCell>
                   <TableCell>
-                    <div className="flex items-center gap-1">
-                      <Star className="h-4 w-4 text-yellow-500 fill-current" />
-                      <span className="font-medium">{dept.satisfaction.toFixed(1)}</span>
-                    </div>
+                    <Badge variant={
+                      dept.satisfaction >= 4.0 ? 'default' : 
+                      dept.satisfaction >= 3.5 ? 'secondary' : 'destructive'
+                    }>
+                      {dept.satisfaction}/5.0
+                    </Badge>
                   </TableCell>
                 </TableRow>
-              )) : (
-                <TableRow>
-                  <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
-                    ไม่มีข้อมูลการใช้งานบริการ
-                  </TableCell>
-                </TableRow>
-              )}
+              ))}
             </TableBody>
           </Table>
         </CardContent>

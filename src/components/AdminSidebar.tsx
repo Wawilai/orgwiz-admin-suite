@@ -36,12 +36,7 @@ import {
   ChevronRight,
   ShieldCheck
 } from "lucide-react";
-import { usePermissions } from "@/hooks/usePermissions";
 import { cn } from "@/lib/utils";
-
-interface AdminSidebarProps {
-  userPermissions?: any;
-}
 
 const menuItems = [
   {
@@ -53,90 +48,62 @@ const menuItems = [
   {
     title: "การจัดการระบบ",
     icon: Building2,
-    permission: "users", // Combined permission for system management
     items: [
-      { title: "จัดการผู้ใช้งาน", url: "/users", icon: Users, permission: "users" },
-      { title: "มอบหมายบทบาท", url: "/user-roles", icon: ShieldCheck, permission: "roles" },
-      { title: "จัดการกลุ่ม", url: "/groups", icon: Users, permission: "users" },
-      { title: "จัดการองค์กร", url: "/organizations", icon: Building2, permission: "organizations" },
-      { title: "หน่วยงาน", url: "/organization-units", icon: Building2, permission: "organizations" },
-      { title: "จัดการโดเมน", url: "/domains", icon: Globe, permission: "domains" },
-      { title: "จัดการสิทธิ์", url: "/roles", icon: UserCheck, permission: "roles" },
-      { title: "จัดการ Quota", url: "/quotas", icon: Database, permission: "storage" }
+      { title: "จัดการผู้ใช้งาน", url: "/users", icon: Users },
+      { title: "จัดการองค์กร", url: "/organizations", icon: Building2 },
+      { title: "หน่วยงาน", url: "/organization-units", icon: Building2 },
+      { title: "จัดการโดเมน", url: "/domains", icon: Globe },
+      { title: "จัดการสิทธิ์", url: "/roles", icon: UserCheck },
+      { title: "จัดการ Quota", url: "/quotas", icon: Database }
     ]
   },
   {
     title: "บริการหลัก",
     icon: Mail,
     items: [
-      { title: "บริการอีเมล", url: "/mail-service", icon: Mail, permission: "domains" },
-      { title: "Mail Relay", url: "/mail-relay", icon: Zap, permission: "domains" },
+      { title: "บริการอีเมล", url: "/mail-service", icon: Mail },
+      { title: "Mail Relay", url: "/mail-relay", icon: Zap },
       { title: "สมุดที่อยู่", url: "/address-book", icon: Users },
       { title: "ปฏิทิน", url: "/calendar", icon: Calendar },
       { title: "แชท", url: "/chat", icon: MessageSquare },
       { title: "ประชุมออนไลน์", url: "/meetings", icon: Video },
-      { title: "พื้นที่จัดเก็บ", url: "/storage", icon: HardDrive, permission: "storage" }
+      { title: "พื้นที่จัดเก็บ", url: "/storage", icon: HardDrive }
     ]
   },
   {
     title: "ธุรกิจและบัญชี",
     icon: CreditCard,
-    permission: "billing",
     items: [
-      { title: "จัดการแพ็กเกจ", url: "/packages", icon: Package, permission: "billing" },
-      { title: "การเรียกเก็บเงิน", url: "/billing", icon: CreditCard, permission: "billing" },
-      { title: "จัดการไลเซ้นส์", url: "/licenses", icon: FileKey, permission: "system" }
+      { title: "จัดการแพ็กเกจ", url: "/packages", icon: Package },
+      { title: "การเรียกเก็บเงิน", url: "/billing", icon: CreditCard },
+      { title: "จัดการไลเซ้นส์", url: "/licenses", icon: FileKey }
     ]
   },
   {
     title: "รายงานและวิเคราะห์",
     icon: BarChart3,
-    permission: "reports",
     items: [
-      { title: "รายงาน", url: "/reports", icon: BarChart3, permission: "reports" }
+      { title: "รายงาน", url: "/reports", icon: BarChart3 }
     ]
   },
   {
     title: "ตั้งค่าระบบ",
     icon: Settings,
-    permission: "system",
     items: [
-      { title: "จัดการข้อมูลหลัก", url: "/master-data", icon: Database, permission: "system" },
-      { title: "จัดการเซิร์ฟเวอร์", url: "/system-settings", icon: Settings, permission: "system" },
+      { title: "จัดการข้อมูลหลัก", url: "/master-data", icon: Database },
+      { title: "จัดการเซิร์ฟเวอร์", url: "/system-settings", icon: Settings },
       { title: "ความปลอดภัย MFA", url: "/mfa-settings", icon: ShieldCheck },
       { title: "ตั้งค่าบัญชี", url: "/account-settings", icon: User }
     ]
   }
 ];
 
-export function AdminSidebar({ userPermissions }: AdminSidebarProps) {
+export function AdminSidebar() {
   const { state } = useSidebar();
   const location = useLocation();
-  const { canAccessModule } = usePermissions();
-  
-  const filteredMenuItems = menuItems.filter(item => {
-    if (item.standalone) return true; // Dashboard is always visible
-    if (!item.permission) return true; // Items without permission are visible to all
-    return canAccessModule(item.permission);
-  });
-
-  const filteredItems = filteredMenuItems.map(item => {
-    if (!item.items) return item;
-    
-    const filteredSubItems = item.items.filter((subItem: any) => {
-      if (!subItem.permission) return true; // Items without permission are visible to all
-      return canAccessModule(subItem.permission);
-    });
-    
-    return {
-      ...item,
-      items: filteredSubItems
-    };
-  }).filter(item => item.standalone || (item.items && item.items.length > 0));
-  
   const [expandedGroups, setExpandedGroups] = useState<string[]>(() => {
     // Auto-expand group containing current route
-    const activeGroup = filteredItems.find(group => 
+    const activeGroup = menuItems.find(group => 
       group.items?.some(item => item.url === location.pathname)
     );
     return activeGroup ? [activeGroup.title] : [];
@@ -199,7 +166,7 @@ export function AdminSidebar({ userPermissions }: AdminSidebarProps) {
         "overflow-y-auto",
         collapsed ? "px-1 py-2" : "px-2 md:px-3 py-2"
       )}>
-        {filteredItems.map((group) => {
+        {menuItems.map((group) => {
           // Handle standalone items (like Dashboard)
           if (group.standalone) {
             return (

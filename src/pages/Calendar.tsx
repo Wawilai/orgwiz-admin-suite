@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -11,8 +11,6 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Switch } from '@/components/ui/switch';
 import { DatePicker } from '@/components/ui/date-picker';
 import { toast } from '@/hooks/use-toast';
-import { useAuth } from '@/contexts/AuthContext';
-import { supabase } from '@/integrations/supabase/client';
 import { 
   Calendar as CalendarIcon, 
   Plus, 
@@ -50,28 +48,70 @@ interface Event {
   createdAt: string;
 }
 
+const mockEvents: Event[] = [
+  {
+    id: '1',
+    title: 'ประชุมทีม IT ประจำสัปดาห์',
+    description: 'ประชุมรายงานความคืบหน้าโครงการและปรับแผนงาน',
+    startDate: '2024-01-25',
+    startTime: '09:00',
+    endDate: '2024-01-25',
+    endTime: '10:30',
+    location: 'ห้องประชุม A',
+    attendees: ['สมชาย ใจดี', 'นภา สว่างใส', 'วิชัย เก่งกาจ'],
+    type: 'Meeting',
+    priority: 'High',
+    isAllDay: false,
+    isRecurring: true,
+    recurringType: 'Weekly',
+    reminders: [15, 60],
+    status: 'Confirmed',
+    createdBy: 'สมชาย ใจดี',
+    createdAt: '2024-01-20'
+  },
+  {
+    id: '2',
+    title: 'Demo โครงการใหม่',
+    description: 'นำเสนอระบบใหม่ให้ลูกค้า',
+    startDate: '2024-01-26',
+    startTime: '14:00',
+    endDate: '2024-01-26',
+    endTime: '16:00',
+    location: 'Online - Zoom',
+    attendees: ['นภา สว่างใส', 'ลูกค้า A', 'ลูกค้า B'],
+    type: 'Meeting',
+    priority: 'High',
+    isAllDay: false,
+    isRecurring: false,
+    reminders: [30],
+    status: 'Confirmed',
+    createdBy: 'นภา สว่างใส',
+    createdAt: '2024-01-22'
+  },
+  {
+    id: '3',
+    title: 'ส่งรายงานประจำเดือน',
+    description: 'รายงานสรุปผลงานประจำเดือน',
+    startDate: '2024-01-31',
+    startTime: '17:00',
+    endDate: '2024-01-31',
+    endTime: '17:00',
+    location: '-',
+    attendees: [],
+    type: 'Task',
+    priority: 'Medium',
+    isAllDay: false,
+    isRecurring: true,
+    recurringType: 'Monthly',
+    reminders: [1440, 120],
+    status: 'Confirmed',
+    createdBy: 'วิชัย เก่งกาจ',
+    createdAt: '2024-01-15'
+  }
+];
+
 export default function Calendar() {
-  const { user, isAuthenticated } = useAuth();
-  const [events, setEvents] = useState<Event[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    if (isAuthenticated) {
-      fetchEvents();
-    }
-  }, [isAuthenticated]);
-
-  const fetchEvents = async () => {
-    try {
-      // For now, use simplified structure since we don't have events table yet  
-      // You would create an events table with proper schema
-      setEvents([]);
-      setLoading(false);
-    } catch (error) {
-      console.error('Error fetching events:', error);
-      setLoading(false);
-    }
-  };
+  const [events, setEvents] = useState<Event[]>(mockEvents);
   const [currentDate, setCurrentDate] = useState(new Date());
   const [viewMode, setViewMode] = useState<'month' | 'week' | 'day'>('month');
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
@@ -101,7 +141,7 @@ export default function Calendar() {
       startDate: startDate?.toISOString().split('T')[0] || '',
       endDate: endDate?.toISOString().split('T')[0] || '',
       reminders: [15],
-      createdBy: user?.id || 'current-user',
+      createdBy: 'ผู้ใช้ปัจจุบัน',
       createdAt: new Date().toISOString().split('T')[0]
     };
     setEvents([...events, newEvent]);

@@ -1,9 +1,8 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { LoadingButton } from "@/components/ui/loading-button";
 import {
   Table,
   TableBody,
@@ -54,135 +53,94 @@ import {
   CheckCircle,
   XCircle,
 } from "lucide-react";
-import { useAuth } from '@/contexts/AuthContext';
-import { supabase } from '@/integrations/supabase/client';
-import { toast } from '@/hooks/use-toast';
 
-interface Mailbox {
-  id: string;
-  local_part: string;
-  domain_id: string;
-  display_name?: string;
-  quota_mb?: number;
-  used_quota_mb?: number;
-  status: string;
-  last_login?: string;
-  created_at: string;
-  updated_at: string;
-  user_id?: string;
-  domain_name?: string;
-  password_hash?: string;
-  domains?: { name: string };
-}
-
-const fetchMailboxes = async () => {
-  const { data, error } = await supabase
-    .from('mailboxes')
-    .select(`
-      *,
-      domains!mailboxes_domain_id_fkey (name)
-    `)
-    .order('created_at', { ascending: false });
-  
-  if (error) {
-    console.error('Error fetching mailboxes:', error);
-    toast({
-      title: "เกิดข้อผิดพลาด",
-      description: "ไม่สามารถโหลดข้อมูลกล่องจดหมายได้",
-      variant: "destructive",
-    });
-    return [];
+// Mock data for mailboxes
+const mockMailboxes = [
+  {
+    id: 1,
+    email: "somchai@abc-corp.com",
+    displayName: "สมชาย ใจดี",
+    owner: "สมชาย ใจดี",
+    organization: "บริษัท เอบีซี จำกัด (มหาชน)",
+    organizationUnit: "IT Department",
+    domain: "abc-corp.com",
+    quota: 5, // GB
+    used: 3.2, // GB
+    status: "active",
+    lastLogin: "2024-01-20 10:30",
+    createdAt: "2024-01-15",
+    messageCount: 1250,
+    forwardTo: null
+  },
+  {
+    id: 2,
+    email: "somying@abc-corp.com",
+    displayName: "สมหญิง รักสะอาด",
+    owner: "สมหญิง รักสะอาด",
+    organization: "บริษัท เอบีซี จำกัด (มหาชน)",
+    organizationUnit: "HR Department",
+    domain: "abc-corp.com",
+    quota: 5,
+    used: 1.8,
+    status: "active",
+    lastLogin: "2024-01-20 15:45",
+    createdAt: "2024-01-15",
+    messageCount: 890,
+    forwardTo: null
+  },
+  {
+    id: 3,
+    email: "admin@xyz-ltd.com",
+    displayName: "Admin XYZ",
+    owner: null,
+    organization: "บริษัท เอ็กซ์วายแซด จำกัด",
+    organizationUnit: "Management",
+    domain: "xyz-ltd.com",
+    quota: 10,
+    used: 0.5,
+    status: "active",
+    lastLogin: "2024-01-19 09:15",
+    createdAt: "2024-02-01",
+    messageCount: 45,
+    forwardTo: "director@xyz-ltd.com"
+  },
+  {
+    id: 4,
+    email: "support@def-enterprise.com",
+    displayName: "Support Team",
+    owner: "ทีมสนับสนุน",
+    organization: "บริษัท ดีอีเอฟ เอ็นเตอร์ไพรซ์ จำกัด",
+    organizationUnit: "Support",
+    domain: "def-enterprise.com",
+    quota: 2,
+    used: 2.1,
+    status: "suspended",
+    lastLogin: "2024-01-18 14:22",
+    createdAt: "2024-01-20",
+    messageCount: 2890,
+    forwardTo: null
   }
-  
-  return data || [];
-};
-
-const createMailbox = async (mailboxData: any) => {
-  const { data, error } = await supabase
-    .from('mailboxes')
-    .insert([mailboxData])
-    .select()
-    .single();
-  
-  if (error) {
-    console.error('Error creating mailbox:', error);
-    toast({
-      title: "เกิดข้อผิดพลาด",
-      description: "ไม่สามารถเพิ่มกล่องจดหมายได้",
-      variant: "destructive",
-    });
-    return null;
-  }
-  
-  return data;
-};
-
-const updateMailbox = async (id: string, mailboxData: any) => {
-  const { error } = await supabase
-    .from('mailboxes')
-    .update(mailboxData)
-    .eq('id', id);
-  
-  if (error) {
-    console.error('Error updating mailbox:', error);
-    toast({
-      title: "เกิดข้อผิดพลาด",
-      description: "ไม่สามารถแก้ไขกล่องจดหมายได้",
-      variant: "destructive",
-    });
-    return false;
-  }
-  
-  return true;
-};
-
-const deleteMailbox = async (id: string) => {
-  const { error } = await supabase
-    .from('mailboxes')
-    .delete()
-    .eq('id', id);
-  
-  if (error) {
-    console.error('Error deleting mailbox:', error);
-    toast({
-      title: "เกิดข้อผิดพลาด",
-      description: "ไม่สามารถลบกล่องจดหมายได้",
-      variant: "destructive",
-    });
-    return false;
-  }
-  
-  return true;
-};
+];
 
 const MailService = () => {
-  const { user } = useAuth();
-  const [mailboxes, setMailboxes] = useState<Mailbox[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [submitting, setSubmitting] = useState(false);
+  const [mailboxes, setMailboxes] = useState(mockMailboxes);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedFilter, setSelectedFilter] = useState("all");
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-  const [editingMailbox, setEditingMailbox] = useState<Mailbox | null>(null);
+  const [isResetPasswordDialogOpen, setIsResetPasswordDialogOpen] = useState(false);
+  const [isAssignOwnerDialogOpen, setIsAssignOwnerDialogOpen] = useState(false);
+  const [selectedMailbox, setSelectedMailbox] = useState<any>(null);
   const [formData, setFormData] = useState({
-    local_part: "",
-    display_name: "",
-    domain_id: "",
-    quota_mb: 5120, // 5GB in MB
-    status: "active"
+    email: "",
+    displayName: "",
+    owner: "",
+    organization: "",
+    organizationUnit: "",
+    domain: "",
+    quota: 5,
+    forwardTo: ""
   });
-
-  useEffect(() => {
-    loadMailboxes();
-  }, []);
-
-  const loadMailboxes = async () => {
-    setLoading(true);
-    const data = await fetchMailboxes();
-    setMailboxes(data);
-    setLoading(false);
-  };
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -208,7 +166,7 @@ const MailService = () => {
   };
 
   const getUsagePercentage = (used: number, quota: number) => {
-    return quota > 0 ? Math.round((used / quota) * 100) : 0;
+    return Math.round((used / quota) * 100);
   };
 
   const getUsageBadge = (used: number, quota: number) => {
@@ -223,89 +181,77 @@ const MailService = () => {
   };
 
   const filteredMailboxes = mailboxes.filter(mailbox => {
-    const email = `${mailbox.local_part}@${mailbox.domains?.name || 'unknown'}`;
-    const matchesSearch = email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         (mailbox.display_name && mailbox.display_name.toLowerCase().includes(searchTerm.toLowerCase()));
+    const matchesSearch = mailbox.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         mailbox.displayName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         (mailbox.owner && mailbox.owner.toLowerCase().includes(searchTerm.toLowerCase()));
     const matchesFilter = selectedFilter === "all" || mailbox.status === selectedFilter;
     return matchesSearch && matchesFilter;
   });
 
-  const handleAdd = async () => {
-    if (!user || !formData.local_part || !formData.domain_id) return;
-    
-    setSubmitting(true);
-    const mailboxData = {
-      ...formData,
-      used_quota_mb: 0
-    };
-    
-    const newMailbox = await createMailbox(mailboxData);
-    if (newMailbox) {
-      await loadMailboxes();
+  const handleAdd = () => {
+    if (formData.email && formData.displayName) {
+      const newMailbox = {
+        id: mailboxes.length + 1,
+        ...formData,
+        status: "active",
+        used: 0,
+        lastLogin: null,
+        createdAt: new Date().toISOString().split('T')[0],
+        messageCount: 0
+      };
+      setMailboxes([...mailboxes, newMailbox]);
+      setFormData({
+        email: "",
+        displayName: "",
+        owner: "",
+        organization: "",
+        organizationUnit: "",
+        domain: "",
+        quota: 5,
+        forwardTo: ""
+      });
       setIsAddDialogOpen(false);
-      resetForm();
-      toast({
-        title: "เพิ่มกล่องจดหมายสำเร็จ",
-        description: "เพิ่มกล่องจดหมายใหม่เรียบร้อยแล้ว",
-      });
     }
-    setSubmitting(false);
   };
 
-  const handleEdit = async () => {
-    if (!editingMailbox) return;
-    
-    setSubmitting(true);
-    const success = await updateMailbox(editingMailbox.id, formData);
-    if (success) {
-      await loadMailboxes();
-      setEditingMailbox(null);
+  const handleEdit = () => {
+    if (selectedMailbox && formData.email && formData.displayName) {
+      setMailboxes(mailboxes.map(mailbox => 
+        mailbox.id === selectedMailbox.id ? { ...mailbox, ...formData } : mailbox
+      ));
       setIsEditDialogOpen(false);
-      resetForm();
-      toast({
-        title: "แก้ไขสำเร็จ",
-        description: "แก้ไขข้อมูลกล่องจดหมายเรียบร้อยแล้ว",
-      });
-    }
-    setSubmitting(false);
-  };
-
-  const handleDelete = async (id: string) => {
-    const success = await deleteMailbox(id);
-    if (success) {
-      await loadMailboxes();
-      toast({
-        title: "ลบสำเร็จ",
-        description: "ลบกล่องจดหมายเรียบร้อยแล้ว",
-      });
+      setSelectedMailbox(null);
     }
   };
 
-  const resetForm = () => {
-    setFormData({
-      local_part: "",
-      display_name: "",
-      domain_id: "",
-      quota_mb: 5120,
-      status: "active"
-    });
+  const handleDelete = (id: number) => {
+    setMailboxes(mailboxes.filter(mailbox => mailbox.id !== id));
   };
 
-  const openEditDialog = (mailbox: Mailbox) => {
-    setEditingMailbox(mailbox);
+  const openEditDialog = (mailbox: any) => {
+    setSelectedMailbox(mailbox);
     setFormData({
-      local_part: mailbox.local_part,
-      display_name: mailbox.display_name || "",
-      domain_id: mailbox.domain_id,
-      quota_mb: mailbox.quota_mb || 5120,
-      status: mailbox.status
+      email: mailbox.email,
+      displayName: mailbox.displayName,
+      owner: mailbox.owner || "",
+      organization: mailbox.organization,
+      organizationUnit: mailbox.organizationUnit,
+      domain: mailbox.domain,
+      quota: mailbox.quota,
+      forwardTo: mailbox.forwardTo || ""
     });
     setIsEditDialogOpen(true);
   };
 
-  if (loading) {
-    return <div className="flex justify-center p-8">กำลังโหลดข้อมูล...</div>;
-  }
+  const openResetPasswordDialog = (mailbox: any) => {
+    setSelectedMailbox(mailbox);
+    setIsResetPasswordDialogOpen(true);
+  };
+
+  const openAssignOwnerDialog = (mailbox: any) => {
+    setSelectedMailbox(mailbox);
+    setIsAssignOwnerDialogOpen(true);
+  };
 
   return (
     <div className="space-y-6">
@@ -326,6 +272,126 @@ const MailService = () => {
             <Upload className="w-4 h-4 mr-2" />
             นำเข้า
           </Button>
+          {/* Reset Password Dialog */}
+          <Dialog open={isResetPasswordDialogOpen} onOpenChange={setIsResetPasswordDialogOpen}>
+            <DialogTrigger asChild>
+              <Button variant="outline">
+                <Key className="w-4 h-4 mr-2" />
+                รีเซ็ตรหัสผ่าน
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-[500px] bg-card">
+              <DialogHeader>
+                <DialogTitle>รีเซ็ตรหัsผ่านผู้ใช้</DialogTitle>
+                <DialogDescription>
+                  เลือกผู้ใช้และดำเนินการรีเซ็ตรหัสผ่าน
+                </DialogDescription>
+              </DialogHeader>
+              <div className="grid gap-4 py-4">
+                <div className="space-y-2">
+                  <Label htmlFor="reset-user">เลือกผู้ใช้</Label>
+                  <Select>
+                    <SelectTrigger>
+                      <SelectValue placeholder="เลือกผู้ใช้ที่ต้องการรีเซ็ตรหัสผ่าน" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-popover">
+                      {mailboxes.map(mailbox => (
+                        <SelectItem key={mailbox.id} value={mailbox.email}>
+                          {mailbox.displayName} ({mailbox.email})
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="new-password">รหัสผ่านใหม่</Label>
+                  <Input 
+                    id="new-password" 
+                    type="password"
+                    placeholder="กรอกรหัสผ่านใหม่"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="confirm-password">ยืนยันรหัสผ่าน</Label>
+                  <Input 
+                    id="confirm-password" 
+                    type="password"
+                    placeholder="ยืนยันรหัสผ่านใหม่"
+                  />
+                </div>
+                <div className="flex items-center space-x-2">
+                  <input type="checkbox" id="force-change" className="rounded" />
+                  <Label htmlFor="force-change">บังคับเปลี่ยนรหัสผ่านในการเข้าใช้ครั้งถัดไป</Label>
+                </div>
+              </div>
+              <div className="flex justify-end space-x-2">
+                <Button variant="outline">ยกเลิก</Button>
+                <Button>รีเซ็ตรหัสผ่าน</Button>
+              </div>
+            </DialogContent>
+          </Dialog>
+
+          {/* Assign Owner Dialog */}
+          <Dialog open={isAssignOwnerDialogOpen} onOpenChange={setIsAssignOwnerDialogOpen}>
+            <DialogTrigger asChild>
+              <Button variant="outline">
+                <UserCheck className="w-4 h-4 mr-2" />
+                กำหนดเจ้าของ
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-[500px] bg-card">
+              <DialogHeader>
+                <DialogTitle>กำหนดเจ้าของกล่องจดหมาย</DialogTitle>
+                <DialogDescription>
+                  เลือกกล่องจดหมายและกำหนดเจ้าของใหม่
+                </DialogDescription>
+              </DialogHeader>
+              <div className="grid gap-4 py-4">
+                <div className="space-y-2">
+                  <Label htmlFor="select-mailbox">เลือกกล่องจดหมาย</Label>
+                  <Select>
+                    <SelectTrigger>
+                      <SelectValue placeholder="เลือกกล่องจดหมาย" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-popover">
+                      {mailboxes.map(mailbox => (
+                        <SelectItem key={mailbox.id} value={mailbox.email}>
+                          {mailbox.email}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="new-owner">เจ้าของใหม่</Label>
+                  <Input 
+                    id="new-owner" 
+                    placeholder="ชื่อเจ้าของใหม่"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="owner-email">อีเมลติดต่อ</Label>
+                  <Input 
+                    id="owner-email" 
+                    type="email"
+                    placeholder="อีเมลของเจ้าของใหม่"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="transfer-note">หมายเหตุการโอน</Label>
+                  <Input 
+                    id="transfer-note" 
+                    placeholder="เหตุผลในการโอนความเป็นเจ้าของ"
+                  />
+                </div>
+              </div>
+              <div className="flex justify-end space-x-2">
+                <Button variant="outline">ยกเลิก</Button>
+                <Button>กำหนดเจ้าของ</Button>
+              </div>
+            </DialogContent>
+          </Dialog>
+
           <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
             <DialogTrigger asChild>
               <Button>
@@ -342,39 +408,116 @@ const MailService = () => {
               </DialogHeader>
               <div className="grid gap-4 py-4">
                 <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="local_part" className="text-right">
-                    ชื่อผู้ใช้ *
+                  <Label htmlFor="email" className="text-right">
+                    อีเมล *
                   </Label>
                   <Input
-                    id="local_part"
-                    value={formData.local_part}
-                    onChange={(e) => setFormData({...formData, local_part: e.target.value})}
-                    placeholder="username"
+                    id="email"
+                    type="email"
+                    value={formData.email}
+                    onChange={(e) => setFormData({...formData, email: e.target.value})}
+                    placeholder="user@domain.com"
                     className="col-span-3"
                   />
                 </div>
                 <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="display_name" className="text-right">
+                  <Label htmlFor="displayName" className="text-right">
                     ชื่อแสดง *
                   </Label>
                   <Input
-                    id="display_name"
-                    value={formData.display_name}
-                    onChange={(e) => setFormData({...formData, display_name: e.target.value})}
+                    id="displayName"
+                    value={formData.displayName}
+                    onChange={(e) => setFormData({...formData, displayName: e.target.value})}
                     placeholder="ชื่อ-นามสกุล"
                     className="col-span-3"
                   />
                 </div>
                 <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="quota_mb" className="text-right">
-                    โควต้า (MB) *
+                  <Label htmlFor="owner" className="text-right">
+                    เจ้าของ
                   </Label>
                   <Input
-                    id="quota_mb"
-                    type="number"
-                    value={formData.quota_mb}
-                    onChange={(e) => setFormData({...formData, quota_mb: parseInt(e.target.value)})}
-                    placeholder="5120"
+                    id="owner"
+                    value={formData.owner}
+                    onChange={(e) => setFormData({...formData, owner: e.target.value})}
+                    placeholder="เจ้าของกล่องจดหมาย"
+                    className="col-span-3"
+                  />
+                </div>
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="organization" className="text-right">
+                    องค์กร *
+                  </Label>
+                  <Select value={formData.organization} onValueChange={(value) => setFormData({...formData, organization: value})}>
+                    <SelectTrigger className="col-span-3">
+                      <SelectValue placeholder="เลือกองค์กร" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-popover">
+                      <SelectItem value="บริษัท เอบีซี จำกัด (มหาชน)">บริษัท เอบีซี จำกัด (มหาชน)</SelectItem>
+                      <SelectItem value="บริษัท เอ็กซ์วายแซด จำกัด">บริษัท เอ็กซ์วายแซด จำกัด</SelectItem>
+                      <SelectItem value="บริษัท ดีอีเอฟ เอ็นเตอร์ไพรซ์ จำกัด">บริษัท ดีอีเอฟ เอ็นเตอร์ไพรซ์ จำกัด</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="ou" className="text-right">
+                    หน่วยงาน
+                  </Label>
+                  <Select value={formData.organizationUnit} onValueChange={(value) => setFormData({...formData, organizationUnit: value})}>
+                    <SelectTrigger className="col-span-3">
+                      <SelectValue placeholder="เลือกหน่วยงาน" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-popover">
+                      <SelectItem value="IT Department">IT Department</SelectItem>
+                      <SelectItem value="HR Department">HR Department</SelectItem>
+                      <SelectItem value="Finance Department">Finance Department</SelectItem>
+                      <SelectItem value="Management">Management</SelectItem>
+                      <SelectItem value="Support">Support</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="domain" className="text-right">
+                    โดเมน *
+                  </Label>
+                  <Select value={formData.domain} onValueChange={(value) => setFormData({...formData, domain: value})}>
+                    <SelectTrigger className="col-span-3">
+                      <SelectValue placeholder="เลือกโดเมน" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-popover">
+                      <SelectItem value="abc-corp.com">abc-corp.com</SelectItem>
+                      <SelectItem value="xyz-ltd.com">xyz-ltd.com</SelectItem>
+                      <SelectItem value="def-enterprise.com">def-enterprise.com</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="quota" className="text-right">
+                    โควต้า
+                  </Label>
+                  <div className="col-span-3 flex items-center space-x-2">
+                    <Input
+                      id="quota"
+                      type="number"
+                      min="1"
+                      max="50"
+                      value={formData.quota}
+                      onChange={(e) => setFormData({...formData, quota: parseInt(e.target.value) || 5})}
+                      className="w-20"
+                    />
+                    <span className="text-sm text-muted-foreground">GB</span>
+                  </div>
+                </div>
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="forwardTo" className="text-right">
+                    ส่งต่อไปยง
+                  </Label>
+                  <Input
+                    id="forwardTo"
+                    type="email"
+                    value={formData.forwardTo}
+                    onChange={(e) => setFormData({...formData, forwardTo: e.target.value})}
+                    placeholder="forward@domain.com"
                     className="col-span-3"
                   />
                 </div>
@@ -383,9 +526,9 @@ const MailService = () => {
                 <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>
                   ยกเลิก
                 </Button>
-                <LoadingButton loading={submitting} onClick={handleAdd}>
+                <Button onClick={handleAdd}>
                   บันทึก
-                </LoadingButton>
+                </Button>
               </div>
             </DialogContent>
           </Dialog>
@@ -401,7 +544,7 @@ const MailService = () => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{mailboxes.length}</div>
-            <p className="text-xs text-muted-foreground">บัญชีในระบบ</p>
+            <p className="text-xs text-muted-foreground">+3 บัญชีเดือนนี้</p>
           </CardContent>
         </Card>
         <Card>
@@ -418,28 +561,28 @@ const MailService = () => {
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">ข้อความรวม</CardTitle>
+            <Inbox className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              {mailboxes.reduce((sum, m) => sum + m.messageCount, 0).toLocaleString()}
+            </div>
+            <p className="text-xs text-muted-foreground">ข้อความทั้งหมด</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">พื้นที่ใช้งาน</CardTitle>
             <Archive className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {mailboxes.reduce((sum, m) => sum + (m.used_quota_mb || 0), 0)} MB
+              {mailboxes.reduce((sum, m) => sum + m.used, 0).toFixed(1)} GB
             </div>
             <p className="text-xs text-muted-foreground">
-              จาก {mailboxes.reduce((sum, m) => sum + (m.quota_mb || 0), 0)} MB
+              จาก {mailboxes.reduce((sum, m) => sum + m.quota, 0)} GB
             </p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">ระงับ</CardTitle>
-            <XCircle className="h-4 w-4 text-destructive" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {mailboxes.filter(m => m.status === 'suspended').length}
-            </div>
-            <p className="text-xs text-muted-foreground">ต้องตรวจสอบ</p>
           </CardContent>
         </Card>
       </div>
@@ -457,7 +600,7 @@ const MailService = () => {
             <div className="relative flex-1">
               <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="ค้นหาอีเมล, ชื่อแสดง..."
+                placeholder="ค้นหาอีเมล, ชื่อ, เจ้าของ..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="pl-8"
@@ -482,90 +625,102 @@ const MailService = () => {
               <TableHeader>
                 <TableRow>
                   <TableHead>กล่องจดหมาย</TableHead>
+                  <TableHead>เจ้าของ / องค์กร</TableHead>
                   <TableHead>การใช้งาน</TableHead>
+                  <TableHead className="text-center">ข้อความ</TableHead>
                   <TableHead>สถานะ</TableHead>
                   <TableHead>เข้าใช้ล่าสุด</TableHead>
                   <TableHead className="text-right">การดำเนินการ</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredMailboxes.map((mailbox) => {
-                  const email = `${mailbox.local_part}@${mailbox.domains?.name || 'unknown'}`;
-                  const used = mailbox.used_quota_mb || 0;
-                  const quota = mailbox.quota_mb || 5120;
-                  
-                  return (
-                    <TableRow key={mailbox.id}>
-                      <TableCell className="font-medium">
-                        <div className="flex items-center space-x-3">
-                          <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center">
-                            <Mail className="w-5 h-5 text-primary" />
-                          </div>
-                          <div>
-                            <div className="font-medium">{email}</div>
-                            <div className="text-sm text-muted-foreground">{mailbox.display_name}</div>
-                          </div>
+                {filteredMailboxes.map((mailbox) => (
+                  <TableRow key={mailbox.id}>
+                    <TableCell className="font-medium">
+                      <div className="flex items-center space-x-3">
+                        <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center">
+                          <Mail className="w-5 h-5 text-primary" />
                         </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="space-y-1">
-                          <div className="flex items-center justify-between">
-                            <span className="text-sm">{used} / {quota} MB</span>
-                            {getUsageBadge(used, quota)}
-                          </div>
-                          <div className="w-20 bg-muted rounded-full h-1">
-                            <div 
-                              className="h-1 rounded-full bg-primary"
-                              style={{ width: `${Math.min(getUsagePercentage(used, quota), 100)}%` }}
-                            />
-                          </div>
+                        <div>
+                          <div className="font-medium">{mailbox.email}</div>
+                          <div className="text-sm text-muted-foreground">{mailbox.displayName}</div>
+                          {mailbox.forwardTo && (
+                            <div className="text-xs text-muted-foreground">
+                              → {mailbox.forwardTo}
+                            </div>
+                          )}
                         </div>
-                      </TableCell>
-                      <TableCell>
-                        {getStatusBadge(mailbox.status)}
-                      </TableCell>
-                      <TableCell>
-                        <div className="text-sm">
-                          {mailbox.last_login ? new Date(mailbox.last_login).toLocaleDateString('th-TH') : "ยังไม่เข้าใช้"}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div>
+                        <div className="font-medium">{mailbox.owner || "ไม่ระบุ"}</div>
+                        <div className="text-sm text-muted-foreground">{mailbox.organization}</div>
+                        <div className="text-xs text-muted-foreground">{mailbox.organizationUnit}</div>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="space-y-1">
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm">{mailbox.used} / {mailbox.quota} GB</span>
+                          {getUsageBadge(mailbox.used, mailbox.quota)}
                         </div>
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" className="h-8 w-8 p-0">
-                              <MoreHorizontal className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end" className="bg-popover">
-                            <DropdownMenuLabel>การดำเนินการ</DropdownMenuLabel>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem onClick={() => openEditDialog(mailbox)}>
-                              <Edit className="mr-2 h-4 w-4" />
-                              แก้ไข
-                            </DropdownMenuItem>
-                            <DropdownMenuItem 
-                              className="text-destructive"
-                              onClick={() => handleDelete(mailbox.id)}
-                            >
-                              <Trash2 className="mr-2 h-4 w-4" />
-                              ลบ
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </TableCell>
-                    </TableRow>
-                  );
-                })}
-                {filteredMailboxes.length === 0 && (
-                  <TableRow>
-                    <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
-                      {searchTerm || selectedFilter !== 'all' 
-                        ? 'ไม่พบข้อมูลที่ค้นหา' 
-                        : 'ยังไม่มีกล่องจดหมายในระบบ'
-                      }
+                        <div className="w-20 bg-muted rounded-full h-1">
+                          <div 
+                            className="h-1 rounded-full bg-primary"
+                            style={{ width: `${Math.min(getUsagePercentage(mailbox.used, mailbox.quota), 100)}%` }}
+                          />
+                        </div>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="text-center">
+                        <div className="font-medium">{mailbox.messageCount.toLocaleString()}</div>
+                        <div className="text-xs text-muted-foreground">ข้อความ</div>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      {getStatusBadge(mailbox.status)}
+                    </TableCell>
+                    <TableCell>
+                      <div className="text-sm">
+                        {mailbox.lastLogin || "ยังไม่เข้าใช้"}
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" className="h-8 w-8 p-0">
+                            <MoreHorizontal className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="bg-popover">
+                          <DropdownMenuLabel>การดำเนินการ</DropdownMenuLabel>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem onClick={() => openEditDialog(mailbox)}>
+                            <Edit className="mr-2 h-4 w-4" />
+                            แก้ไข
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => openResetPasswordDialog(mailbox)}>
+                            <Key className="mr-2 h-4 w-4" />
+                            รีเซ็ตรหัสผ่าน
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => openAssignOwnerDialog(mailbox)}>
+                            <UserCheck className="mr-2 h-4 w-4" />
+                            กำหนดเจ้าของ
+                          </DropdownMenuItem>
+                          <DropdownMenuItem 
+                            className="text-destructive"
+                            onClick={() => handleDelete(mailbox.id)}
+                          >
+                            <Trash2 className="mr-2 h-4 w-4" />
+                            ลบ
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </TableCell>
                   </TableRow>
-                )}
+                ))}
               </TableBody>
             </Table>
           </div>
@@ -578,41 +733,70 @@ const MailService = () => {
           <DialogHeader>
             <DialogTitle>แก้ไขกล่องจดหมาย</DialogTitle>
             <DialogDescription>
-              แก้ไขข้อมูลกล่องจดหมาย {editingMailbox ? `${editingMailbox.local_part}@${editingMailbox.domains?.name}` : ''}
+              แก้ไขข้อมูลกล่องจดหมาย {selectedMailbox?.email}
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
             <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="edit-local_part" className="text-right">
-                ชื่อผู้ใช้ *
+              <Label htmlFor="edit-email" className="text-right">
+                อีเมล *
               </Label>
               <Input
-                id="edit-local_part"
-                value={formData.local_part}
-                onChange={(e) => setFormData({...formData, local_part: e.target.value})}
+                id="edit-email"
+                type="email"
+                value={formData.email}
+                onChange={(e) => setFormData({...formData, email: e.target.value})}
                 className="col-span-3"
               />
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="edit-display_name" className="text-right">
+              <Label htmlFor="edit-displayName" className="text-right">
                 ชื่อแสดง *
               </Label>
               <Input
-                id="edit-display_name"
-                value={formData.display_name}
-                onChange={(e) => setFormData({...formData, display_name: e.target.value})}
+                id="edit-displayName"
+                value={formData.displayName}
+                onChange={(e) => setFormData({...formData, displayName: e.target.value})}
                 className="col-span-3"
               />
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="edit-quota_mb" className="text-right">
-                โควต้า (MB)
+              <Label htmlFor="edit-owner" className="text-right">
+                เจ้าของ
               </Label>
               <Input
-                id="edit-quota_mb"
-                type="number"
-                value={formData.quota_mb}
-                onChange={(e) => setFormData({...formData, quota_mb: parseInt(e.target.value)})}
+                id="edit-owner"
+                value={formData.owner}
+                onChange={(e) => setFormData({...formData, owner: e.target.value})}
+                className="col-span-3"
+              />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="edit-quota" className="text-right">
+                โควต้า
+              </Label>
+              <div className="col-span-3 flex items-center space-x-2">
+                <Input
+                  id="edit-quota"
+                  type="number"
+                  min="1"
+                  max="50"
+                  value={formData.quota}
+                  onChange={(e) => setFormData({...formData, quota: parseInt(e.target.value) || 5})}
+                  className="w-20"
+                />
+                <span className="text-sm text-muted-foreground">GB</span>
+              </div>
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="edit-forwardTo" className="text-right">
+                ส่งต่อไปยง
+              </Label>
+              <Input
+                id="edit-forwardTo"
+                type="email"
+                value={formData.forwardTo}
+                onChange={(e) => setFormData({...formData, forwardTo: e.target.value})}
                 className="col-span-3"
               />
             </div>
@@ -621,9 +805,9 @@ const MailService = () => {
             <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
               ยกเลิก
             </Button>
-            <LoadingButton loading={submitting} onClick={handleEdit}>
+            <Button onClick={handleEdit}>
               บันทึกการแก้ไข
-            </LoadingButton>
+            </Button>
           </div>
         </DialogContent>
       </Dialog>

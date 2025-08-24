@@ -11,7 +11,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { toast } from "sonner";
 
 const Auth = () => {
-  const { signIn, signUp, resetPassword, loading, isAuthenticated } = useAuth();
+  const { signIn, signUp, loading, isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [activeTab, setActiveTab] = useState("signin");
@@ -20,7 +20,6 @@ const Auth = () => {
     password: "",
     confirmPassword: ""
   });
-  const [resetEmail, setResetEmail] = useState("");
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [authSuccess, setAuthSuccess] = useState(false);
@@ -145,33 +144,6 @@ const Auth = () => {
     if (error) setError("");
   };
 
-  const handleResetPassword = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError("");
-    setIsLoading(true);
-
-    if (!resetEmail) {
-      setError("กรุณากรอกอีเมล");
-      setIsLoading(false);
-      return;
-    }
-
-    try {
-      const { error } = await resetPassword(resetEmail);
-      if (error) {
-        setError(error.message);
-      } else {
-        toast.success("ส่งลิงก์รีเซ็ตรหัสผ่านไปยังอีเมลแล้ว");
-        setActiveTab("signin");
-        setResetEmail("");
-      }
-    } catch (err) {
-      setError("เกิดข้อผิดพลาดในการส่งลิงก์รีเซ็ตรหัสผ่าน");
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   // Show success state while processing auth callback
   if (authSuccess) {
     return (
@@ -220,10 +192,9 @@ const Auth = () => {
           </CardHeader>
           <CardContent>
             <Tabs value={activeTab} onValueChange={setActiveTab}>
-              <TabsList className="grid w-full grid-cols-3">
+              <TabsList className="grid w-full grid-cols-2">
                 <TabsTrigger value="signin">เข้าสู่ระบบ</TabsTrigger>
                 <TabsTrigger value="signup">สมัครสมาชิก</TabsTrigger>
-                <TabsTrigger value="reset">ลืมรหัสผ่าน</TabsTrigger>
               </TabsList>
 
               {error && (
@@ -330,33 +301,6 @@ const Auth = () => {
                     disabled={isLoading || loading}
                   >
                     {isLoading ? "กำลังสมัครสมาชิก..." : "สมัครสมาชิก"}
-                  </Button>
-                </form>
-              </TabsContent>
-
-              <TabsContent value="reset" className="space-y-4 mt-4">
-                <form onSubmit={handleResetPassword} className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="reset-email">อีเมล</Label>
-                    <div className="relative">
-                      <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                      <Input
-                        id="reset-email"
-                        type="email"
-                        placeholder="your.email@company.com"
-                        value={resetEmail}
-                        onChange={(e) => setResetEmail(e.target.value)}
-                        className="pl-10"
-                        disabled={isLoading}
-                      />
-                    </div>
-                  </div>
-                  <Button 
-                    type="submit" 
-                    className="w-full" 
-                    disabled={isLoading || loading}
-                  >
-                    {isLoading ? "กำลังส่งลิงก์..." : "ส่งลิงก์รีเซ็ตรหัสผ่าน"}
                   </Button>
                 </form>
               </TabsContent>

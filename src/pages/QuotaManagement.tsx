@@ -1,7 +1,5 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { useAuth } from "@/contexts/AuthContext";
-import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -41,78 +39,84 @@ import {
   AlertTriangle,
   CheckCircle,
   TrendingUp,
-  Plus,
-  Trash2,
 } from "lucide-react";
 
-interface Quota {
-  id: string;
-  organization_id: string;
-  quota_type: string;
-  allocated_mb: number;
-  used_mb: number;
-  warning_threshold_mb?: number;
-  last_calculated?: string;
-  organization?: { name: string };
-}
+// Mock data for quotas
+const mockQuotas = [
+  {
+    id: 1,
+    organization: "บริษัท เอบีซี จำกัด (มหาชน)",
+    organizationUnit: "IT Department",
+    resourceType: "storage",
+    resourceName: "พื้นที่จัดเก็บ",
+    allocated: 1000, // GB
+    used: 750, // GB
+    unit: "GB",
+    warningThreshold: 80, // %
+    criticalThreshold: 95, // %
+    lastUpdated: "2024-01-20 14:30"
+  },
+  {
+    id: 2,
+    organization: "บริษัท เอบีซี จำกัด (มหาชน)",
+    organizationUnit: "IT Department", 
+    resourceType: "mailbox",
+    resourceName: "กล่องจดหมาย",
+    allocated: 100,
+    used: 45,
+    unit: "กล่อง",
+    warningThreshold: 80,
+    criticalThreshold: 95,
+    lastUpdated: "2024-01-20 14:30"
+  },
+  {
+    id: 3,
+    organization: "บริษัท เอ็กซ์วายแซด จำกัด",
+    organizationUnit: "HR Department",
+    resourceType: "users",
+    resourceName: "ผู้ใช้งาน",
+    allocated: 50,
+    used: 35,
+    unit: "คน",
+    warningThreshold: 80,
+    criticalThreshold: 95,
+    lastUpdated: "2024-01-20 14:25"
+  },
+  {
+    id: 4,
+    organization: "บริษัท เอ็กซ์วายแซด จำกัด",
+    organizationUnit: "Finance Department",
+    resourceType: "database",
+    resourceName: "ฐานข้อมูล",
+    allocated: 500,
+    used: 480,
+    unit: "GB",
+    warningThreshold: 80,
+    criticalThreshold: 95,
+    lastUpdated: "2024-01-20 14:20"
+  }
+];
 
 const QuotaManagement = () => {
-  const { isAuthenticated } = useAuth();
-  const [quotas, setQuotas] = useState<Quota[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [submitting, setSubmitting] = useState(false);
+  const [quotas, setQuotas] = useState(mockQuotas);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedFilter, setSelectedFilter] = useState("all");
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-  const [isAddQuotaOpen, setIsAddQuotaOpen] = useState(false);
-  const [selectedQuota, setSelectedQuota] = useState<Quota | null>(null);
+  const [selectedQuota, setSelectedQuota] = useState<any>(null);
   const [formData, setFormData] = useState({
-    allocated_mb: 0,
-    warning_threshold_mb: 0,
+    allocated: 0,
+    warningThreshold: 80,
+    criticalThreshold: 95
   });
-  const [newQuotaData, setNewQuotaData] = useState({
-    quota_type: "",
-    allocated_mb: 1000,
-    warning_threshold_mb: 800,
-  });
-
-  useEffect(() => {
-    if (isAuthenticated) {
-      fetchQuotas();
-    }
-  }, [isAuthenticated]);
-
-  const fetchQuotas = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('storage_quotas')
-        .select(`
-          *,
-          organization:organizations(name)
-        `)
-        .order('created_at', { ascending: false });
-      
-      if (error) throw error;
-      setQuotas(data || []);
-    } catch (error) {
-      console.error('Error fetching quotas:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const getUsagePercentage = (used: number, allocated: number) => {
-    if (allocated === 0) return 0;
     return Math.round((used / allocated) * 100);
   };
 
-  const getUsageStatus = (percentage: number, quota: Quota) => {
-    const criticalThreshold = 95;
-    const warningThreshold = Math.round((quota.warning_threshold_mb || quota.allocated_mb * 0.8) / quota.allocated_mb * 100);
-    
-    if (percentage >= criticalThreshold) {
+  const getUsageStatus = (percentage: number, quota: any) => {
+    if (percentage >= quota.criticalThreshold) {
       return { status: "critical", color: "bg-destructive", icon: AlertTriangle };
-    } else if (percentage >= warningThreshold) {
+    } else if (percentage >= quota.warningThreshold) {
       return { status: "warning", color: "bg-warning", icon: AlertTriangle };
     } else {
       return { status: "normal", color: "bg-success", icon: CheckCircle };
@@ -121,11 +125,13 @@ const QuotaManagement = () => {
 
   const getResourceIcon = (type: string) => {
     switch (type) {
-      case "file_storage":
+      case "storage":
         return HardDrive;
       case "mailbox":
         return Mail;
-      case "backup":
+      case "users":
+        return Users;
+      case "database":
         return Database;
       default:
         return HardDrive;
@@ -133,13 +139,13 @@ const QuotaManagement = () => {
   };
 
   const filteredQuotas = quotas.filter(quota => {
-    const orgName = quota.organization?.name || '';
-    const matchesSearch = orgName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         quota.quota_type.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesSearch = quota.organization.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         quota.organizationUnit.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         quota.resourceName.toLowerCase().includes(searchTerm.toLowerCase());
     
     let matchesFilter = true;
     if (selectedFilter !== "all") {
-      const percentage = getUsagePercentage(quota.used_mb, quota.allocated_mb);
+      const percentage = getUsagePercentage(quota.used, quota.allocated);
       const status = getUsageStatus(percentage, quota);
       matchesFilter = status.status === selectedFilter;
     }
@@ -147,77 +153,28 @@ const QuotaManagement = () => {
     return matchesSearch && matchesFilter;
   });
 
-  const handleEdit = async () => {
+  const handleEdit = () => {
     if (selectedQuota) {
-      try {
-        const { error } = await supabase
-          .from('storage_quotas')
-          .update({
-            allocated_mb: formData.allocated_mb,
-            warning_threshold_mb: formData.warning_threshold_mb,
-          })
-          .eq('id', selectedQuota.id);
-        
-        if (error) throw error;
-        
-        fetchQuotas(); // Refresh data
-        setIsEditDialogOpen(false);
-        setSelectedQuota(null);
-      } catch (error) {
-        console.error('Error updating quota:', error);
-      }
+      setQuotas(quotas.map(quota => 
+        quota.id === selectedQuota.id ? { 
+          ...quota, 
+          allocated: formData.allocated,
+          warningThreshold: formData.warningThreshold,
+          criticalThreshold: formData.criticalThreshold,
+          lastUpdated: new Date().toLocaleString('th-TH')
+        } : quota
+      ));
+      setIsEditDialogOpen(false);
+      setSelectedQuota(null);
     }
   };
 
-  const handleAddQuota = async () => {
-    if (!newQuotaData.quota_type) return;
-    
-    setSubmitting(true);
-    try {
-      const { error } = await supabase
-        .from('storage_quotas')
-        .insert([{
-          ...newQuotaData,
-          organization_id: 'temp-org-id', // Will be replaced with actual org ID
-          used_mb: 0,
-        }]);
-      
-      if (error) throw error;
-      
-      await fetchQuotas();
-      setIsAddQuotaOpen(false);
-      setNewQuotaData({
-        quota_type: "",
-        allocated_mb: 1000,
-        warning_threshold_mb: 800,
-      });
-    } catch (error) {
-      console.error('Error adding quota:', error);
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
-  const handleDeleteQuota = async (id: string) => {
-    try {
-      const { error } = await supabase
-        .from('storage_quotas')
-        .delete()
-        .eq('id', id);
-      
-      if (error) throw error;
-      
-      await fetchQuotas();
-    } catch (error) {
-      console.error('Error deleting quota:', error);
-    }
-  };
-
-  const openEditDialog = (quota: Quota) => {
+  const openEditDialog = (quota: any) => {
     setSelectedQuota(quota);
     setFormData({
-      allocated_mb: quota.allocated_mb,
-      warning_threshold_mb: quota.warning_threshold_mb || Math.round(quota.allocated_mb * 0.8),
+      allocated: quota.allocated,
+      warningThreshold: quota.warningThreshold,
+      criticalThreshold: quota.criticalThreshold
     });
     setIsEditDialogOpen(true);
   };
@@ -254,9 +211,8 @@ const QuotaManagement = () => {
           <CardContent>
             <div className="text-2xl font-bold">
               {quotas.filter(q => {
-                const percentage = getUsagePercentage(q.used_mb, q.allocated_mb);
-                const warningThreshold = Math.round((q.warning_threshold_mb || q.allocated_mb * 0.8) / q.allocated_mb * 100);
-                return percentage < warningThreshold;
+                const percentage = getUsagePercentage(q.used, q.allocated);
+                return percentage < q.warningThreshold;
               }).length}
             </div>
             <p className="text-xs text-muted-foreground">ใช้งานปกติ</p>
@@ -270,10 +226,8 @@ const QuotaManagement = () => {
           <CardContent>
             <div className="text-2xl font-bold">
               {quotas.filter(q => {
-                const percentage = getUsagePercentage(q.used_mb, q.allocated_mb);
-                const warningThreshold = Math.round((q.warning_threshold_mb || q.allocated_mb * 0.8) / q.allocated_mb * 100);
-                const criticalThreshold = 95;
-                return percentage >= warningThreshold && percentage < criticalThreshold;
+                const percentage = getUsagePercentage(q.used, q.allocated);
+                return percentage >= q.warningThreshold && percentage < q.criticalThreshold;
               }).length}
             </div>
             <p className="text-xs text-muted-foreground">ใกล้เต็ม</p>
@@ -287,74 +241,13 @@ const QuotaManagement = () => {
           <CardContent>
             <div className="text-2xl font-bold">
               {quotas.filter(q => {
-                const percentage = getUsagePercentage(q.used_mb, q.allocated_mb);
-                const criticalThreshold = 95;
-                return percentage >= criticalThreshold;
+                const percentage = getUsagePercentage(q.used, q.allocated);
+                return percentage >= q.criticalThreshold;
               }).length}
             </div>
             <p className="text-xs text-muted-foreground">เต็มแล้ว</p>
           </CardContent>
         </Card>
-      </div>
-
-      <div className="flex justify-end">
-        <Dialog open={isAddQuotaOpen} onOpenChange={setIsAddQuotaOpen}>
-          <DialogTrigger asChild>
-            <Button>
-              <Plus className="w-4 h-4 mr-2" />
-              เพิ่มโควต้า
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="bg-card">
-            <DialogHeader>
-              <DialogTitle>เพิ่มโควต้าใหม่</DialogTitle>
-              <DialogDescription>
-                สร้างโควต้าทรัพยากรใหม่
-              </DialogDescription>
-            </DialogHeader>
-            <div className="grid gap-4 py-4">
-              <div>
-                <Label htmlFor="quota_type">ประเภททรัพยากร</Label>
-                <Select value={newQuotaData.quota_type} onValueChange={(value) => setNewQuotaData({...newQuotaData, quota_type: value})}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="เลือกประเภททรัพยากร" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="file_storage">File Storage</SelectItem>
-                    <SelectItem value="mailbox">Mailbox</SelectItem>
-                    <SelectItem value="backup">Backup</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label htmlFor="allocated_mb">โควต้า (MB)</Label>
-                <Input
-                  id="allocated_mb"
-                  type="number"
-                  value={newQuotaData.allocated_mb}
-                  onChange={(e) => setNewQuotaData({...newQuotaData, allocated_mb: parseInt(e.target.value) || 0})}
-                />
-              </div>
-              <div>
-                <Label htmlFor="warning_threshold_mb">เกณฑ์เตือน (MB)</Label>
-                <Input
-                  id="warning_threshold_mb"
-                  type="number"
-                  value={newQuotaData.warning_threshold_mb}
-                  onChange={(e) => setNewQuotaData({...newQuotaData, warning_threshold_mb: parseInt(e.target.value) || 0})}
-                />
-              </div>
-            </div>
-            <div className="flex justify-end space-x-2">
-              <Button variant="outline" onClick={() => setIsAddQuotaOpen(false)}>
-                ยกเลิก
-              </Button>
-              <Button onClick={handleAddQuota} disabled={submitting}>
-                {submitting ? "กำลังบันทึก..." : "บันทึก"}
-              </Button>
-            </div>
-          </DialogContent>
-        </Dialog>
       </div>
 
       {/* Quota Dashboard */}
@@ -367,10 +260,10 @@ const QuotaManagement = () => {
         </CardHeader>
         <CardContent>
           <div className="grid gap-4 md:grid-cols-2">
-            {filteredQuotas.map((quota) => {
-              const percentage = getUsagePercentage(quota.used_mb, quota.allocated_mb);
+            {quotas.map((quota) => {
+              const percentage = getUsagePercentage(quota.used, quota.allocated);
               const status = getUsageStatus(percentage, quota);
-              const ResourceIcon = getResourceIcon(quota.quota_type);
+              const ResourceIcon = getResourceIcon(quota.resourceType);
               const StatusIcon = status.icon;
 
               return (
@@ -381,9 +274,9 @@ const QuotaManagement = () => {
                         <ResourceIcon className="w-4 h-4 text-primary" />
                       </div>
                       <div>
-                        <div className="font-medium text-sm">{quota.quota_type}</div>
+                        <div className="font-medium text-sm">{quota.resourceName}</div>
                         <div className="text-xs text-muted-foreground">
-                          {quota.organization?.name || 'Unknown Organization'}
+                          {quota.organization} / {quota.organizationUnit}
                         </div>
                       </div>
                     </div>
@@ -396,7 +289,7 @@ const QuotaManagement = () => {
                   <div className="space-y-2">
                     <div className="flex justify-between text-sm">
                       <span>การใช้งาน</span>
-                      <span>{quota.used_mb} / {quota.allocated_mb} MB</span>
+                      <span>{quota.used} / {quota.allocated} {quota.unit}</span>
                     </div>
                     <Progress 
                       value={percentage} 
@@ -404,7 +297,7 @@ const QuotaManagement = () => {
                     />
                     <div className="flex justify-between text-xs text-muted-foreground">
                       <span>{percentage}% ใช้งานแล้ว</span>
-                      <span>อัปเดต: {quota.last_calculated ? new Date(quota.last_calculated).toLocaleString('th-TH') : '-'}</span>
+                      <span>อัปเดต: {quota.lastUpdated}</span>
                     </div>
                   </div>
                 </Card>
@@ -461,9 +354,9 @@ const QuotaManagement = () => {
               </TableHeader>
               <TableBody>
                 {filteredQuotas.map((quota) => {
-                  const percentage = getUsagePercentage(quota.used_mb, quota.allocated_mb);
+                  const percentage = getUsagePercentage(quota.used, quota.allocated);
                   const status = getUsageStatus(percentage, quota);
-                  const ResourceIcon = getResourceIcon(quota.quota_type);
+                  const ResourceIcon = getResourceIcon(quota.resourceType);
 
                   return (
                     <TableRow key={quota.id}>
@@ -473,21 +366,21 @@ const QuotaManagement = () => {
                             <ResourceIcon className="w-5 h-5 text-primary" />
                           </div>
                           <div>
-                            <div className="font-medium">{quota.quota_type}</div>
-                            <div className="text-sm text-muted-foreground capitalize">{quota.quota_type}</div>
+                            <div className="font-medium">{quota.resourceName}</div>
+                            <div className="text-sm text-muted-foreground capitalize">{quota.resourceType}</div>
                           </div>
                         </div>
                       </TableCell>
                       <TableCell>
                         <div>
-                          <div className="font-medium">{quota.organization?.name || 'Unknown Organization'}</div>
-                          <div className="text-sm text-muted-foreground">-</div>
+                          <div className="font-medium">{quota.organization}</div>
+                          <div className="text-sm text-muted-foreground">{quota.organizationUnit}</div>
                         </div>
                       </TableCell>
                       <TableCell>
                         <div className="space-y-1">
                           <div className="flex justify-between text-sm">
-                            <span>{quota.used_mb} / {quota.allocated_mb} MB</span>
+                            <span>{quota.used} / {quota.allocated} {quota.unit}</span>
                             <span className="font-medium">{percentage}%</span>
                           </div>
                           <Progress value={percentage} className="h-2 w-32" />
@@ -509,27 +402,17 @@ const QuotaManagement = () => {
                       </TableCell>
                       <TableCell>
                         <div className="text-sm">
-                          {quota.last_calculated ? new Date(quota.last_calculated).toLocaleString('th-TH') : '-'}
+                          {quota.lastUpdated}
                         </div>
                       </TableCell>
                       <TableCell className="text-right">
-                        <div className="flex justify-end space-x-2">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => openEditDialog(quota)}
-                          >
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleDeleteQuota(quota.id)}
-                            className="text-destructive hover:text-destructive"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => openEditDialog(quota)}
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
                       </TableCell>
                     </TableRow>
                   );
@@ -546,7 +429,7 @@ const QuotaManagement = () => {
           <DialogHeader>
             <DialogTitle>แก้ไขโควต้า</DialogTitle>
             <DialogDescription>
-              แก้ไขการตั้งค่าโควต้า {selectedQuota?.quota_type}
+              แก้ไขการตั้งค่าโควต้า {selectedQuota?.resourceName}
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
@@ -558,10 +441,10 @@ const QuotaManagement = () => {
                 <Input
                   id="allocated"
                   type="number"
-                  value={formData.allocated_mb}
-                  onChange={(e) => setFormData({...formData, allocated_mb: parseInt(e.target.value) || 0})}
+                  value={formData.allocated}
+                  onChange={(e) => setFormData({...formData, allocated: parseInt(e.target.value) || 0})}
                 />
-                <span className="text-sm text-muted-foreground">MB</span>
+                <span className="text-sm text-muted-foreground">{selectedQuota?.unit}</span>
               </div>
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
@@ -574,21 +457,33 @@ const QuotaManagement = () => {
                   type="number"
                   min="0"
                   max="100"
-                  value={formData.warning_threshold_mb}
-                  onChange={(e) => setFormData({...formData, warning_threshold_mb: parseInt(e.target.value) || 0})}
+                  value={formData.warningThreshold}
+                  onChange={(e) => setFormData({...formData, warningThreshold: parseInt(e.target.value) || 0})}
                 />
                 <span className="text-sm text-muted-foreground">%</span>
               </div>
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
-              <Label className="text-right">
-                ข้อมูลปัจจุบัน
+              <Label htmlFor="critical" className="text-right">
+                เกณฑ์วิกฤต
               </Label>
-              <div className="col-span-3 p-3 bg-muted/50 rounded-lg">
-                <div className="space-y-1 text-sm text-muted-foreground">
-                  <div>ใช้งานแล้ว: {selectedQuota?.used_mb} MB</div>
-                  <div>เปอร์เซ็นต์การใช้งาน: {selectedQuota ? getUsagePercentage(selectedQuota.used_mb, selectedQuota.allocated_mb) : 0}%</div>
-                </div>
+              <div className="col-span-3 flex items-center space-x-2">
+                <Input
+                  id="critical"
+                  type="number"
+                  min="0"
+                  max="100"
+                  value={formData.criticalThreshold}
+                  onChange={(e) => setFormData({...formData, criticalThreshold: parseInt(e.target.value) || 0})}
+                />
+                <span className="text-sm text-muted-foreground">%</span>
+              </div>
+            </div>
+            <div className="col-span-4 p-3 bg-muted/50 rounded-lg">
+              <div className="text-sm font-medium mb-2">ข้อมูลปัจจุบัน</div>
+              <div className="space-y-1 text-sm text-muted-foreground">
+                <div>ใช้งานแล้ว: {selectedQuota?.used} {selectedQuota?.unit}</div>
+                <div>เปอร์เซ็นต์การใช้งาน: {selectedQuota ? getUsagePercentage(selectedQuota.used, selectedQuota.allocated) : 0}%</div>
               </div>
             </div>
           </div>

@@ -1,13 +1,6 @@
-import React from 'react'
 import { createRoot } from 'react-dom/client'
-import { BrowserRouter } from 'react-router-dom'
 import App from './App.tsx'
 import './index.css'
-import { ThemeProvider } from './components/ThemeProvider'
-import { AuthProvider } from './contexts/AuthContext'
-import { MasterDataProvider } from './contexts/MasterDataContext'
-import { Toaster } from "./components/ui/toaster";
-import { Toaster as Sonner } from "./components/ui/sonner";
 import { initializeFocusEnhancement } from './utils/focusManagement.ts'
 
 // Initialize focus management system
@@ -15,17 +8,31 @@ document.addEventListener('DOMContentLoaded', () => {
   initializeFocusEnhancement();
 });
 
+// Create a simple fallback component
+const FallbackApp = () => (
+  <div style={{ 
+    display: 'flex', 
+    justifyContent: 'center', 
+    alignItems: 'center', 
+    height: '100vh',
+    fontFamily: 'system-ui',
+    backgroundColor: '#f8fafc'
+  }}>
+    <div style={{ textAlign: 'center' }}>
+      <h1 style={{ color: '#334155', marginBottom: '10px' }}>Enterprise Management System</h1>
+      <p style={{ color: '#64748b' }}>กำลังโหลด...</p>
+    </div>
+  </div>
+);
+
 const rootElement = document.getElementById("root");
 if (rootElement) {
-  createRoot(rootElement).render(
-    <React.StrictMode>
-      <BrowserRouter>
-        <ThemeProvider defaultTheme="light" storageKey="vite-ui-theme">
-          <App />
-          <Toaster />
-          <Sonner />
-        </ThemeProvider>
-      </BrowserRouter>
-    </React.StrictMode>
-  );
+  try {
+    // Try loading the full app first
+    createRoot(rootElement).render(<App />);
+  } catch (error) {
+    console.error('Error loading full app, using fallback:', error);
+    // If full app fails, use fallback
+    createRoot(rootElement).render(<FallbackApp />);
+  }
 }

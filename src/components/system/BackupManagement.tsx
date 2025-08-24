@@ -1,6 +1,4 @@
-import { useState, useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/contexts/AuthContext';
+import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -44,63 +42,43 @@ interface BackupSchedule {
   size: string;
 }
 
+const mockBackups: BackupSchedule[] = [
+  {
+    id: '1',
+    name: 'Daily Database Backup',
+    type: 'Full',
+    frequency: 'Daily',
+    targetServers: ['DB-SRV-01'],
+    destination: '/backup/database/',
+    retention: 30,
+    status: 'Active',
+    lastBackup: '2024-01-25T02:00:00',
+    nextBackup: '2024-01-26T02:00:00',
+    size: '2.3 GB'
+  },
+  {
+    id: '2',
+    name: 'Weekly System Backup',
+    type: 'Incremental', 
+    frequency: 'Weekly',
+    targetServers: ['WEB-SRV-01', 'MAIL-SRV-01'],
+    destination: '/backup/system/',
+    retention: 12,
+    status: 'Active',
+    lastBackup: '2024-01-21T01:00:00',
+    nextBackup: '2024-01-28T01:00:00',
+    size: '850 MB'
+  }
+];
+
 export function BackupManagement() {
-  const { isAuthenticated } = useAuth();
-  const [backups, setBackups] = useState<BackupSchedule[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [backups, setBackups] = useState<BackupSchedule[]>(mockBackups);
   const [isAddBackupDialogOpen, setIsAddBackupDialogOpen] = useState(false);
   const [isEditBackupDialogOpen, setIsEditBackupDialogOpen] = useState(false);
   const [isRestoreDialogOpen, setIsRestoreDialogOpen] = useState(false);
   const [isCloneDialogOpen, setIsCloneDialogOpen] = useState(false);
   const [isBackupLogDialogOpen, setIsBackupLogDialogOpen] = useState(false);
   const [selectedBackup, setSelectedBackup] = useState<BackupSchedule | null>(null);
-
-  useEffect(() => {
-    if (isAuthenticated) {
-      fetchBackups();
-    }
-  }, [isAuthenticated]);
-
-  const fetchBackups = async () => {
-    try {
-      setLoading(true);
-      // Since we don't have a backup_schedules table yet, we'll use mock data for now
-      // In a real implementation, you would fetch from a backup_schedules table
-      const mockData: BackupSchedule[] = [
-        {
-          id: '1',
-          name: 'Daily Database Backup',
-          type: 'Full',
-          frequency: 'Daily',
-          targetServers: ['DB-SRV-01'],
-          destination: '/backup/database/',
-          retention: 30,
-          status: 'Active',
-          lastBackup: '2024-01-25T02:00:00',
-          nextBackup: '2024-01-26T02:00:00',
-          size: '2.3 GB'
-        },
-        {
-          id: '2',
-          name: 'Weekly System Backup',
-          type: 'Incremental',
-          frequency: 'Weekly',
-          targetServers: ['WEB-SRV-01', 'MAIL-SRV-01'],
-          destination: '/backup/system/',
-          retention: 12,
-          status: 'Active',
-          lastBackup: '2024-01-21T01:00:00',
-          nextBackup: '2024-01-28T01:00:00',
-          size: '850 MB'
-        }
-      ];
-      setBackups(mockData);
-    } catch (error) {
-      console.error('Error fetching backups:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const handleRunBackup = (backupId: string) => {
     setBackups(backups.map(backup => 
@@ -295,9 +273,6 @@ export function BackupManagement() {
           </div>
         </CardHeader>
         <CardContent>
-          {loading ? (
-            <div className="text-center py-8">กำลังโหลดข้อมูล...</div>
-          ) : (
           <Table>
             <TableHeader>
               <TableRow>
@@ -387,7 +362,6 @@ export function BackupManagement() {
               ))}
             </TableBody>
           </Table>
-          )}
         </CardContent>
       </Card>
 

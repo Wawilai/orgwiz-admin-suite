@@ -15,8 +15,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Separator } from '@/components/ui/separator';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { toast } from '@/hooks/use-toast';
-import { useAuth } from '@/contexts/AuthContext';
-import { supabase } from '@/integrations/supabase/client';
 import { 
   Video, 
   Plus, 
@@ -119,29 +117,134 @@ interface Poll {
   createdAt: string;
 }
 
+const mockMeetings: Meeting[] = [
+  {
+    id: '1',
+    title: 'ประชุมทีม IT ประจำสัปดาห์',
+    description: 'ประชุมรายงานความคืบหน้าและวางแผนงาน',
+    host: 'สมชาย ใจดี',
+    hostId: 'host1',
+    participants: [
+      {
+        id: '1',
+        name: 'สมชาย ใจดี',
+        email: 'somchai@company.com',
+        role: 'Host',
+        status: 'Joined',
+        joinTime: '09:00',
+        isMuted: false,
+        isVideoOn: true,
+        isHandRaised: false,
+        connectionQuality: 'Good'
+      },
+      {
+        id: '2',
+        name: 'นภา สว่างใส',
+        email: 'napa@company.com',
+        role: 'Participant',
+        status: 'Joined',
+        joinTime: '09:02',
+        isMuted: true,
+        isVideoOn: true,
+        isHandRaised: true,
+        connectionQuality: 'Good'
+      },
+      {
+        id: '3',
+        name: 'วิชัย เก่งมาก',
+        email: 'wichai@company.com',
+        role: 'Participant',
+        status: 'Joined',
+        joinTime: '09:01',
+        isMuted: false,
+        isVideoOn: false,
+        isHandRaised: false,
+        connectionQuality: 'Fair'
+      }
+    ],
+    invitedEmails: ['somchai@company.com', 'napa@company.com', 'admin@company.com'],
+    scheduledDate: '2024-01-25',
+    scheduledTime: '09:00',
+    duration: 60,
+    meetingRoom: 'room-001',
+    password: '123456',
+    isRecording: false,
+    isLocked: false,
+    waitingRoom: true,
+    status: 'Live',
+    maxParticipants: 50,
+    createdAt: '2024-01-20',
+    meetingLink: 'https://meet.company.com/room-001',
+    chatMessages: [
+      {
+        id: '1',
+        userId: '1',
+        userName: 'สมชาย ใจดี',
+        message: 'สวัสดีครับทุกคน',
+        timestamp: '09:05'
+      },
+      {
+        id: '2',
+        userId: '2',
+        userName: 'นภา สว่างใส',
+        message: 'สวัสดีค่ะ',
+        timestamp: '09:06'
+      }
+    ],
+    polls: []
+  },
+  {
+    id: '2',
+    title: 'Demo โครงการใหม่',
+    description: 'นำเสนอระบบใหม่ให้ลูกค้า',
+    host: 'นภา สว่างใส',
+    hostId: 'host2',
+    participants: [
+      {
+        id: '2',
+        name: 'นภา สว่างใส',
+        email: 'napa@company.com',
+        role: 'Host',
+        status: 'Invited',
+        isMuted: false,
+        isVideoOn: false,
+        isHandRaised: false,
+        connectionQuality: 'Good'
+      }
+    ],
+    invitedEmails: ['napa@company.com', 'client@customer.com'],
+    scheduledDate: '2024-01-26',
+    scheduledTime: '14:00',
+    duration: 120,
+    meetingRoom: 'room-002',
+    password: 'demo2024',
+    isRecording: false,
+    isLocked: false,
+    waitingRoom: false,
+    status: 'Scheduled',
+    maxParticipants: 20,
+    createdAt: '2024-01-22',
+    meetingLink: 'https://meet.company.com/room-002',
+    chatMessages: [],
+    polls: []
+  }
+];
+
+const mockPolls: Poll[] = [
+  {
+    id: '1',
+    meetingId: '1',
+    question: 'คุณคิดว่าโครงการควรเริ่มเมื่อไหร่?',
+    options: ['สัปดาหน์หน้า', 'เดือนหน้า', 'ไตรมาสหน้า'],
+    votes: { '1': 'เดือนหน้า', '2': 'เดือนหน้า' },
+    isActive: true,
+    createdAt: '2024-01-25T09:15:00'
+  }
+];
+
 export default function Meeting() {
-  const { user, isAuthenticated } = useAuth();
-  const [meetings, setMeetings] = useState<Meeting[]>([]);
-  const [polls, setPolls] = useState<Poll[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    if (isAuthenticated) {
-      fetchMeetings();
-    }
-  }, [isAuthenticated]);
-
-  const fetchMeetings = async () => {
-    try {
-      // For now, use simplified structure since we don't have meetings table yet
-      // You would create a meetings table with proper schema
-      setMeetings([]);
-      setLoading(false);
-    } catch (error) {
-      console.error('Error fetching meetings:', error);
-      setLoading(false);
-    }
-  };
+  const [meetings, setMeetings] = useState<Meeting[]>(mockMeetings);
+  const [polls, setPolls] = useState<Poll[]>(mockPolls);
   const [activeMeeting, setActiveMeeting] = useState<Meeting | null>(null);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isPollDialogOpen, setIsPollDialogOpen] = useState(false);
@@ -159,7 +262,7 @@ export default function Meeting() {
   const [currentTab, setCurrentTab] = useState('meetings');
   const [chatMessage, setChatMessage] = useState('');
   const [inviteEmails, setInviteEmails] = useState('');
-  const currentUser = { id: user?.id || 'current', name: 'ผู้ใช้ปัจจุบัน', isMuted: false, isVideoOn: true };
+  const [currentUser] = useState({ id: 'current', name: 'ผู้ใช้ปัจจุบัน', isMuted: false, isVideoOn: true });
   const [formData, setFormData] = useState<Partial<Meeting>>({
     title: '',
     description: '',
@@ -235,7 +338,7 @@ export default function Meeting() {
       id: Date.now().toString(),
       ...formData as Meeting,
       host: 'ผู้ใช้ปัจจุบัน',
-      hostId: user?.id || 'current-user',
+      hostId: currentUser.id,
       participants: [],
       meetingRoom: `room-${Date.now()}`,
       isRecording: false,

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -13,7 +13,6 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { DatePicker } from '@/components/ui/date-picker';
 import { toast } from '@/hooks/use-toast';
-import { supabase } from '@/integrations/supabase/client';
 import { 
   Key, 
   Plus, 
@@ -36,40 +35,127 @@ import {
 
 interface License {
   id: string;
-  license_key: string;
-  product_name: string;
-  license_type: 'user_based' | 'feature_based' | 'concurrent' | 'site_wide';
-  organization_id: string;
-  organization_name?: string;
-  max_users: number;
-  usage_count: number;
+  licenseKey: string;
+  productName: string;
+  licenseType: 'User-Based' | 'Feature-Based' | 'Concurrent' | 'Site-Wide';
+  organizationId: string;
+  organizationName: string;
+  assignedUsers: string[];
+  maxUsers: number;
   features: string[];
-  issue_date: string;
-  expiry_date: string;
-  status: 'active' | 'expired' | 'suspended' | 'revoked';
-  auto_renew: boolean;
-  last_used?: string;
-  notes?: string;
-  created_at?: string;
-  updated_at?: string;
+  issueDate: string;
+  expiryDate: string;
+  status: 'Active' | 'Expired' | 'Suspended' | 'Revoked';
+  autoRenew: boolean;
+  usageCount: number;
+  lastUsed: string;
+  notes: string;
 }
 
 interface LicenseUsage {
   id: string;
-  license_id: string;
-  user_id: string;
-  session_start: string;
-  session_end?: string;
-  duration_minutes?: number;
-  ip_address?: string;
-  user_agent?: string;
-  features_used?: string[];
+  licenseId: string;
+  userId: string;
+  userName: string;
+  usageDate: string;
+  duration: number;
+  ipAddress: string;
+  userAgent: string;
 }
 
+const mockLicenses: License[] = [
+  {
+    id: '1',
+    licenseKey: 'ENT-2024-TECH001-ABCD1234',
+    productName: 'Enterprise Communication Suite',
+    licenseType: 'User-Based',
+    organizationId: 'org-001',
+    organizationName: 'บริษัท เทคโนโลยี จำกัด',
+    assignedUsers: ['user-001', 'user-002', 'user-003'],
+    maxUsers: 50,
+    features: ['Email', 'Chat', 'Video Conference', 'File Sharing', 'Advanced Security'],
+    issueDate: '2024-01-01',
+    expiryDate: '2024-12-31',
+    status: 'Active',
+    autoRenew: true,
+    usageCount: 125,
+    lastUsed: '2024-01-25T14:30:00',
+    notes: 'ลิขสิทธิ์หลักสำหรับระบบสื่อสารองค์กร'
+  },
+  {
+    id: '2',
+    licenseKey: 'STD-2024-MARK002-EFGH5678',
+    productName: 'Standard Business Package',
+    licenseType: 'Feature-Based',
+    organizationId: 'org-002',
+    organizationName: 'บริษัท การตลาด จำกัด',
+    assignedUsers: ['user-004', 'user-005'],
+    maxUsers: 10,
+    features: ['Email', 'Chat', 'Basic Reports'],
+    issueDate: '2024-01-15',
+    expiryDate: '2024-07-15',
+    status: 'Active',
+    autoRenew: false,
+    usageCount: 45,
+    lastUsed: '2024-01-24T09:15:00',
+    notes: 'แพ็กเกจพื้นฐานสำหรับธุรกิจขนาดเล็ก'
+  },
+  {
+    id: '3',
+    licenseKey: 'CONC-2024-DIGI003-IJKL9012',
+    productName: 'Concurrent Access License',
+    licenseType: 'Concurrent',
+    organizationId: 'org-003',
+    organizationName: 'บริษัท ดิจิทัล จำกัด',
+    assignedUsers: [],
+    maxUsers: 25,
+    features: ['All Features', 'API Access', 'Custom Integration'],
+    issueDate: '2024-01-10',
+    expiryDate: '2024-01-31',
+    status: 'Expired',
+    autoRenew: true,
+    usageCount: 89,
+    lastUsed: '2024-01-31T23:59:59',
+    notes: 'ลิขสิทธิ์แบบ Concurrent หมดอายุ'
+  }
+];
+
+const mockUsageLogs: LicenseUsage[] = [
+  {
+    id: '1',
+    licenseId: '1',
+    userId: 'user-001',
+    userName: 'สมชาย ใจดี',
+    usageDate: '2024-01-25T14:30:00',
+    duration: 120,
+    ipAddress: '192.168.1.100',
+    userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+  },
+  {
+    id: '2',
+    licenseId: '1',
+    userId: 'user-002',
+    userName: 'นภา สว่างใส',
+    usageDate: '2024-01-25T13:15:00',
+    duration: 95,
+    ipAddress: '192.168.1.101',
+    userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36'
+  },
+  {
+    id: '3',
+    licenseId: '2',
+    userId: 'user-004',
+    userName: 'วิชัย เก่งกาจ',
+    usageDate: '2024-01-24T09:15:00',
+    duration: 180,
+    ipAddress: '192.168.2.50',
+    userAgent: 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36'
+  }
+];
+
 export default function LicenseManagement() {
-  const [licenses, setLicenses] = useState<License[]>([]);
-  const [usageLogs, setUsageLogs] = useState<LicenseUsage[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [licenses, setLicenses] = useState<License[]>(mockLicenses);
+  const [usageLogs] = useState<LicenseUsage[]>(mockUsageLogs);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [typeFilter, setTypeFilter] = useState<string>('all');
@@ -81,221 +167,98 @@ export default function LicenseManagement() {
   const [selectedLicense, setSelectedLicense] = useState<License | null>(null);
   const [currentTab, setCurrentTab] = useState('licenses');
   const [formData, setFormData] = useState<Partial<License>>({
-    license_key: '',
-    product_name: '',
-    license_type: 'user_based',
-    organization_id: '',
-    max_users: 10,
+    licenseKey: '',
+    productName: '',
+    licenseType: 'User-Based',
+    organizationId: '',
+    organizationName: '',
+    maxUsers: 10,
     features: [],
-    expiry_date: '',
-    status: 'active',
-    auto_renew: true,
+    expiryDate: '',
+    status: 'Active',
+    autoRenew: true,
     notes: ''
   });
 
-  // Fetch licenses from database
-  const fetchLicenses = async () => {
-    try {
-      setLoading(true);
-      const { data, error } = await supabase
-        .from('licenses')
-        .select(`
-          *,
-          organizations (
-            name
-          )
-        `)
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-
-      const formattedLicenses: License[] = (data || []).map(license => ({
-        id: license.id,
-        license_key: license.license_key,
-        product_name: license.product_name,
-        license_type: license.license_type as 'user_based' | 'feature_based' | 'concurrent' | 'site_wide',
-        organization_id: license.organization_id,
-        organization_name: license.organizations?.name || 'ไม่ระบุ',
-        max_users: license.max_users,
-        usage_count: license.usage_count,
-        features: Array.isArray(license.features) ? license.features.map(f => String(f)) : [],
-        issue_date: license.issue_date,
-        expiry_date: license.expiry_date,
-        status: license.status as 'active' | 'expired' | 'suspended' | 'revoked',
-        auto_renew: license.auto_renew,
-        last_used: license.last_used,
-        notes: license.notes,
-        created_at: license.created_at,
-        updated_at: license.updated_at
-      }));
-
-      setLicenses(formattedLicenses);
-    } catch (error) {
-      console.error('Error fetching licenses:', error);
-      toast({
-        title: "เกิดข้อผิดพลาด",
-        description: "ไม่สามารถดึงข้อมูลใบอนุญาตได้",
-        variant: "destructive"
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchLicenses();
-  }, []);
-
   const filteredLicenses = licenses.filter(license => {
-    const matchesSearch = license.license_key.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         license.product_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         (license.organization_name || '').toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesSearch = license.licenseKey.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         license.productName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         license.organizationName.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = statusFilter === 'all' || license.status === statusFilter;
-    const matchesType = typeFilter === 'all' || license.license_type === typeFilter;
+    const matchesType = typeFilter === 'all' || license.licenseType === typeFilter;
     return matchesSearch && matchesStatus && matchesType;
   });
 
-  const handleAddLicense = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('licenses')
-        .insert([{
-          license_key: formData.license_key,
-          product_name: formData.product_name,
-          license_type: formData.license_type,
-          organization_id: formData.organization_id,
-          max_users: formData.max_users || 10,
-          features: formData.features || [],
-          issue_date: new Date().toISOString().split('T')[0],
-          expiry_date: formData.expiry_date,
-          status: formData.status || 'active',
-          auto_renew: formData.auto_renew || false,
-          notes: formData.notes
-        }])
-        .select()
-        .single();
-
-      if (error) throw error;
-
-      await fetchLicenses(); // Refresh the list
-      setIsAddLicenseDialogOpen(false);
-      resetForm();
-      toast({
-        title: "เพิ่มลิขสิทธิ์สำเร็จ",
-        description: "เพิ่มลิขสิทธิ์ใหม่เรียบร้อยแล้ว",
-      });
-    } catch (error) {
-      console.error('Error adding license:', error);
-      toast({
-        title: "เกิดข้อผิดพลาด",
-        description: "ไม่สามารถเพิ่มลิขสิทธิ์ได้",
-        variant: "destructive"
-      });
-    }
+  const handleAddLicense = () => {
+    const newLicense: License = {
+      id: Date.now().toString(),
+      ...formData as License,
+      assignedUsers: [],
+      issueDate: new Date().toISOString().split('T')[0],
+      usageCount: 0,
+      lastUsed: new Date().toISOString(),
+      features: formData.features || []
+    };
+    setLicenses([...licenses, newLicense]);
+    setIsAddLicenseDialogOpen(false);
+    resetForm();
+    toast({
+      title: "เพิ่มลิขสิทธิ์สำเร็จ",
+      description: "เพิ่มลิขสิทธิ์ใหม่เรียบร้อยแล้ว",
+    });
   };
 
-  const handleEditLicense = async () => {
+  const handleEditLicense = () => {
     if (!editingLicense) return;
-    
-    try {
-      const { error } = await supabase
-        .from('licenses')
-        .update({
-          license_key: formData.license_key,
-          product_name: formData.product_name,
-          license_type: formData.license_type,
-          max_users: formData.max_users,
-          features: formData.features,
-          expiry_date: formData.expiry_date,
-          status: formData.status,
-          auto_renew: formData.auto_renew,
-          notes: formData.notes
-        })
-        .eq('id', editingLicense.id);
-
-      if (error) throw error;
-
-      await fetchLicenses(); // Refresh the list
-      setEditingLicense(null);
-      resetForm();
-      toast({
-        title: "แก้ไขสำเร็จ",
-        description: "แก้ไขลิขสิทธิ์เรียบร้อยแล้ว",
-      });
-    } catch (error) {
-      console.error('Error updating license:', error);
-      toast({
-        title: "เกิดข้อผิดพลาด",
-        description: "ไม่สามารถแก้ไขลิขสิทธิ์ได้",
-        variant: "destructive"
-      });
-    }
+    setLicenses(licenses.map(license => 
+      license.id === editingLicense.id ? { ...license, ...formData } : license
+    ));
+    setEditingLicense(null);
+    resetForm();
+    toast({
+      title: "แก้ไขสำเร็จ",
+      description: "แก้ไขลิขสิทธิ์เรียบร้อยแล้ว",
+    });
   };
 
-  const handleRevokeLicense = async (id: string) => {
-    try {
-      const { error } = await supabase
-        .from('licenses')
-        .update({ status: 'revoked' })
-        .eq('id', id);
-
-      if (error) throw error;
-
-      await fetchLicenses(); // Refresh the list
-      toast({
-        title: "เพิกถอนลิขสิทธิ์สำเร็จ",
-        description: "เพิกถอนลิขสิทธิ์เรียบร้อยแล้ว",
-      });
-    } catch (error) {
-      console.error('Error revoking license:', error);
-      toast({
-        title: "เกิดข้อผิดพลาด",
-        description: "ไม่สามารถเพิกถอนลิขสิทธิ์ได้",
-        variant: "destructive"
-      });
-    }
+  const handleRevokeLicense = (id: string) => {
+    setLicenses(licenses.map(license => 
+      license.id === id ? { ...license, status: 'Revoked' as const } : license
+    ));
+    toast({
+      title: "เพิกถอนลิขสิทธิ์สำเร็จ",
+      description: "เพิกถอนลิขสิทธิ์เรียบร้อยแล้ว",
+    });
   };
 
-  const handleRenewLicense = async (id: string) => {
-    try {
-      const newExpiryDate = new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
-      
-      const { error } = await supabase
-        .from('licenses')
-        .update({ 
-          status: 'active',
-          expiry_date: newExpiryDate
-        })
-        .eq('id', id);
-
-      if (error) throw error;
-
-      await fetchLicenses(); // Refresh the list
-      toast({
-        title: "ต่ออายุสำเร็จ",
-        description: "ต่ออายุลิขสิทธิ์เรียบร้อยแล้ว",
-      });
-    } catch (error) {
-      console.error('Error renewing license:', error);
-      toast({
-        title: "เกิดข้อผิดพลาด",
-        description: "ไม่สามารถต่ออายุลิขสิทธิ์ได้",
-        variant: "destructive"
-      });
-    }
+  const handleRenewLicense = (id: string) => {
+    setLicenses(licenses.map(license => 
+      license.id === id 
+        ? { 
+            ...license, 
+            status: 'Active' as const,
+            expiryDate: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+          } 
+        : license
+    ));
+    toast({
+      title: "ต่ออายุสำเร็จ",
+      description: "ต่ออายุลิขสิทธิ์เรียบร้อยแล้ว",
+    });
   };
 
   const resetForm = () => {
     setFormData({
-      license_key: '',
-      product_name: '',
-      license_type: 'user_based',
-      organization_id: '',
-      max_users: 10,
+      licenseKey: '',
+      productName: '',
+      licenseType: 'User-Based',
+      organizationId: '',
+      organizationName: '',
+      maxUsers: 10,
       features: [],
-      expiry_date: '',
-      status: 'active',
-      auto_renew: true,
+      expiryDate: '',
+      status: 'Active',
+      autoRenew: true,
       notes: ''
     });
   };
@@ -325,12 +288,12 @@ export default function LicenseManagement() {
     const certificateContent = `
 CERTIFICATE OF LICENSE
 
-License Key: ${license.license_key}
-Product: ${license.product_name}
-Organization: ${license.organization_name}
-Issue Date: ${license.issue_date}
-Expiry Date: ${license.expiry_date}
-Max Users: ${license.max_users}
+License Key: ${license.licenseKey}
+Product: ${license.productName}
+Organization: ${license.organizationName}
+Issue Date: ${license.issueDate}
+Expiry Date: ${license.expiryDate}
+Max Users: ${license.maxUsers}
 Status: ${license.status}
 
 This certificate confirms the valid license for the above product.
@@ -341,29 +304,29 @@ Generated on: ${new Date().toLocaleString()}
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `certificate-${license.license_key}.txt`;
+    a.download = `certificate-${license.licenseKey}.txt`;
     a.click();
     window.URL.revokeObjectURL(url);
   };
 
   const getStatusBadge = (status: string) => {
     const variants: Record<string, "default" | "destructive" | "secondary" | "outline"> = {
-      active: "default",
-      expired: "destructive", 
-      suspended: "secondary",
-      revoked: "outline"
+      Active: "default",
+      Expired: "destructive",
+      Suspended: "secondary",
+      Revoked: "outline"
     };
     const colors = {
-      active: "text-green-700",
-      expired: "text-red-700",
-      suspended: "text-yellow-700", 
-      revoked: "text-gray-700"
+      Active: "text-green-700",
+      Expired: "text-red-700",
+      Suspended: "text-yellow-700",
+      Revoked: "text-gray-700"
     };
     const statusText = {
-      active: "เปิดใช้งาน",
-      expired: "หมดอายุ",
-      suspended: "ระงับใช้งาน",
-      revoked: "เพิกถอน"
+      Active: "เปิดใช้งาน",
+      Expired: "หมดอายุ",
+      Suspended: "ระงับใช้งาน",
+      Revoked: "เพิกถอน"
     };
     return <Badge variant={variants[status] || "default"} className={colors[status as keyof typeof colors]}>
       {statusText[status as keyof typeof statusText]}
@@ -372,18 +335,12 @@ Generated on: ${new Date().toLocaleString()}
 
   const getTypeBadge = (type: string) => {
     const variants: Record<string, "default" | "destructive" | "secondary" | "outline"> = {
-      'user_based': "default",
-      'feature_based': "secondary", 
-      'concurrent': "outline",
-      'site_wide': "destructive"
+      'User-Based': "default",
+      'Feature-Based': "secondary",
+      'Concurrent': "outline",
+      'Site-Wide': "destructive"
     };
-    const typeText = {
-      'user_based': "User-Based",
-      'feature_based': "Feature-Based",
-      'concurrent': "Concurrent", 
-      'site_wide': "Site-Wide"
-    };
-    return <Badge variant={variants[type] || "default"}>{typeText[type as keyof typeof typeText] || type}</Badge>;
+    return <Badge variant={variants[type] || "default"}>{type}</Badge>;
   };
 
   const getDaysUntilExpiry = (expiryDate: string) => {
@@ -395,25 +352,12 @@ Generated on: ${new Date().toLocaleString()}
   };
 
   const totalLicenses = licenses.length;
-  const activeLicenses = licenses.filter(l => l.status === 'active').length;
-  const expiredLicenses = licenses.filter(l => l.status === 'expired').length;
+  const activeLicenses = licenses.filter(l => l.status === 'Active').length;
+  const expiredLicenses = licenses.filter(l => l.status === 'Expired').length;
   const expiringLicenses = licenses.filter(l => {
-    const days = getDaysUntilExpiry(l.expiry_date);
-    return days <= 30 && days > 0 && l.status === 'active';
+    const days = getDaysUntilExpiry(l.expiryDate);
+    return days <= 30 && days > 0 && l.status === 'Active';
   }).length;
-
-  if (loading) {
-    return (
-      <div className="container mx-auto p-6 space-y-6">
-        <div className="flex justify-center items-center h-64">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-            <p>กำลังโหลดข้อมูลลิขสิทธิ์...</p>
-          </div>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="container mx-auto p-6 space-y-6">
@@ -426,7 +370,7 @@ Generated on: ${new Date().toLocaleString()}
           <div className="flex gap-2">
             <Button variant="outline" onClick={() => {
               const csv = "รหัสลิขสิทธิ์,ผลิตภัณฑ์,ประเภท,องค์กร,ผู้ใช้สูงสุด,สถานะ,วันหมดอายุ\n" + 
-                filteredLicenses.map(l => `${l.license_key},${l.product_name},${l.license_type},${l.organization_name},${l.max_users},${l.status},${l.expiry_date}`).join('\n');
+                filteredLicenses.map(l => `${l.licenseKey},${l.productName},${l.licenseType},${l.organizationName},${l.maxUsers},${l.status},${l.expiryDate}`).join('\n');
               const blob = new Blob([csv], { type: 'text/csv' });
               const url = window.URL.createObjectURL(blob);
               const a = document.createElement('a');
@@ -469,58 +413,79 @@ Generated on: ${new Date().toLocaleString()}
                 </DialogHeader>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="col-span-2 space-y-2">
-                    <Label htmlFor="license_key">รหัสลิขสิทธิ์ *</Label>
+                    <Label htmlFor="licenseKey">รหัสลิขสิทธิ์ *</Label>
                     <Input
-                      id="license_key"
-                      value={formData.license_key}
-                      onChange={(e) => setFormData({ ...formData, license_key: e.target.value })}
+                      id="licenseKey"
+                      value={formData.licenseKey}
+                      onChange={(e) => setFormData({ ...formData, licenseKey: e.target.value })}
                       placeholder="กรอกรหัสลิขสิทธิ์"
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="product_name">ชื่อผลิตภัณฑ์ *</Label>
+                    <Label htmlFor="productName">ชื่อผลิตภัณฑ์ *</Label>
                     <Input
-                      id="product_name"
-                      value={formData.product_name}
-                      onChange={(e) => setFormData({ ...formData, product_name: e.target.value })}
+                      id="productName"
+                      value={formData.productName}
+                      onChange={(e) => setFormData({ ...formData, productName: e.target.value })}
                       placeholder="กรอกชื่อผลิตภัณฑ์"
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="license_type">ประเภทลิขสิทธิ์</Label>
+                    <Label htmlFor="licenseType">ประเภทลิขสิทธิ์</Label>
                     <Select
-                      value={formData.license_type}
-                      onValueChange={(value) => setFormData({ ...formData, license_type: value as any })}
+                      value={formData.licenseType}
+                      onValueChange={(value) => setFormData({ ...formData, licenseType: value as any })}
                     >
                       <SelectTrigger>
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="user_based">User-Based</SelectItem>
-                        <SelectItem value="feature_based">Feature-Based</SelectItem>
-                        <SelectItem value="concurrent">Concurrent</SelectItem>
-                        <SelectItem value="site_wide">Site-Wide</SelectItem>
+                        <SelectItem value="User-Based">User-Based</SelectItem>
+                        <SelectItem value="Feature-Based">Feature-Based</SelectItem>
+                        <SelectItem value="Concurrent">Concurrent</SelectItem>
+                        <SelectItem value="Site-Wide">Site-Wide</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="max_users">จำนวนผู้ใช้สูงสุด</Label>
+                    <Label htmlFor="organizationName">องค์กร *</Label>
                     <Input
-                      id="max_users"
-                      type="number"
-                      value={formData.max_users}
-                      onChange={(e) => setFormData({ ...formData, max_users: parseInt(e.target.value) || 0 })}
-                      placeholder="10"
+                      id="organizationName"
+                      value={formData.organizationName}
+                      onChange={(e) => setFormData({ ...formData, organizationName: e.target.value })}
+                      placeholder="กรอกชื่อองค์กร"
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="expiry_date">วันหมดอายุ *</Label>
+                    <Label htmlFor="maxUsers">จำนวนผู้ใช้สูงสุด</Label>
                     <Input
-                      id="expiry_date"
-                      type="date"
-                      value={formData.expiry_date}
-                      onChange={(e) => setFormData({ ...formData, expiry_date: e.target.value })}
+                      id="maxUsers"
+                      type="number"
+                      value={formData.maxUsers}
+                      onChange={(e) => setFormData({ ...formData, maxUsers: parseInt(e.target.value) })}
+                      min="1"
                     />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="expiryDate">วันหมดอายุ</Label>
+                    <DatePicker
+                      placeholder="เลือกวันหมดอายุ"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="status">สถานะ</Label>
+                    <Select
+                      value={formData.status}
+                      onValueChange={(value) => setFormData({ ...formData, status: value as any })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Active">เปิดใช้งาน</SelectItem>
+                        <SelectItem value="Suspended">ระงับใช้งาน</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
                   <div className="col-span-2 space-y-2">
                     <Label htmlFor="notes">หมายเหตุ</Label>
@@ -528,12 +493,12 @@ Generated on: ${new Date().toLocaleString()}
                       id="notes"
                       value={formData.notes}
                       onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                      placeholder="หมายเหตุเพิ่มเติม"
+                      placeholder="กรอกหมายเหตุ"
                       rows={3}
                     />
                   </div>
                 </div>
-                <div className="flex justify-end gap-2 pt-4">
+                <div className="flex justify-end gap-2">
                   <Button variant="outline" onClick={() => setIsAddLicenseDialogOpen(false)}>
                     ยกเลิก
                   </Button>
@@ -546,380 +511,452 @@ Generated on: ${new Date().toLocaleString()}
           </div>
         </div>
 
-        {/* Statistics Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">ลิขสิทธิ์ทั้งหมด</CardTitle>
-              <Key className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{totalLicenses}</div>
-              <p className="text-xs text-muted-foreground">
-                ลิขสิทธิ์ในระบบ
-              </p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">ใช้งานได้</CardTitle>
-              <CheckCircle className="h-4 w-4 text-green-600" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-green-600">{activeLicenses}</div>
-              <p className="text-xs text-muted-foreground">
-                ลิขสิทธิ์ที่เปิดใช้งาน
-              </p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">ใกล้หมดอายุ</CardTitle>
-              <Clock className="h-4 w-4 text-yellow-600" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-yellow-600">{expiringLicenses}</div>
-              <p className="text-xs text-muted-foreground">
-                หมดอายุใน 30 วัน
-              </p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">หมดอายุ</CardTitle>
-              <XCircle className="h-4 w-4 text-red-600" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-red-600">{expiredLicenses}</div>
-              <p className="text-xs text-muted-foreground">
-                ลิขสิทธิ์ที่หมดอายุ
-              </p>
-            </CardContent>
-          </Card>
-        </div>
-
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList>
           <TabsTrigger value="licenses">ลิขสิทธิ์</TabsTrigger>
           <TabsTrigger value="usage">การใช้งาน</TabsTrigger>
           <TabsTrigger value="alerts">การแจ้งเตือน</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="licenses" className="space-y-4">
-          {/* Search and Filter */}
-          <div className="flex flex-col sm:flex-row gap-4">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="ค้นหาลิขสิทธิ์..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
-              />
-            </div>
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-48">
-                <SelectValue placeholder="สถานะ" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">ทุกสถานะ</SelectItem>
-                <SelectItem value="active">เปิดใช้งาน</SelectItem>
-                <SelectItem value="expired">หมดอายุ</SelectItem>
-                <SelectItem value="suspended">ระงับใช้งาน</SelectItem>
-                <SelectItem value="revoked">เพิกถอน</SelectItem>
-              </SelectContent>
-            </Select>
-            <Select value={typeFilter} onValueChange={setTypeFilter}>
-              <SelectTrigger className="w-48">
-                <SelectValue placeholder="ประเภท" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">ทุกประเภท</SelectItem>
-                <SelectItem value="user_based">User-Based</SelectItem>
-                <SelectItem value="feature_based">Feature-Based</SelectItem>
-                <SelectItem value="concurrent">Concurrent</SelectItem>
-                <SelectItem value="site_wide">Site-Wide</SelectItem>
-              </SelectContent>
-            </Select>
+        <TabsContent value="licenses" className="space-y-6">
+          {/* Stats Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">ลิขสิทธิ์ทั้งหมด</CardTitle>
+                <Key className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{totalLicenses}</div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">เปิดใช้งาน</CardTitle>
+                <CheckCircle className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-green-600">{activeLicenses}</div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">ใกล้หมดอายุ</CardTitle>
+                <AlertTriangle className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-yellow-600">{expiringLicenses}</div>
+                <div className="text-xs text-muted-foreground">ใน 30 วัน</div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">หมดอายุ</CardTitle>
+                <XCircle className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-red-600">{expiredLicenses}</div>
+              </CardContent>
+            </Card>
           </div>
 
           {/* Licenses Table */}
           <Card>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>รหัสลิขสิทธิ์</TableHead>
-                  <TableHead>ผลิตภัณฑ์</TableHead>
-                  <TableHead>ประเภท</TableHead>
-                  <TableHead>องค์กร</TableHead>
-                  <TableHead>ผู้ใช้</TableHead>
-                  <TableHead>สถานะ</TableHead>
-                  <TableHead>วันหมดอายุ</TableHead>
-                  <TableHead>การกระทำ</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredLicenses.map((license) => (
-                  <TableRow key={license.id}>
-                    <TableCell className="font-medium">{license.license_key}</TableCell>
-                    <TableCell>{license.product_name}</TableCell>
-                    <TableCell>{getTypeBadge(license.license_type)}</TableCell>
-                    <TableCell>{license.organization_name}</TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <Users className="h-4 w-4 text-muted-foreground" />
-                        <span>{license.usage_count}/{license.max_users}</span>
-                        <Progress 
-                          value={(license.usage_count / license.max_users) * 100} 
-                          className="w-16 h-2"
-                        />
-                      </div>
-                    </TableCell>
-                    <TableCell>{getStatusBadge(license.status)}</TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <Calendar className="h-4 w-4 text-muted-foreground" />
-                        {new Date(license.expiry_date).toLocaleDateString('th-TH')}
-                        {getDaysUntilExpiry(license.expiry_date) <= 30 && getDaysUntilExpiry(license.expiry_date) > 0 && (
-                          <Badge variant="outline" className="text-yellow-600">
-                            เหลือ {getDaysUntilExpiry(license.expiry_date)} วัน
-                          </Badge>
-                        )}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" className="h-8 w-8 p-0">
-                            <MoreHorizontal className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => openEditDialog(license)}>
-                            <Edit2 className="mr-2 h-4 w-4" />
-                            แก้ไข
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => openAssignDialog(license)}>
-                            <Users className="mr-2 h-4 w-4" />
-                            กำหนดผู้ใช้
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => openUsageHistoryDialog(license)}>
-                            <Activity className="mr-2 h-4 w-4" />
-                            ประวัติการใช้งาน
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => handleDownloadCertificate(license)}>
-                            <Download className="mr-2 h-4 w-4" />
-                            ดาวน์โหลดใบรับรอง
-                          </DropdownMenuItem>
-                          {license.status === 'active' && (
-                            <DropdownMenuItem onClick={() => handleRevokeLicense(license.id)}>
-                              <XCircle className="mr-2 h-4 w-4" />
-                              เพิกถอน
-                            </DropdownMenuItem>
-                          )}
-                          {(license.status === 'expired' || license.status === 'revoked') && (
-                            <DropdownMenuItem onClick={() => handleRenewLicense(license.id)}>
-                              <RefreshCw className="mr-2 h-4 w-4" />
-                              ต่ออายุ
-                            </DropdownMenuItem>
-                          )}
-                          <DropdownMenuItem onClick={() => openSendReportDialog(license)}>
-                            <TrendingUp className="mr-2 h-4 w-4" />
-                            ส่งรายงาน
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="usage" className="space-y-4">
-          <Card>
             <CardHeader>
-              <CardTitle>ประวัติการใช้งานลิขสิทธิ์</CardTitle>
+              <CardTitle>รายการลิขสิทธิ์</CardTitle>
+              <div className="flex gap-4">
+                <div className="relative flex-1">
+                  <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="ค้นหารหัสลิขสิทธิ์ ชื่อผลิตภัณฑ์ หรือองค์กร..."
+                    className="pl-8"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                  />
+                </div>
+                <Select value={statusFilter} onValueChange={setStatusFilter}>
+                  <SelectTrigger className="w-40">
+                    <SelectValue placeholder="สถานะ" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">ทั้งหมด</SelectItem>
+                    <SelectItem value="Active">เปิดใช้งาน</SelectItem>
+                    <SelectItem value="Expired">หมดอายุ</SelectItem>
+                    <SelectItem value="Suspended">ระงับใช้งาน</SelectItem>
+                    <SelectItem value="Revoked">เพิกถอน</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Select value={typeFilter} onValueChange={setTypeFilter}>
+                  <SelectTrigger className="w-40">
+                    <SelectValue placeholder="ประเภท" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">ทั้งหมด</SelectItem>
+                    <SelectItem value="User-Based">User-Based</SelectItem>
+                    <SelectItem value="Feature-Based">Feature-Based</SelectItem>
+                    <SelectItem value="Concurrent">Concurrent</SelectItem>
+                    <SelectItem value="Site-Wide">Site-Wide</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </CardHeader>
             <CardContent>
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>ลิขสิทธิ์</TableHead>
-                    <TableHead>ผู้ใช้</TableHead>
-                    <TableHead>วันที่ใช้งาน</TableHead>
-                    <TableHead>ระยะเวลา</TableHead>
-                    <TableHead>IP Address</TableHead>
+                    <TableHead>รหัสลิขสิทธิ์</TableHead>
+                    <TableHead>ผลิตภัณฑ์</TableHead>
+                    <TableHead>องค์กร</TableHead>
+                    <TableHead>ประเภท</TableHead>
+                    <TableHead>การใช้งาน</TableHead>
+                    <TableHead>วันหมดอายุ</TableHead>
+                    <TableHead>สถานะ</TableHead>
+                    <TableHead>จัดการ</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {usageLogs.length === 0 ? (
-                    <TableRow>
-                      <TableCell colSpan={5} className="text-center text-muted-foreground">
-                        ไม่มีข้อมูลการใช้งาน
-                      </TableCell>
-                    </TableRow>
-                  ) : (
-                    usageLogs.map((log) => (
-                      <TableRow key={log.id}>
-                        <TableCell>{log.license_id}</TableCell>
-                        <TableCell>{log.user_id}</TableCell>
-                        <TableCell>{new Date(log.session_start).toLocaleString('th-TH')}</TableCell>
-                        <TableCell>{log.duration_minutes} นาที</TableCell>
-                        <TableCell>{log.ip_address}</TableCell>
+                  {filteredLicenses.map((license) => {
+                    const usage = (license.assignedUsers.length / license.maxUsers) * 100;
+                    const daysUntilExpiry = getDaysUntilExpiry(license.expiryDate);
+                    
+                    return (
+                      <TableRow key={license.id}>
+                        <TableCell>
+                          <div className="font-mono text-sm">{license.licenseKey}</div>
+                        </TableCell>
+                        <TableCell>
+                          <div>
+                            <div className="font-medium">{license.productName}</div>
+                            <div className="text-sm text-muted-foreground">
+                              {license.features.slice(0, 2).join(', ')}
+                              {license.features.length > 2 && ` +${license.features.length - 2} more`}
+                            </div>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div>
+                            <div className="font-medium">{license.organizationName}</div>
+                            <div className="text-sm text-muted-foreground">{license.organizationId}</div>
+                          </div>
+                        </TableCell>
+                        <TableCell>{getTypeBadge(license.licenseType)}</TableCell>
+                        <TableCell>
+                          <div className="space-y-2">
+                            <div className="flex justify-between text-sm">
+                              <span>{license.assignedUsers.length}/{license.maxUsers}</span>
+                              <span>{usage.toFixed(0)}%</span>
+                            </div>
+                            <Progress value={usage} className="h-2" />
+                            <div className="text-xs text-muted-foreground">
+                              ใช้งาน {license.usageCount} ครั้ง
+                            </div>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="space-y-1">
+                            <div className="flex items-center gap-2">
+                              <Calendar className="h-4 w-4" />
+                              <span className="text-sm">{license.expiryDate}</span>
+                            </div>
+                            {daysUntilExpiry <= 30 && daysUntilExpiry > 0 && (
+                              <Badge variant="outline" className="text-xs text-yellow-700">
+                                <AlertTriangle className="h-3 w-3 mr-1" />
+                                {daysUntilExpiry} วัน
+                              </Badge>
+                            )}
+                            {license.autoRenew && (
+                              <Badge variant="outline" className="text-xs">
+                                <RefreshCw className="h-3 w-3 mr-1" />
+                                ต่ออายุอัตโนมัติ
+                              </Badge>
+                            )}
+                          </div>
+                        </TableCell>
+                        <TableCell>{getStatusBadge(license.status)}</TableCell>
+                        <TableCell>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" className="h-8 w-8 p-0">
+                                <MoreHorizontal className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem onClick={() => openEditDialog(license)}>
+                                <Edit2 className="mr-2 h-4 w-4" />
+                                แก้ไข
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => openAssignDialog(license)}>
+                                <Users className="mr-2 h-4 w-4" />
+                                กำหนดผู้ใช้
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => handleDownloadCertificate(license)}>
+                                <Download className="mr-2 h-4 w-4" />
+                                ดาวน์โหลด Certificate
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => openUsageHistoryDialog(license)}>
+                                <Activity className="mr-2 h-4 w-4" />
+                                ดูประวัติการใช้งาน
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => openSendReportDialog(license)}>
+                                <Download className="mr-2 h-4 w-4" />
+                                ส่งรายงาน
+                              </DropdownMenuItem>
+                              {license.status === 'Expired' && (
+                                <DropdownMenuItem onClick={() => handleRenewLicense(license.id)}>
+                                  <RefreshCw className="mr-2 h-4 w-4" />
+                                  ต่ออายุ
+                                </DropdownMenuItem>
+                              )}
+                              {license.status === 'Active' && (
+                                <DropdownMenuItem 
+                                  onClick={() => handleRevokeLicense(license.id)}
+                                  className="text-red-600"
+                                >
+                                  <XCircle className="mr-2 h-4 w-4" />
+                                  เพิกถอน
+                                </DropdownMenuItem>
+                              )}
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </TableCell>
                       </TableRow>
-                    ))
-                  )}
+                    );
+                  })}
                 </TableBody>
               </Table>
             </CardContent>
           </Card>
         </TabsContent>
 
-        <TabsContent value="alerts" className="space-y-4">
-          <div className="grid gap-4">
-            {licenses
-              .filter(license => {
-                const days = getDaysUntilExpiry(license.expiry_date);
-                return (days <= 30 && days > 0 && license.status === 'active') || license.status === 'expired';
-              })
-              .map((license) => {
-                const days = getDaysUntilExpiry(license.expiry_date);
-                const isExpired = license.status === 'expired';
-                const isExpiringSoon = days <= 30 && days > 0;
-                
-                return (
-                  <Card key={license.id} className={`border-l-4 ${isExpired ? 'border-l-red-500' : 'border-l-yellow-500'}`}>
-                    <CardContent className="pt-6">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          {isExpired ? (
-                            <XCircle className="h-5 w-5 text-red-500" />
-                          ) : (
-                            <AlertTriangle className="h-5 w-5 text-yellow-500" />
-                          )}
-                          <div>
-                            <h3 className="font-medium">{license.product_name}</h3>
-                            <p className="text-sm text-muted-foreground">
-                              {license.license_key} • {license.organization_name}
-                            </p>
+        <TabsContent value="usage" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>บันทึกการใช้งานล่าสุด</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>วันที่ใช้งาน</TableHead>
+                    <TableHead>ผู้ใช้</TableHead>
+                    <TableHead>ลิขสิทธิ์</TableHead>
+                    <TableHead>ระยะเวลา</TableHead>
+                    <TableHead>IP Address</TableHead>
+                    <TableHead>User Agent</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {usageLogs.map((usage) => {
+                    const license = licenses.find(l => l.id === usage.licenseId);
+                    return (
+                      <TableRow key={usage.id}>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            <Activity className="h-4 w-4" />
+                            {new Date(usage.usageDate).toLocaleString('th-TH')}
                           </div>
-                        </div>
-                        <div className="text-right">
-                          {isExpired ? (
-                            <Badge variant="destructive">หมดอายุแล้ว</Badge>
-                          ) : (
-                            <Badge variant="outline" className="text-yellow-600">
-                              เหลือ {days} วัน
-                            </Badge>
-                          )}
-                          <p className="text-sm text-muted-foreground mt-1">
-                            หมดอายุ: {new Date(license.expiry_date).toLocaleDateString('th-TH')}
-                          </p>
-                        </div>
+                        </TableCell>
+                        <TableCell>
+                          <div>
+                            <div className="font-medium">{usage.userName}</div>
+                            <div className="text-sm text-muted-foreground">{usage.userId}</div>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div>
+                            <div className="font-medium">{license?.productName}</div>
+                            <div className="text-sm text-muted-foreground font-mono">
+                              {license?.licenseKey}
+                            </div>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="outline">
+                            <Clock className="h-3 w-3 mr-1" />
+                            {usage.duration} นาที
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="font-mono text-sm">{usage.ipAddress}</TableCell>
+                        <TableCell className="max-w-xs truncate text-xs">
+                          {usage.userAgent}
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="alerts" className="space-y-6">
+          <div className="grid gap-4">
+            {licenses.filter(l => {
+              const days = getDaysUntilExpiry(l.expiryDate);
+              return (days <= 30 && days > 0 && l.status === 'Active') || l.status === 'Expired';
+            }).map((license) => {
+              const days = getDaysUntilExpiry(license.expiryDate);
+              const isExpired = license.status === 'Expired';
+              const isExpiringSoon = days <= 30 && days > 0;
+              
+              return (
+                <Card key={license.id} className={`${isExpired ? 'border-red-200' : isExpiringSoon ? 'border-yellow-200' : ''}`}>
+                  <CardHeader className="pb-3">
+                    <div className="flex justify-between items-start">
+                      <div className="flex items-center gap-2">
+                        {isExpired ? (
+                          <XCircle className="h-5 w-5 text-red-600" />
+                        ) : (
+                          <AlertTriangle className="h-5 w-5 text-yellow-600" />
+                        )}
+                        <CardTitle className="text-lg">
+                          {isExpired ? 'ลิขสิทธิ์หมดอายุ' : 'ลิขสิทธิ์ใกล้หมดอายุ'}
+                        </CardTitle>
                       </div>
-                    </CardContent>
-                  </Card>
-                );
-              })}
-            
-            {licenses.filter(license => {
-              const days = getDaysUntilExpiry(license.expiry_date);
-              return (days <= 30 && days > 0 && license.status === 'active') || license.status === 'expired';
-            }).length === 0 && (
-              <Card>
-                <CardContent className="pt-6 text-center">
-                  <CheckCircle className="h-12 w-12 text-green-500 mx-auto mb-4" />
-                  <h3 className="text-lg font-medium">ไม่มีการแจ้งเตือน</h3>
-                  <p className="text-muted-foreground">ลิขสิทธิ์ทั้งหมดอยู่ในสถานะปกติ</p>
-                </CardContent>
-              </Card>
-            )}
+                      <Badge variant={isExpired ? "destructive" : "outline"}>
+                        {isExpired ? 'หมดอายุแล้ว' : `${days} วัน`}
+                      </Badge>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-2">
+                      <div className="flex justify-between">
+                        <span className="font-medium">ผลิตภัณฑ์:</span>
+                        <span>{license.productName}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="font-medium">องค์กร:</span>
+                        <span>{license.organizationName}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="font-medium">รหัสลิขสิทธิ์:</span>
+                        <span className="font-mono text-sm">{license.licenseKey}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="font-medium">วันหมดอายุ:</span>
+                        <span>{license.expiryDate}</span>
+                      </div>
+                      <div className="flex justify-end gap-2 mt-4">
+                        <Button variant="outline" onClick={() => openEditDialog(license)}>
+                          <Edit2 className="h-4 w-4 mr-2" />
+                          แก้ไข
+                        </Button>
+                        <Button onClick={() => handleRenewLicense(license.id)}>
+                          <RefreshCw className="h-4 w-4 mr-2" />
+                          ต่ออายุ
+                        </Button>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })}
           </div>
         </TabsContent>
       </Tabs>
 
-      {/* Edit License Dialog */}
-      <Dialog open={!!editingLicense} onOpenChange={(open) => !open && setEditingLicense(null)}>
+      {/* Edit Dialog */}
+      <Dialog open={editingLicense !== null} onOpenChange={() => setEditingLicense(null)}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>แก้ไขลิขสิทธิ์</DialogTitle>
             <DialogDescription>
-              แก้ไขข้อมูลลิขสิทธิ์
+              แก้ไขรายละเอียดลิขสิทธิ์ที่เลือก
             </DialogDescription>
           </DialogHeader>
           <div className="grid grid-cols-2 gap-4">
             <div className="col-span-2 space-y-2">
-              <Label htmlFor="edit_license_key">รหัสลิขสิทธิ์ *</Label>
+              <Label htmlFor="edit-licenseKey">รหัสลิขสิทธิ์ *</Label>
               <Input
-                id="edit_license_key"
-                value={formData.license_key}
-                onChange={(e) => setFormData({ ...formData, license_key: e.target.value })}
+                id="edit-licenseKey"
+                value={formData.licenseKey}
+                onChange={(e) => setFormData({ ...formData, licenseKey: e.target.value })}
                 placeholder="กรอกรหัสลิขสิทธิ์"
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="edit_product_name">ชื่อผลิตภัณฑ์ *</Label>
+              <Label htmlFor="edit-productName">ชื่อผลิตภัณฑ์ *</Label>
               <Input
-                id="edit_product_name"
-                value={formData.product_name}
-                onChange={(e) => setFormData({ ...formData, product_name: e.target.value })}
+                id="edit-productName"
+                value={formData.productName}
+                onChange={(e) => setFormData({ ...formData, productName: e.target.value })}
                 placeholder="กรอกชื่อผลิตภัณฑ์"
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="edit_license_type">ประเภทลิขสิทธิ์</Label>
+              <Label htmlFor="edit-licenseType">ประเภทลิขสิทธิ์</Label>
               <Select
-                value={formData.license_type}
-                onValueChange={(value) => setFormData({ ...formData, license_type: value as any })}
+                value={formData.licenseType}
+                onValueChange={(value) => setFormData({ ...formData, licenseType: value as any })}
               >
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="user_based">User-Based</SelectItem>
-                  <SelectItem value="feature_based">Feature-Based</SelectItem>
-                  <SelectItem value="concurrent">Concurrent</SelectItem>
-                  <SelectItem value="site_wide">Site-Wide</SelectItem>
+                  <SelectItem value="User-Based">User-Based</SelectItem>
+                  <SelectItem value="Feature-Based">Feature-Based</SelectItem>
+                  <SelectItem value="Concurrent">Concurrent</SelectItem>
+                  <SelectItem value="Site-Wide">Site-Wide</SelectItem>
                 </SelectContent>
               </Select>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="edit_max_users">จำนวนผู้ใช้สูงสุด</Label>
+              <Label htmlFor="edit-organizationName">องค์กร *</Label>
               <Input
-                id="edit_max_users"
-                type="number"
-                value={formData.max_users}
-                onChange={(e) => setFormData({ ...formData, max_users: parseInt(e.target.value) || 0 })}
-                placeholder="10"
+                id="edit-organizationName"
+                value={formData.organizationName}
+                onChange={(e) => setFormData({ ...formData, organizationName: e.target.value })}
+                placeholder="กรอกชื่อองค์กร"
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="edit_expiry_date">วันหมดอายุ *</Label>
+              <Label htmlFor="edit-maxUsers">จำนวนผู้ใช้สูงสุด</Label>
               <Input
-                id="edit_expiry_date"
-                type="date"
-                value={formData.expiry_date}
-                onChange={(e) => setFormData({ ...formData, expiry_date: e.target.value })}
+                id="edit-maxUsers"
+                type="number"
+                value={formData.maxUsers}
+                onChange={(e) => setFormData({ ...formData, maxUsers: parseInt(e.target.value) })}
+                min="1"
               />
             </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-expiryDate">วันหมดอายุ</Label>
+              <DatePicker
+                placeholder="เลือกวันหมดอายุ"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-status">สถานะ</Label>
+              <Select
+                value={formData.status}
+                onValueChange={(value) => setFormData({ ...formData, status: value as any })}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Active">เปิดใช้งาน</SelectItem>
+                  <SelectItem value="Suspended">ระงับใช้งาน</SelectItem>
+                  <SelectItem value="Revoked">เพิกถอน</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
             <div className="col-span-2 space-y-2">
-              <Label htmlFor="edit_notes">หมายเหตุ</Label>
+              <Label htmlFor="edit-notes">หมายเหตุ</Label>
               <Textarea
-                id="edit_notes"
+                id="edit-notes"
                 value={formData.notes}
                 onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                placeholder="หมายเหตุเพิ่มเติม"
+                placeholder="กรอกหมายเหตุ"
                 rows={3}
               />
             </div>
           </div>
-          <div className="flex justify-end gap-2 pt-4">
+          <div className="flex justify-end gap-2">
             <Button variant="outline" onClick={() => setEditingLicense(null)}>
               ยกเลิก
             </Button>
             <Button onClick={handleEditLicense}>
-              บันทึกการแก้ไข
+              บันทึก
             </Button>
           </div>
         </DialogContent>
@@ -927,18 +964,29 @@ Generated on: ${new Date().toLocaleString()}
 
       {/* Assign Users Dialog */}
       <Dialog open={isAssignDialogOpen} onOpenChange={setIsAssignDialogOpen}>
-        <DialogContent>
+        <DialogContent className="max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>กำหนดผู้ใช้งานลิขสิทธิ์</DialogTitle>
+            <DialogTitle>กำหนดผู้ใช้ลิขสิทธิ์</DialogTitle>
             <DialogDescription>
-              เลือกผู้ใช้ที่จะกำหนดให้ใช้งานลิขสิทธิ์นี้
+              จัดการการกำหนดผู้ใช้สำหรับลิขสิทธิ์
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4">
-            <p className="text-sm text-muted-foreground">
-              ฟีเจอร์นี้จะพัฒนาในอนาคต สำหรับกำหนดผู้ใช้เฉพาะให้สามารถใช้งานลิขสิทธิ์นี้ได้
-            </p>
-          </div>
+          {selectedLicense && (
+            <div className="space-y-4">
+              <div>
+                <Label className="text-sm font-medium">ลิขสิทธิ์</Label>
+                <p className="text-sm">{selectedLicense.productName}</p>
+                <p className="text-xs text-muted-foreground font-mono">{selectedLicense.licenseKey}</p>
+              </div>
+              <div>
+                <Label className="text-sm font-medium">จำนวนผู้ใช้ปัจจุบัน</Label>
+                <p className="text-sm">{selectedLicense.assignedUsers.length} / {selectedLicense.maxUsers}</p>
+              </div>
+              <div className="text-sm text-muted-foreground">
+                ฟีเจอร์การกำหนดผู้ใช้จะเชื่อมต่อกับระบบ User Management
+              </div>
+            </div>
+          )}
           <div className="flex justify-end gap-2">
             <Button variant="outline" onClick={() => setIsAssignDialogOpen(false)}>
               ปิด
@@ -949,51 +997,100 @@ Generated on: ${new Date().toLocaleString()}
 
       {/* Usage History Dialog */}
       <Dialog open={isUsageHistoryOpen} onOpenChange={setIsUsageHistoryOpen}>
-        <DialogContent className="max-w-4xl">
+        <DialogContent className="max-w-3xl">
           <DialogHeader>
             <DialogTitle>ประวัติการใช้งานลิขสิทธิ์</DialogTitle>
             <DialogDescription>
-              ดูประวัติการใช้งานลิขสิทธิ์ {selectedLicense?.license_key}
+              ประวัติการใช้งานของ {selectedLicense?.productName}
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4">
-            <p className="text-sm text-muted-foreground">
-              ประวัติการใช้งานลิขสิทธิ์จะแสดงที่นี่เมื่อมีการพัฒนาระบบให้สมบูรณ์
-            </p>
-          </div>
-          <div className="flex justify-end gap-2">
-            <Button variant="outline" onClick={() => setIsUsageHistoryOpen(false)}>
-              ปิด
-            </Button>
+          <div className="py-4">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>วันที่ใช้งาน</TableHead>
+                  <TableHead>ผู้ใช้</TableHead>
+                  <TableHead>ระยะเวลา</TableHead>
+                  <TableHead>IP Address</TableHead>
+                  <TableHead>User Agent</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {mockUsageLogs.filter(log => log.licenseId === selectedLicense?.id).map((usage) => (
+                  <TableRow key={usage.id}>
+                    <TableCell>
+                      {new Date(usage.usageDate).toLocaleString('th-TH')}
+                    </TableCell>
+                    <TableCell>{usage.userName}</TableCell>
+                    <TableCell>{usage.duration} นาที</TableCell>
+                    <TableCell className="font-mono text-sm">{usage.ipAddress}</TableCell>
+                    <TableCell className="max-w-xs truncate text-xs">
+                      {usage.userAgent.substring(0, 50)}...
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
           </div>
         </DialogContent>
       </Dialog>
 
       {/* Send Report Dialog */}
       <Dialog open={isSendReportOpen} onOpenChange={setIsSendReportOpen}>
-        <DialogContent>
+        <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
             <DialogTitle>ส่งรายงานลิขสิทธิ์</DialogTitle>
             <DialogDescription>
-              ส่งรายงานการใช้งานลิขสิทธิ์ {selectedLicense?.license_key}
+              ส่งรายงานการใช้งานลิขสิทธิ์ {selectedLicense?.productName}
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4">
-            <p className="text-sm text-muted-foreground">
-              ฟีเจอร์การส่งรายงานทาง Email จะพัฒนาในอนาคต
-            </p>
+          <div className="grid gap-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="report-type">ประเภทรายงาน</Label>
+              <Select>
+                <SelectTrigger>
+                  <SelectValue placeholder="เลือกประเภทรายงาน" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="usage">รายงานการใช้งาน</SelectItem>
+                  <SelectItem value="compliance">รายงานการปฏิบัติตามข้อกำหนด</SelectItem>
+                  <SelectItem value="expiry">รายงานการหมดอายุ</SelectItem>
+                  <SelectItem value="full">รายงานแบบเต็ม</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="recipient">ผู้รับรายงาน</Label>
+              <Input id="recipient" placeholder="อีเมลผู้รับรายงาน" type="email" />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="period">ช่วงเวลา</Label>
+              <Select>
+                <SelectTrigger>
+                  <SelectValue placeholder="เลือกช่วงเวลา" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="week">7 วันที่ผ่านมา</SelectItem>
+                  <SelectItem value="month">1 เดือนที่ผ่านมา</SelectItem>
+                  <SelectItem value="quarter">3 เดือนที่ผ่านมา</SelectItem>
+                  <SelectItem value="year">1 ปีที่ผ่านมา</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="note">หมายเหตุเพิ่มเติม</Label>
+              <textarea 
+                id="note" 
+                className="w-full p-3 border rounded-md min-h-[80px]" 
+                placeholder="หมายเหตุเพิ่มเติม (ไม่บังคับ)"
+              />
+            </div>
           </div>
           <div className="flex justify-end gap-2">
             <Button variant="outline" onClick={() => setIsSendReportOpen(false)}>
               ยกเลิก
             </Button>
-            <Button onClick={() => {
-              toast({
-                title: "ส่งรายงานสำเร็จ",
-                description: "รายงานลิขสิทธิ์ถูกส่งแล้ว",
-              });
-              setIsSendReportOpen(false);
-            }}>
+            <Button onClick={() => setIsSendReportOpen(false)}>
               ส่งรายงาน
             </Button>
           </div>
