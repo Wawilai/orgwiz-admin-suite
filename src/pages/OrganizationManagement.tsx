@@ -1,8 +1,11 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { useAuth } from "@/contexts/AuthContext";
+import { usePermissions } from "@/hooks/usePermissions";
+import { supabase } from "@/integrations/supabase/client";
 import {
   Table,
   TableBody,
@@ -101,7 +104,11 @@ const mockOrganizations = [
 
 const OrganizationManagement = () => {
   const { getActiveItems } = useMasterData();
-  const [organizations, setOrganizations] = useState(mockOrganizations);
+  const { isAuthenticated } = useAuth();
+  const { permissions } = usePermissions();
+  const [organizations, setOrganizations] = useState<any[]>([]);
+  const [tenants, setTenants] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedFilter, setSelectedFilter] = useState("all");
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
@@ -114,8 +121,56 @@ const OrganizationManagement = () => {
     phone: "",
     address: "",
     admin: "",
-    adminEmail: ""
+    adminEmail: "",
+    tenant_id: ""
   });
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      fetchOrganizations();
+      fetchTenants();
+    }
+  }, [isAuthenticated, permissions]);
+
+  const fetchOrganizations = async () => {
+    try {
+      console.log('Current permissions:', permissions);
+      
+      // Super Admin และ Tenant Admin สามารถเห็นองค์กรทั้งหมด
+      const { data, error } = await supabase
+        .from('organizations')
+        .select('*')
+        .order('created_at', { ascending: false });
+      
+      if (error) {
+        console.error('Supabase error:', error);
+        throw error;
+      }
+      
+      console.log('Fetched organizations:', data);
+      setOrganizations(data || []);
+    } catch (error) {
+      console.error('Error fetching organizations:', error);
+      toast.error('เกิดข้อผิดพลาดในการโหลดข้อมูลองค์กร');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchTenants = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('tenants')
+        .select('*')
+        .eq('status', 'active')
+        .order('name');
+      
+      if (error) throw error;
+      setTenants(data || []);
+    } catch (error) {
+      console.error('Error fetching tenants:', error);
+    }
+  };
 
   // Get master data
   const organizationTypes = getActiveItems('organizationTypes');
@@ -149,42 +204,80 @@ const OrganizationManagement = () => {
     return matchesSearch && matchesFilter;
   });
 
-  const handleAdd = () => {
+  const handleAdd = async () => {
     if (formData.name && formData.email) {
-      const newOrg = {
-        id: organizations.length + 1,
-        ...formData,
-        status: "active",
-        userCount: 0,
-        createdAt: new Date().toISOString().split('T')[0],
-        logo: null
-      };
-      setOrganizations([...organizations, newOrg]);
-      setFormData({
-        name: "",
-        type: "",
-        email: "",
-        phone: "",
-        address: "",
-        admin: "",
-        adminEmail: ""
-      });
-      setIsAddDialogOpen(false);
+      try {
+        const { error } = await supabase
+          .from('organizations')
+          .insert([{
+            name: formData.name,
+            type: formData.type,
+            email: formData.email,
+            phone: formData.phone,
+            address: formData.address,
+            tenant_id: formData.tenant_id || null,
+            status: 'active'
+          }]);
+        
+        if (error) throw error;
+        
+        await fetchOrganizations();
+        setFormData({
+          name: "",
+          type: "",
+          email: "",
+          phone: "",
+          address: "",
+          admin: "",
+          adminEmail: "",
+          tenant_id: ""
+        });
+        setIsAddDialogOpen(false);
+      } catch (error) {
+        console.error('Error adding organization:', error);
+      }
     }
   };
 
-  const handleEdit = () => {
+  const handleEdit = async () => {
     if (selectedOrg && formData.name && formData.email) {
-      setOrganizations(organizations.map(org => 
-        org.id === selectedOrg.id ? { ...org, ...formData } : org
-      ));
-      setIsEditDialogOpen(false);
-      setSelectedOrg(null);
+      try {
+        const { error } = await supabase
+          .from('organizations')
+          .update({
+            name: formData.name,
+            type: formData.type,
+            email: formData.email,
+            phone: formData.phone,
+            address: formData.address,
+            tenant_id: formData.tenant_id || null
+          })
+          .eq('id', selectedOrg.id);
+        
+        if (error) throw error;
+        
+        await fetchOrganizations();
+        setIsEditDialogOpen(false);
+        setSelectedOrg(null);
+      } catch (error) {
+        console.error('Error updating organization:', error);
+      }
     }
   };
 
-  const handleDelete = (id: number) => {
-    setOrganizations(organizations.filter(org => org.id !== id));
+  const handleDelete = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from('organizations')
+        .delete()
+        .eq('id', id);
+      
+      if (error) throw error;
+      
+      await fetchOrganizations();
+    } catch (error) {
+      console.error('Error deleting organization:', error);
+    }
   };
 
   const openEditDialog = (org: any) => {
@@ -196,7 +289,8 @@ const OrganizationManagement = () => {
       phone: org.phone,
       address: org.address,
       admin: org.admin,
-      adminEmail: org.adminEmail
+      adminEmail: org.adminEmail,
+      tenant_id: org.tenant_id || ""
     });
     setIsEditDialogOpen(true);
   };
@@ -398,9 +492,9 @@ const OrganizationManagement = () => {
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
-              {organizations.reduce((sum, org) => sum + org.userCount, 0)}
-            </div>
+             <div className="text-2xl font-bold">
+               {organizations.reduce((sum, org) => sum + (org.userCount || 0), 0)}
+             </div>
             <p className="text-xs text-muted-foreground">ทุกองค์กร</p>
           </CardContent>
         </Card>
@@ -467,47 +561,49 @@ const OrganizationManagement = () => {
               <TableBody>
                 {filteredOrganizations.map((org) => (
                   <TableRow key={org.id}>
-                    <TableCell className="font-medium">
-                      <div className="flex items-center space-x-3">
-                        <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center">
-                          <Building className="w-5 h-5 text-primary" />
-                        </div>
-                        <div>
-                          <div className="font-medium">{org.name}</div>
-                          <div className="text-sm text-muted-foreground flex items-center">
-                            <Mail className="w-3 h-3 mr-1" />
-                            {org.email}
-                          </div>
-                          <div className="text-sm text-muted-foreground flex items-center">
-                            <MapPin className="w-3 h-3 mr-1" />
-                            {org.address.length > 50 ? org.address.substring(0, 50) + '...' : org.address}
-                          </div>
-                        </div>
-                      </div>
-                    </TableCell>
+                     <TableCell className="font-medium">
+                       <div className="flex items-center space-x-3">
+                         <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center">
+                           <Building className="w-5 h-5 text-primary" />
+                         </div>
+                         <div>
+                           <div className="font-medium">{org.name}</div>
+                           <div className="text-sm text-muted-foreground flex items-center">
+                             <Mail className="w-3 h-3 mr-1" />
+                             {org.email}
+                           </div>
+                           {org.address && (
+                             <div className="text-sm text-muted-foreground flex items-center">
+                               <MapPin className="w-3 h-3 mr-1" />
+                               {org.address.length > 50 ? org.address.substring(0, 50) + '...' : org.address}
+                             </div>
+                           )}
+                         </div>
+                       </div>
+                     </TableCell>
                     <TableCell>
                       {getTypeBadge(org.type)}
                     </TableCell>
-                    <TableCell>
-                      <div>
-                        <div className="font-medium">{org.admin}</div>
-                        <div className="text-sm text-muted-foreground">{org.adminEmail}</div>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="text-center">
-                        <div className="font-medium">{org.userCount}</div>
-                        <div className="text-xs text-muted-foreground">คน</div>
-                      </div>
-                    </TableCell>
+                     <TableCell>
+                       <div>
+                         <div className="font-medium">{org.admin || 'ไม่ระบุ'}</div>
+                         <div className="text-sm text-muted-foreground">{org.adminEmail || 'ไม่ระบุ'}</div>
+                       </div>
+                     </TableCell>
+                     <TableCell>
+                       <div className="text-center">
+                         <div className="font-medium">{org.userCount || 0}</div>
+                         <div className="text-xs text-muted-foreground">คน</div>
+                       </div>
+                     </TableCell>
                     <TableCell>
                       {getStatusBadge(org.status)}
                     </TableCell>
-                    <TableCell>
-                      <div className="text-sm">
-                        {org.createdAt}
-                      </div>
-                    </TableCell>
+                     <TableCell>
+                       <div className="text-sm">
+                         {new Date(org.created_at).toLocaleDateString('th-TH')}
+                       </div>
+                     </TableCell>
                     <TableCell className="text-right">
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>

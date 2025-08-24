@@ -1,4 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -48,59 +50,56 @@ interface Organization {
   description?: string;
 }
 
-const mockOrganizations: Organization[] = [
-  {
-    id: '1',
-    name: 'บริษัท เทคโนโลยี ABC จำกัด',
-    type: 'เอกชน',
-    address: '123 ถนนสุขุมวิท กรุงเทพฯ 10110',
-    phone: '02-234-5678',
-    email: 'contact@abc-tech.com',
-    website: 'www.abc-tech.com',
-    adminName: 'นายสมชาย ใจดี',
-    createdDate: '2023-01-15',
-    status: 'active',
-    employeeCount: 250,
-    description: 'บริษัทพัฒนาซอฟต์แวร์และให้บริการด้าน IT'
-  },
-  {
-    id: '2',
-    name: 'มหาวิทยาลัยเทคโนโลยี XYZ',
-    type: 'การศึกษา',
-    address: '456 ถนนพหลโยธิน กรุงเทพฯ 10400',
-    phone: '02-345-6789',
-    email: 'info@xyz-uni.ac.th',
-    website: 'www.xyz-uni.ac.th',
-    adminName: 'ผศ.ดร.วิชาญ เก่งกาจ',
-    createdDate: '2022-08-20',
-    status: 'active',
-    employeeCount: 1200,
-    description: 'สถาบันการศึกษาระดับอุดมศึกษา'
-  },
-  {
-    id: '3',
-    name: 'โรงพยาบาล สุขภาพดี',
-    type: 'สาธารณสุข',
-    address: '789 ถนนราชดำริ กรุงเทพฯ 10330',
-    phone: '02-456-7890',
-    email: 'contact@healthgood.co.th',
-    website: 'www.healthgood.co.th',
-    adminName: 'นพ.สุขสันต์ ใจเย็น',
-    createdDate: '2021-12-01',
-    status: 'inactive',
-    employeeCount: 450,
-    description: 'โรงพยาบาลเอกชน ให้บริการด้านสุขภาพครบวงจร'
-  }
-];
-
 export default function EnhancedOrganizationManagement() {
-  const [organizations, setOrganizations] = useState<Organization[]>(mockOrganizations);
+  const { isAuthenticated } = useAuth();
+  const [organizations, setOrganizations] = useState<Organization[]>([]);
+  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [typeFilter, setTypeFilter] = useState('all');
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [selectedOrg, setSelectedOrg] = useState<Organization | null>(null);
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      fetchOrganizations();
+    }
+  }, [isAuthenticated]);
+
+  const fetchOrganizations = async () => {
+    try {
+      setLoading(true);
+      const { data, error } = await supabase
+        .from('organizations')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+
+      const mappedOrgs: Organization[] = data?.map(org => ({
+        id: org.id,
+        name: org.name,
+        type: org.type,
+        address: org.address || '',
+        phone: org.phone || '',
+        email: org.email,
+        website: org.website || '',
+        taxId: org.tax_id || '',
+        registrationNumber: org.registration_number || '',
+        createdDate: org.created_at,
+        status: org.status as 'active' | 'inactive' | 'suspended',
+        employeeCount: 0, // This would need to be calculated from profiles
+        description: org.description || ''
+      })) || [];
+
+      setOrganizations(mappedOrgs);
+    } catch (error) {
+      console.error('Error fetching organizations:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const filteredOrganizations = organizations.filter(org => {
     const matchesSearch = org.name.toLowerCase().includes(searchTerm.toLowerCase()) ||

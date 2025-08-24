@@ -1,4 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -39,33 +41,53 @@ interface Certificate {
   keySize: number;
 }
 
-const mockCertificates: Certificate[] = [
-  {
-    id: '1',
-    domain: 'example.com',
-    issuer: 'Let\'s Encrypt',
-    type: 'SSL/TLS',
-    validFrom: '2024-01-01',
-    validTo: '2024-04-01',
-    status: 'Valid',
-    algorithm: 'RSA',
-    keySize: 2048
-  },
-  {
-    id: '2',
-    domain: 'mail.example.com',
-    issuer: 'DigiCert',
-    type: 'SSL/TLS', 
-    validFrom: '2023-12-15',
-    validTo: '2024-02-15',
-    status: 'Expiring Soon',
-    algorithm: 'ECDSA',
-    keySize: 256
-  }
-];
-
 export function CertificateManagement() {
-  const [certificates] = useState<Certificate[]>(mockCertificates);
+  const { isAuthenticated } = useAuth();
+  const [certificates, setCertificates] = useState<Certificate[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      fetchCertificates();
+    }
+  }, [isAuthenticated]);
+
+  const fetchCertificates = async () => {
+    try {
+      setLoading(true);
+      // Since we don't have a certificates table yet, we'll use mock data for now
+      // In a real implementation, you would fetch from a certificates table
+      const mockData: Certificate[] = [
+        {
+          id: '1',
+          domain: 'example.com',
+          issuer: 'Let\'s Encrypt',
+          type: 'SSL/TLS',
+          validFrom: '2024-01-01',
+          validTo: '2024-04-01',
+          status: 'Valid',
+          algorithm: 'RSA',
+          keySize: 2048
+        },
+        {
+          id: '2',
+          domain: 'mail.example.com',
+          issuer: 'DigiCert',
+          type: 'SSL/TLS',
+          validFrom: '2023-12-15',
+          validTo: '2024-02-15',
+          status: 'Expiring Soon',
+          algorithm: 'ECDSA',
+          keySize: 256
+        }
+      ];
+      setCertificates(mockData);
+    } catch (error) {
+      console.error('Error fetching certificates:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
   const [selectedCertificate, setSelectedCertificate] = useState<Certificate | null>(null);
   const [isCertRenewDialogOpen, setIsCertRenewDialogOpen] = useState(false);
   const [isDetailDialogOpen, setIsDetailDialogOpen] = useState(false);
@@ -144,6 +166,9 @@ export function CertificateManagement() {
           </CardTitle>
         </CardHeader>
         <CardContent>
+          {loading ? (
+            <div className="text-center py-8">กำลังโหลดข้อมูล...</div>
+          ) : (
           <Table>
             <TableHeader>
               <TableRow>
@@ -226,6 +251,7 @@ export function CertificateManagement() {
               })}
             </TableBody>
           </Table>
+          )}
         </CardContent>
       </Card>
 

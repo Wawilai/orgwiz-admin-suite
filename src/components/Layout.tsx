@@ -3,6 +3,7 @@ import { AdminSidebar } from "./AdminSidebar";
 import { Bell, Search, User, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { useEffect } from "react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -15,6 +16,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
+import { usePermissions } from "@/hooks/usePermissions";
 import { toast } from "sonner";
 
 interface LayoutProps {
@@ -24,20 +26,29 @@ interface LayoutProps {
 export function Layout({ children }: LayoutProps) {
   const navigate = useNavigate();
   const { user, signOut, isAuthenticated } = useAuth();
+  const { permissions, loading: permLoading } = usePermissions();
+
+  // Handle authentication redirect with useEffect to prevent race conditions
+  useEffect(() => {
+    if (!isAuthenticated) {
+      navigate("/auth");
+    }
+  }, [isAuthenticated, navigate]);
 
   const handleLogout = async () => {
     try {
       await signOut();
       toast.success("ออกจากระบบสำเร็จ");
-      navigate("/");
+      // Navigate to auth page directly instead of home to avoid redirect loop
+      navigate("/auth", { replace: true });
     } catch (error) {
+      console.error("Logout error:", error);
       toast.error("เกิดข้อผิดพลาดในการออกจากระบบ");
     }
   };
 
-  // Redirect to auth if not authenticated
+  // Don't render anything if not authenticated (will redirect via useEffect)
   if (!isAuthenticated) {
-    navigate("/auth");
     return null;
   }
 

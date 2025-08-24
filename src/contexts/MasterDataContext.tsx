@@ -1,16 +1,19 @@
-import React, { createContext, useContext, useState, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { supabase } from '@/integrations/supabase/client';
 
-// Master Data Types
+// Master Data Types - Updated to match database structure
 export interface MasterDataItem {
-  id: number;
+  id: string;
   code: string;
   name: string;
+  name_en?: string;
   description?: string;
-  isActive: boolean;
-  order: number;
-  category?: string;
-  createdAt: string;
-  updatedAt: string;
+  is_active: boolean;
+  sort_order: number;
+  type_id: string;
+  organization_id?: string;
+  created_at: string;
+  updated_at: string;
 }
 
 interface MasterDataContextType {
@@ -19,56 +22,110 @@ interface MasterDataContextType {
   positions: MasterDataItem[];
   userRoles: MasterDataItem[];
   countries: MasterDataItem[];
+  contactTypes: MasterDataItem[];
+  licenseTypes: MasterDataItem[];
+  licenseStatus: MasterDataItem[];
+  currencies: MasterDataItem[];
+  languages: MasterDataItem[];
+  loading: boolean;
   getActiveItems: (type: string) => MasterDataItem[];
+  getMasterDataByType: (typeName: string) => MasterDataItem[];
+  refreshMasterData: () => Promise<void>;
 }
-
-// Initial master data
-const initialOrganizationTypes: MasterDataItem[] = [
-  { id: 1, code: "PUBLIC", name: "บริษัทมหาชน", description: "บริษัทจดทะเบียนในตลาดหลักทรัพย์", isActive: true, order: 1, createdAt: "2024-01-01", updatedAt: "2024-01-01" },
-  { id: 2, code: "LIMITED", name: "บริษัทจำกัด", description: "บริษัทจำกัดทั่วไป", isActive: true, order: 2, createdAt: "2024-01-01", updatedAt: "2024-01-01" },
-  { id: 3, code: "PARTNERSHIP", name: "ห้างหุ้นส่วน", description: "ห้างหุ้นส่วนจำกัด", isActive: true, order: 3, createdAt: "2024-01-01", updatedAt: "2024-01-01" },
-];
-
-const initialDepartments: MasterDataItem[] = [
-  { id: 1, code: "IT", name: "แผนกเทคโนโลยีสารสนเทศ", description: "จัดการระบบและเทคโนโลยี", isActive: true, order: 1, createdAt: "2024-01-01", updatedAt: "2024-01-01" },
-  { id: 2, code: "HR", name: "แผนกทรัพยากรบุคคล", description: "จัดการบุคลากรและสวัสดิการ", isActive: true, order: 2, createdAt: "2024-01-01", updatedAt: "2024-01-01" },
-  { id: 3, code: "FINANCE", name: "แผนกการเงิน", description: "จัดการเงินและบัญชี", isActive: true, order: 3, createdAt: "2024-01-01", updatedAt: "2024-01-01" },
-  { id: 4, code: "MARKETING", name: "แผนกการตลาด", description: "จัดการการตลาดและประชาสัมพันธ์", isActive: true, order: 4, createdAt: "2024-01-01", updatedAt: "2024-01-01" },
-  { id: 5, code: "SALES", name: "แผนกขาย", description: "จัดการการขายและบริการลูกค้า", isActive: true, order: 5, createdAt: "2024-01-01", updatedAt: "2024-01-01" },
-];
-
-const initialPositions: MasterDataItem[] = [
-  { id: 1, code: "CEO", name: "ประธานเจ้าหน้าที่บริหาร", description: "ผู้บริหารสูงสุด", isActive: true, order: 1, createdAt: "2024-01-01", updatedAt: "2024-01-01" },
-  { id: 2, code: "MANAGER", name: "ผู้จัดการ", description: "ผู้จัดการระดับกลาง", isActive: true, order: 2, createdAt: "2024-01-01", updatedAt: "2024-01-01" },
-  { id: 3, code: "SUPERVISOR", name: "หัวหน้างาน", description: "หัวหน้าทีมงาน", isActive: true, order: 3, createdAt: "2024-01-01", updatedAt: "2024-01-01" },
-  { id: 4, code: "SENIOR_STAFF", name: "พนักงานอาวุโส", description: "พนักงานระดับอาวุโส", isActive: true, order: 4, createdAt: "2024-01-01", updatedAt: "2024-01-01" },
-  { id: 5, code: "STAFF", name: "พนักงาน", description: "พนักงานทั่วไป", isActive: true, order: 5, createdAt: "2024-01-01", updatedAt: "2024-01-01" },
-];
-
-const initialUserRoles: MasterDataItem[] = [
-  { id: 1, code: "SUPER_ADMIN", name: "ผู้ดูแลระบบสูงสุด", description: "สิทธิ์เต็มทั้งระบบ", isActive: true, order: 1, createdAt: "2024-01-01", updatedAt: "2024-01-01" },
-  { id: 2, code: "ORG_ADMIN", name: "ผู้ดูแลองค์กร", description: "จัดการผู้ใช้ในองค์กร", isActive: true, order: 2, createdAt: "2024-01-01", updatedAt: "2024-01-01" },
-  { id: 3, code: "HR_MANAGER", name: "ผู้จัดการทรัพยากรบุคคล", description: "จัดการข้อมูลบุคลากร", isActive: true, order: 3, createdAt: "2024-01-01", updatedAt: "2024-01-01" },
-  { id: 4, code: "DEPARTMENT_HEAD", name: "หัวหน้าแผนก", description: "จัดการผู้ใช้ในแผนก", isActive: true, order: 4, createdAt: "2024-01-01", updatedAt: "2024-01-01" },
-  { id: 5, code: "USER", name: "ผู้ใช้งานทั่วไป", description: "สิทธิ์การใช้งานพื้นฐาน", isActive: true, order: 5, createdAt: "2024-01-01", updatedAt: "2024-01-01" },
-];
-
-const initialCountries: MasterDataItem[] = [
-  { id: 1, code: "TH", name: "ประเทศไทย", description: "Thailand", isActive: true, order: 1, createdAt: "2024-01-01", updatedAt: "2024-01-01" },
-  { id: 2, code: "US", name: "สหรัฐอเมริกา", description: "United States", isActive: true, order: 2, createdAt: "2024-01-01", updatedAt: "2024-01-01" },
-  { id: 3, code: "JP", name: "ญี่ปุ่น", description: "Japan", isActive: true, order: 3, createdAt: "2024-01-01", updatedAt: "2024-01-01" },
-  { id: 4, code: "SG", name: "สิงคโปร์", description: "Singapore", isActive: true, order: 4, createdAt: "2024-01-01", updatedAt: "2024-01-01" },
-  { id: 5, code: "MY", name: "มาเลเซีย", description: "Malaysia", isActive: true, order: 5, createdAt: "2024-01-01", updatedAt: "2024-01-01" },
-];
 
 const MasterDataContext = createContext<MasterDataContextType | undefined>(undefined);
 
 export const MasterDataProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [organizationTypes] = useState<MasterDataItem[]>(initialOrganizationTypes);
-  const [departments] = useState<MasterDataItem[]>(initialDepartments);
-  const [positions] = useState<MasterDataItem[]>(initialPositions);
-  const [userRoles] = useState<MasterDataItem[]>(initialUserRoles);
-  const [countries] = useState<MasterDataItem[]>(initialCountries);
+  const [organizationTypes, setOrganizationTypes] = useState<MasterDataItem[]>([]);
+  const [departments, setDepartments] = useState<MasterDataItem[]>([]);
+  const [positions, setPositions] = useState<MasterDataItem[]>([]);
+  const [userRoles, setUserRoles] = useState<MasterDataItem[]>([]);
+  const [countries, setCountries] = useState<MasterDataItem[]>([]);
+  const [contactTypes, setContactTypes] = useState<MasterDataItem[]>([]);
+  const [licenseTypes, setLicenseTypes] = useState<MasterDataItem[]>([]);
+  const [licenseStatus, setLicenseStatus] = useState<MasterDataItem[]>([]);
+  const [currencies, setCurrencies] = useState<MasterDataItem[]>([]);
+  const [languages, setLanguages] = useState<MasterDataItem[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const fetchMasterDataByType = async (typeName: string): Promise<MasterDataItem[]> => {
+    try {
+      const { data: typeData, error: typeError } = await supabase
+        .from('master_data_types')
+        .select('id')
+        .eq('type_name', typeName)
+        .single();
+
+      if (typeError || !typeData) {
+        console.error(`Error fetching master data type ${typeName}:`, typeError);
+        return [];
+      }
+
+      const { data: items, error: itemsError } = await supabase
+        .from('master_data_items')
+        .select('*')
+        .eq('type_id', typeData.id)
+        .order('sort_order');
+
+      if (itemsError) {
+        console.error(`Error fetching master data items for ${typeName}:`, itemsError);
+        return [];
+      }
+
+      return items || [];
+    } catch (error) {
+      console.error(`Error in fetchMasterDataByType for ${typeName}:`, error);
+      return [];
+    }
+  };
+
+  const refreshMasterData = async () => {
+    setLoading(true);
+    try {
+      const [
+        orgTypesData,
+        departmentsData,
+        positionsData,
+        userRolesData,
+        countriesData,
+        contactTypesData,
+        licenseTypesData,
+        licenseStatusData,
+        currenciesData,
+        languagesData
+      ] = await Promise.all([
+        fetchMasterDataByType('ประเภทองค์กร'),
+        fetchMasterDataByType('แผนก'),
+        fetchMasterDataByType('ตำแหน่ง'),
+        fetchMasterDataByType('บทบาทผู้ใช้'),
+        fetchMasterDataByType('ประเทศ'),
+        fetchMasterDataByType('ประเภทของผู้ติดต่อ'),
+        fetchMasterDataByType('ประเภทใบอนุญาต'),
+        fetchMasterDataByType('สถานะใบอนุญาต'),
+        fetchMasterDataByType('สกุลเงิน'),
+        fetchMasterDataByType('ภาษา')
+      ]);
+
+      setOrganizationTypes(orgTypesData);
+      setDepartments(departmentsData);
+      setPositions(positionsData);
+      setUserRoles(userRolesData);
+      setCountries(countriesData);
+      setContactTypes(contactTypesData);
+      setLicenseTypes(licenseTypesData);
+      setLicenseStatus(licenseStatusData);
+      setCurrencies(currenciesData);
+      setLanguages(languagesData);
+    } catch (error) {
+      console.error('Error refreshing master data:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    refreshMasterData();
+  }, []);
 
   const getActiveItems = (type: string): MasterDataItem[] => {
     let items: MasterDataItem[] = [];
@@ -89,11 +146,32 @@ export const MasterDataProvider: React.FC<{ children: ReactNode }> = ({ children
       case 'countries':
         items = countries;
         break;
+      case 'contactTypes':
+        items = contactTypes;
+        break;
+      case 'licenseTypes':
+        items = licenseTypes;
+        break;
+      case 'licenseStatus':
+        items = licenseStatus;
+        break;
+      case 'currencies':
+        items = currencies;
+        break;
+      case 'languages':
+        items = languages;
+        break;
       default:
         return [];
     }
     
-    return items.filter(item => item.isActive).sort((a, b) => a.order - b.order);
+    return items
+      .filter(item => item.is_active)
+      .sort((a, b) => a.sort_order - b.sort_order);
+  };
+
+  const getMasterDataByType = (typeName: string): MasterDataItem[] => {
+    return getActiveItems(typeName);
   };
 
   const value: MasterDataContextType = {
@@ -102,7 +180,15 @@ export const MasterDataProvider: React.FC<{ children: ReactNode }> = ({ children
     positions,
     userRoles,
     countries,
+    contactTypes,
+    licenseTypes,
+    licenseStatus,
+    currencies,
+    languages,
+    loading,
     getActiveItems,
+    getMasterDataByType,
+    refreshMasterData
   };
 
   return (

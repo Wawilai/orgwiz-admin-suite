@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -10,6 +10,8 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { toast } from '@/hooks/use-toast';
+import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
 import { 
   HardDrive, 
   Plus, 
@@ -164,8 +166,87 @@ const mockOrganizations = [
 ];
 
 export default function Storage() {
-  const [quotas, setQuotas] = useState<StorageQuota[]>(mockQuotas);
-  const [usageLogs] = useState<UsageLog[]>(mockUsageLogs);
+  const { user, isAuthenticated } = useAuth();
+  const [quotas, setQuotas] = useState<StorageQuota[]>([]);
+  const [usageLogs] = useState<UsageLog[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [departments] = useState<string[]>([
+    'ฝ่ายไอที',
+    'ฝ่ายทรัพยากรบุคคล', 
+    'ฝ่ายการเงิน',
+    'ฝ่ายการตลาด',
+    'ฝ่ายขาย',
+    'ฝ่ายปฏิบัติการ',
+    'ฝ่ายกฎหมาย',
+    'ฝ่ายบัญชี',
+    'ฝ่ายผลิต',
+    'ฝ่ายคุณภาพ',
+    'ฝ่ายธุรการ'
+  ]);
+  const [organizations, setOrganizations] = useState<string[]>([]);
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      fetchStorageQuotas();
+      fetchOrganizations();
+    }
+  }, [isAuthenticated]);
+
+  const fetchOrganizations = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('organizations')
+        .select('name')
+        .eq('status', 'active');
+      
+      if (error) throw error;
+      setOrganizations(data?.map(org => org.name) || []);
+    } catch (error) {
+      console.error('Error fetching organizations:', error);
+    }
+  };
+
+  const fetchStorageQuotas = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('storage_quotas')
+        .select(`
+          *,
+          organization:organizations(name)
+        `)
+        .order('created_at', { ascending: false });
+      
+      if (error) throw error;
+      
+      const formattedQuotas = data?.map(quota => ({
+        id: quota.id,
+        entityType: 'Organization' as const,
+        entityName: quota.organization?.name || 'Unknown',
+        entityId: quota.organization_id,
+        allocatedSpace: quota.allocated_mb / 1024, // Convert MB to GB
+        usedSpace: quota.used_mb / 1024, // Convert MB to GB
+        warningThreshold: 80,
+        status: getStorageStatus(quota.used_mb, quota.allocated_mb),
+        lastUpdated: quota.last_calculated || new Date().toISOString(),
+        createdAt: quota.created_at,
+        organization: quota.organization?.name
+      })) || [];
+      
+      setQuotas(formattedQuotas);
+    } catch (error) {
+      console.error('Error fetching storage quotas:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getStorageStatus = (used: number, allocated: number): StorageQuota['status'] => {
+    const percentage = (used / allocated) * 100;
+    if (percentage >= 100) return 'Exceeded';
+    if (percentage >= 95) return 'Critical';
+    if (percentage >= 80) return 'Warning';
+    return 'Normal';
+  };
   const [searchTerm, setSearchTerm] = useState('');
   const [entityTypeFilter, setEntityTypeFilter] = useState<string>('all');
   const [statusFilter, setStatusFilter] = useState<string>('all');
@@ -471,7 +552,7 @@ export default function Storage() {
                           <SelectValue placeholder="เลือกองค์กร" />
                         </SelectTrigger>
                         <SelectContent>
-                          {mockOrganizations.map((org) => (
+                        {organizations.map((org) => (
                             <SelectItem key={org} value={org}>
                               {org}
                             </SelectItem>
@@ -852,7 +933,7 @@ export default function Storage() {
                       <SelectValue placeholder="เลือกองค์กร" />
                     </SelectTrigger>
                     <SelectContent>
-                      {mockOrganizations.map((org) => (
+                      {organizations.map((org) => (
                         <SelectItem key={org} value={org}>
                           {org}
                         </SelectItem>

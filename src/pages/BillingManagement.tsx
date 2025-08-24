@@ -1,377 +1,115 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { toast } from '@/hooks/use-toast';
+import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
 import { 
   CreditCard, 
   Plus, 
   Search, 
   Download, 
-  Eye, 
-  FileText, 
-  AlertCircle,
-  CheckCircle,
-  Clock,
-  XCircle,
-  MoreHorizontal,
-  Calculator,
-  Banknote,
   TrendingUp,
-  Calendar
+  Calendar,
+  Building,
+  Banknote
 } from 'lucide-react';
 
-interface Invoice {
+interface BillingAccount {
   id: string;
-  invoiceNumber: string;
-  organizationId: string;
-  organizationName: string;
-  packageName: string;
-  issueDate: string;
-  dueDate: string;
-  amount: number;
-  tax: number;
-  totalAmount: number;
-  status: 'Pending' | 'Paid' | 'Overdue' | 'Cancelled';
-  paymentMethod?: string;
-  paidDate?: string;
-  items: InvoiceItem[];
+  organization_id: string;
+  account_name: string;
+  billing_email: string;
+  billing_address?: string;
+  payment_method?: string;
+  currency: string;
+  status: string;
+  payment_terms?: number;
+  tax_rate?: number;
+  organizations?: { name: string };
 }
 
-interface InvoiceItem {
-  id: string;
-  description: string;
-  quantity: number;
-  unitPrice: number;
-  totalPrice: number;
-}
-
-interface PaymentSetting {
-  id: string;
-  organizationId: string;
-  organizationName: string;
-  paymentMethod: 'CreditCard' | 'BankTransfer' | 'PayPal';
-  autoPayment: boolean;
-  billingEmail: string;
-  billingAddress: string;
-  taxId?: string;
-  creditCardLast4?: string;
-  bankAccount?: string;
-  createdAt: string;
-}
-
-const mockInvoices: Invoice[] = [
-  {
-    id: '1',
-    invoiceNumber: 'INV-2024-001',
-    organizationId: 'org-001',
-    organizationName: 'บริษัท เทคโนโลยี จำกัด',
-    packageName: 'Standard Plan',
-    issueDate: '2024-01-01',
-    dueDate: '2024-01-31',
-    amount: 799,
-    tax: 55.93,
-    totalAmount: 854.93,
-    status: 'Paid',
-    paymentMethod: 'CreditCard',
-    paidDate: '2024-01-15',
-    items: [
-      {
-        id: '1',
-        description: 'Standard Plan - Monthly Subscription',
-        quantity: 1,
-        unitPrice: 799,
-        totalPrice: 799
-      }
-    ]
-  },
-  {
-    id: '2',
-    invoiceNumber: 'INV-2024-002',
-    organizationId: 'org-002',
-    organizationName: 'บริษัท การตลาด จำกัด',
-    packageName: 'Basic Plan',
-    issueDate: '2024-01-15',
-    dueDate: '2024-02-14',
-    amount: 299,
-    tax: 20.93,
-    totalAmount: 319.93,
-    status: 'Pending',
-    items: [
-      {
-        id: '1',
-        description: 'Basic Plan - Monthly Subscription',
-        quantity: 1,
-        unitPrice: 299,
-        totalPrice: 299
-      }
-    ]
-  },
-  {
-    id: '3',
-    invoiceNumber: 'INV-2024-003',
-    organizationId: 'org-003',
-    organizationName: 'บริษัท ดิจิทัล จำกัด',
-    packageName: 'Premium Plan',
-    issueDate: '2024-01-10',
-    dueDate: '2024-01-25',
-    amount: 1499,
-    tax: 104.93,
-    totalAmount: 1603.93,
-    status: 'Overdue',
-    items: [
-      {
-        id: '1',
-        description: 'Premium Plan - Monthly Subscription',
-        quantity: 1,
-        unitPrice: 1499,
-        totalPrice: 1499
-      }
-    ]
-  }
-];
-
-const mockPaymentSettings: PaymentSetting[] = [
-  {
-    id: '1',
-    organizationId: 'org-001',
-    organizationName: 'บริษัท เทคโนโลยี จำกัด',
-    paymentMethod: 'CreditCard',
-    autoPayment: true,
-    billingEmail: 'billing@techcompany.com',
-    billingAddress: '123 ถนนเทคโนโลยี กรุงเทพฯ 10110',
-    taxId: '0105558001234',
-    creditCardLast4: '1234',
-    createdAt: '2024-01-01'
-  },
-  {
-    id: '2',
-    organizationId: 'org-002',
-    organizationName: 'บริษัท การตลาด จำกัด',
-    paymentMethod: 'BankTransfer',
-    autoPayment: false,
-    billingEmail: 'finance@marketing.com',
-    billingAddress: '456 ถนนการตลาด กรุงเทพฯ 10220',
-    taxId: '0105558005678',
-    bankAccount: 'SCB-1234567890',
-    createdAt: '2024-01-15'
-  }
-];
-
-export default function BillingManagement() {
-  const [invoices, setInvoices] = useState<Invoice[]>(mockInvoices);
-  const [paymentSettings, setPaymentSettings] = useState<PaymentSetting[]>(mockPaymentSettings);
+const BillingManagement = () => {
+  const { isAuthenticated } = useAuth();
+  const [billingAccounts, setBillingAccounts] = useState<BillingAccount[]>([]);
+  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState<string>('all');
-  const [isGenerateInvoiceDialogOpen, setIsGenerateInvoiceDialogOpen] = useState(false);
-  const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
-  const [currentTab, setCurrentTab] = useState('invoices');
-  const [isEditPaymentMethodOpen, setIsEditPaymentMethodOpen] = useState(false);
-  const [isEditBillingInfoOpen, setIsEditBillingInfoOpen] = useState(false);
-  const [selectedPaymentSetting, setSelectedPaymentSetting] = useState<PaymentSetting | null>(null);
-  const [editingPaymentMethod, setEditingPaymentMethod] = useState<string>('CreditCard');
-  const [editingBillingData, setEditingBillingData] = useState<Partial<PaymentSetting>>({});
+  const [currentTab, setCurrentTab] = useState('accounts');
 
-  const filteredInvoices = invoices.filter(invoice => {
-    const matchesSearch = invoice.invoiceNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         invoice.organizationName.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = statusFilter === 'all' || invoice.status === statusFilter;
-    return matchesSearch && matchesStatus;
-  });
+  useEffect(() => {
+    if (isAuthenticated) {
+      fetchBillingAccounts();
+    }
+  }, [isAuthenticated]);
 
-  const handleGenerateInvoice = () => {
-    const newInvoice: Invoice = {
-      id: Date.now().toString(),
-      invoiceNumber: `INV-2024-${String(invoices.length + 1).padStart(3, '0')}`,
-      organizationId: 'org-new',
-      organizationName: 'องค์กรใหม่',
-      packageName: 'Standard Plan',
-      issueDate: new Date().toISOString().split('T')[0],
-      dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-      amount: 799,
-      tax: 55.93,
-      totalAmount: 854.93,
-      status: 'Pending',
-      items: [
-        {
-          id: '1',
-          description: 'Standard Plan - Monthly Subscription',
-          quantity: 1,
-          unitPrice: 799,
-          totalPrice: 799
-        }
-      ]
-    };
-    setInvoices([newInvoice, ...invoices]);
-    setIsGenerateInvoiceDialogOpen(false);
-    toast({
-      title: "สร้างใบแจ้งหนี้สำเร็จ",
-      description: `สร้างใบแจ้งหนี้ ${newInvoice.invoiceNumber} เรียบร้อยแล้ว`,
-    });
+  const fetchBillingAccounts = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('billing_accounts')
+        .select(`
+          *,
+          organizations!billing_accounts_organization_id_fkey (name)
+        `)
+        .order('created_at', { ascending: false });
+      
+      if (error) throw error;
+      setBillingAccounts(data || []);
+    } catch (error) {
+      console.error('Error fetching billing accounts:', error);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleMarkAsPaid = (invoiceId: string) => {
-    setInvoices(invoices.map(invoice =>
-      invoice.id === invoiceId
-        ? { 
-            ...invoice, 
-            status: 'Paid' as const, 
-            paidDate: new Date().toISOString().split('T')[0],
-            paymentMethod: 'CreditCard'
-          }
-        : invoice
-    ));
-    toast({
-      title: "อัปเดตสถานะสำเร็จ",
-      description: "ทำเครื่องหมายเป็นชำระแล้ว",
-    });
-  };
-
-  const handleCancelInvoice = (invoiceId: string) => {
-    setInvoices(invoices.map(invoice =>
-      invoice.id === invoiceId ? { ...invoice, status: 'Cancelled' as const } : invoice
-    ));
-    toast({
-      title: "ยกเลิกใบแจ้งหนี้สำเร็จ",
-      description: "ยกเลิกใบแจ้งหนี้เรียบร้อยแล้ว",
-    });
-  };
-
-  const handleDownloadInvoice = (invoice: Invoice) => {
-    // Simulate PDF download
-    const element = document.createElement('a');
-    const file = new Blob(['PDF content would be generated here'], { type: 'application/pdf' });
-    element.href = URL.createObjectURL(file);
-    element.download = `${invoice.invoiceNumber}.pdf`;
-    document.body.appendChild(element);
-    element.click();
-    document.body.removeChild(element);
-    toast({
-      title: "ดาวน์โหลดสำเร็จ",
-      description: `ดาวน์โหลดใบแจ้งหนี้ ${invoice.invoiceNumber} เรียบร้อยแล้ว`,
-    });
-  };
-
-  const handleSendInvoiceEmail = (invoice: Invoice) => {
-    toast({
-      title: "ส่งอีเมลสำเร็จ",
-      description: `ส่งใบแจ้งหนี้ ${invoice.invoiceNumber} ทางอีเมลเรียบร้อยแล้ว`,
-    });
-  };
-
-  const handlePrintInvoice = (invoice: Invoice) => {
-    window.print();
-    toast({
-      title: "พิมพ์ใบแจ้งหนี้",
-      description: "เปิดหน้าต่างการพิมพ์แล้ว",
-    });
-  };
-
-  const openEditPaymentMethodDialog = (setting: PaymentSetting) => {
-    setSelectedPaymentSetting(setting);
-    setEditingPaymentMethod(setting.paymentMethod);
-    setIsEditPaymentMethodOpen(true);
-  };
-
-  const openEditBillingInfoDialog = (setting: PaymentSetting) => {
-    setSelectedPaymentSetting(setting);
-    setEditingBillingData({
-      billingEmail: setting.billingEmail,
-      billingAddress: setting.billingAddress,
-      taxId: setting.taxId
-    });
-    setIsEditBillingInfoOpen(true);
-  };
-
-  const handleSavePaymentMethod = () => {
-    if (!selectedPaymentSetting) return;
-    
-    setPaymentSettings(paymentSettings.map(setting =>
-      setting.id === selectedPaymentSetting.id
-        ? { ...setting, paymentMethod: editingPaymentMethod as any }
-        : setting
-    ));
-    
-    setIsEditPaymentMethodOpen(false);
-    setSelectedPaymentSetting(null);
-    toast({
-      title: "แก้ไขสำเร็จ",
-      description: "แก้ไขวิธีการชำระเงินเรียบร้อยแล้ว",
-    });
-  };
-
-  const handleSaveBillingInfo = () => {
-    if (!selectedPaymentSetting) return;
-    
-    setPaymentSettings(paymentSettings.map(setting =>
-      setting.id === selectedPaymentSetting.id
-        ? { ...setting, ...editingBillingData }
-        : setting
-    ));
-    
-    setIsEditBillingInfoOpen(false);
-    setSelectedPaymentSetting(null);
-    toast({
-      title: "แก้ไขสำเร็จ",
-      description: "แก้ไขข้อมูลการเรียกเก็บเงินเรียบร้อยแล้ว",
-    });
-  };
-
-  const handleToggleAutoPayment = (settingId: string) => {
-    setPaymentSettings(paymentSettings.map(setting =>
-      setting.id === settingId
-        ? { ...setting, autoPayment: !setting.autoPayment }
-        : setting
-    ));
-    toast({
-      title: "อัปเดตสำเร็จ",
-      description: "เปลี่ยนการตั้งค่าการชำระอัตโนมัติเรียบร้อยแล้ว",
-    });
-  };
+  const filteredAccounts = billingAccounts.filter(account => 
+    account.account_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    account.billing_email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (account.organizations?.name || '').toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   const getStatusBadge = (status: string) => {
-    const variants: Record<string, "default" | "destructive" | "secondary" | "outline"> = {
-      Pending: "outline",
-      Paid: "default",
-      Overdue: "destructive",
-      Cancelled: "secondary"
-    };
-    const colors = {
-      Pending: "text-yellow-700",
-      Paid: "text-green-700",
-      Overdue: "text-red-700",
-      Cancelled: "text-gray-700"
-    };
-    const statusText = {
-      Pending: "รอชำระ",
-      Paid: "ชำระแล้ว",
-      Overdue: "เกินกำหนด",
-      Cancelled: "ยกเลิก"
-    };
-    return <Badge variant={variants[status] || "default"} className={colors[status as keyof typeof colors]}>
-      {statusText[status as keyof typeof statusText]}
-    </Badge>;
+    const variants = {
+      active: 'default',
+      inactive: 'secondary',
+      suspended: 'destructive'
+    } as const;
+    
+    const labels = {
+      active: 'ใช้งาน',
+      inactive: 'ไม่ใช้งาน', 
+      suspended: 'ระงับการใช้งาน'
+    } as const;
+
+    return (
+      <Badge variant={variants[status as keyof typeof variants] || 'outline'}>
+        {labels[status as keyof typeof labels] || status}
+      </Badge>
+    );
   };
 
-  const getPaymentMethodBadge = (method: string) => {
-    const methodText = {
-      CreditCard: "บัตรเครดิต",
-      BankTransfer: "โอนผ่านธนาคาร",
-      PayPal: "PayPal"
-    };
-    return <Badge variant="outline">{methodText[method as keyof typeof methodText]}</Badge>;
+  const getPaymentMethodIcon = (method?: string) => {
+    if (!method) return <Banknote className="h-4 w-4" />;
+    
+    switch (method.toLowerCase()) {
+      case 'credit_card':
+      case 'creditcard':
+        return <CreditCard className="h-4 w-4" />;
+      case 'bank_transfer':
+        return <Building className="h-4 w-4" />;
+      default:
+        return <Banknote className="h-4 w-4" />;
+    }
   };
 
-  const totalRevenue = invoices.filter(inv => inv.status === 'Paid').reduce((sum, inv) => sum + inv.totalAmount, 0);
-  const pendingAmount = invoices.filter(inv => inv.status === 'Pending').reduce((sum, inv) => sum + inv.totalAmount, 0);
-  const overdueAmount = invoices.filter(inv => inv.status === 'Overdue').reduce((sum, inv) => sum + inv.totalAmount, 0);
+  if (loading) {
+    return <div className="p-8 text-center">กำลังโหลดข้อมูล...</div>;
+  }
 
   return (
     <div className="container mx-auto p-6 space-y-6">
@@ -379,36 +117,32 @@ export default function BillingManagement() {
         <div className="flex justify-between items-center">
           <div>
             <h1 className="text-3xl font-bold">จัดการการเงินและบัญชี</h1>
-            <p className="text-muted-foreground">ติดตามใบแจ้งหนี้ การชำระเงิน และตั้งค่าการเก็บเงิน</p>
+            <p className="text-muted-foreground">ติดตามบัญชีการเงินและการตั้งค่าการเก็บเงิน</p>
           </div>
           <div className="flex gap-2">
             <Button variant="outline">
               <Download className="h-4 w-4 mr-2" />
               ส่งออกรายงาน
             </Button>
-            <Dialog open={isGenerateInvoiceDialogOpen} onOpenChange={setIsGenerateInvoiceDialogOpen}>
+            <Dialog>
               <DialogTrigger asChild>
                 <Button>
                   <Plus className="h-4 w-4 mr-2" />
-                  สร้างใบแจ้งหนี้
+                  เพิ่มบัญชี
                 </Button>
               </DialogTrigger>
               <DialogContent>
                 <DialogHeader>
-                  <DialogTitle>สร้างใบแจ้งหนี้ใหม่</DialogTitle>
+                  <DialogTitle>เพิ่มบัญชีการเงินใหม่</DialogTitle>
                 </DialogHeader>
                 <div className="space-y-4">
                   <p className="text-sm text-muted-foreground">
-                    ระบบจะสร้างใบแจ้งหนี้อัตโนมัติตามแพ็กเกจและการสมัครสมาชิก
+                    เพิ่มบัญชีการเงินใหม่สำหรับองค์กร
                   </p>
                 </div>
                 <div className="flex justify-end gap-2">
-                  <Button variant="outline" onClick={() => setIsGenerateInvoiceDialogOpen(false)}>
-                    ยกเลิก
-                  </Button>
-                  <Button onClick={handleGenerateInvoice}>
-                    สร้างใบแจ้งหนี้
-                  </Button>
+                  <Button variant="outline">ยกเลิก</Button>
+                  <Button>เพิ่มบัญชี</Button>
                 </div>
               </DialogContent>
             </Dialog>
@@ -416,225 +150,123 @@ export default function BillingManagement() {
         </div>
 
         <TabsList>
-          <TabsTrigger value="invoices">ใบแจ้งหนี้</TabsTrigger>
-          <TabsTrigger value="payments">การชำระเงิน</TabsTrigger>
+          <TabsTrigger value="accounts">บัญชีการเงิน</TabsTrigger>
           <TabsTrigger value="settings">ตั้งค่าการเก็บเงิน</TabsTrigger>
+          <TabsTrigger value="reports">รายงาน</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="invoices" className="space-y-6">
+        <TabsContent value="accounts" className="space-y-6">
           {/* Stats Cards */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">รายได้รวม</CardTitle>
+                <CardTitle className="text-sm font-medium">บัญชีทั้งหมด</CardTitle>
+                <Building className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{billingAccounts.length}</div>
+                <p className="text-xs text-muted-foreground">บัญชีการเงิน</p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">บัญชีใช้งาน</CardTitle>
                 <TrendingUp className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold text-green-600">฿{totalRevenue.toLocaleString()}</div>
+                <div className="text-2xl font-bold text-green-600">
+                  {billingAccounts.filter(acc => acc.status === 'active').length}
+                </div>
+                <p className="text-xs text-muted-foreground">บัญชีที่ใช้งานอยู่</p>
               </CardContent>
             </Card>
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">รอชำระ</CardTitle>
-                <Clock className="h-4 w-4 text-muted-foreground" />
+                <CardTitle className="text-sm font-medium">สกุลเงิน</CardTitle>
+                <Banknote className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold text-yellow-600">฿{pendingAmount.toLocaleString()}</div>
+                <div className="text-2xl font-bold">THB</div>
+                <p className="text-xs text-muted-foreground">สกุลเงินหลัก</p>
               </CardContent>
             </Card>
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">เกินกำหนด</CardTitle>
-                <AlertCircle className="h-4 w-4 text-muted-foreground" />
+                <CardTitle className="text-sm font-medium">อัตราภาษี</CardTitle>
+                <Calendar className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold text-red-600">฿{overdueAmount.toLocaleString()}</div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">ใบแจ้งหนี้ทั้งหมด</CardTitle>
-                <FileText className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{invoices.length}</div>
+                <div className="text-2xl font-bold">7%</div>
+                <p className="text-xs text-muted-foreground">ภาษีมูลค่าเพิ่ม</p>
               </CardContent>
             </Card>
           </div>
 
-          {/* Invoices Table */}
+          {/* Billing Accounts Table */}
           <Card>
             <CardHeader>
-              <CardTitle>รายการใบแจ้งหนี้</CardTitle>
+              <CardTitle>รายการบัญชีการเงิน</CardTitle>
               <div className="flex gap-4">
                 <div className="relative flex-1">
                   <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
                   <Input
-                    placeholder="ค้นหาเลขใบแจ้งหนี้ หรือชื่อองค์กร..."
+                    placeholder="ค้นหาชื่อบัญชี อีเมล หรือองค์กร..."
                     className="pl-8"
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                   />
                 </div>
-                <Select value={statusFilter} onValueChange={setStatusFilter}>
-                  <SelectTrigger className="w-40">
-                    <SelectValue placeholder="สถานะ" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">ทั้งหมด</SelectItem>
-                    <SelectItem value="Pending">รอชำระ</SelectItem>
-                    <SelectItem value="Paid">ชำระแล้ว</SelectItem>
-                    <SelectItem value="Overdue">เกินกำหนด</SelectItem>
-                    <SelectItem value="Cancelled">ยกเลิก</SelectItem>
-                  </SelectContent>
-                </Select>
               </div>
             </CardHeader>
             <CardContent>
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>เลขใบแจ้งหนี้</TableHead>
+                    <TableHead>ชื่อบัญชี</TableHead>
                     <TableHead>องค์กร</TableHead>
-                    <TableHead>แพ็กเกจ</TableHead>
-                    <TableHead>วันที่ออก</TableHead>
-                    <TableHead>กำหนดชำระ</TableHead>
-                    <TableHead>จำนวนเงิน</TableHead>
-                    <TableHead>สถานะ</TableHead>
-                    <TableHead>จัดการ</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredInvoices.map((invoice) => (
-                    <TableRow key={invoice.id}>
-                      <TableCell>
-                        <div className="font-medium">{invoice.invoiceNumber}</div>
-                      </TableCell>
-                      <TableCell>
-                        <div>
-                          <div className="font-medium">{invoice.organizationName}</div>
-                          <div className="text-sm text-muted-foreground">{invoice.organizationId}</div>
-                        </div>
-                      </TableCell>
-                      <TableCell>{invoice.packageName}</TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <Calendar className="h-4 w-4" />
-                          {invoice.issueDate}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <Calendar className="h-4 w-4" />
-                          {invoice.dueDate}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div>
-                          <div className="font-medium">฿{invoice.totalAmount.toLocaleString()}</div>
-                          <div className="text-xs text-muted-foreground">
-                            + ภาษี ฿{invoice.tax.toFixed(2)}
-                          </div>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="space-y-1">
-                          {getStatusBadge(invoice.status)}
-                          {invoice.paymentMethod && (
-                            <div>{getPaymentMethodBadge(invoice.paymentMethod)}</div>
-                          )}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" className="h-8 w-8 p-0">
-                              <MoreHorizontal className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={() => setSelectedInvoice(invoice)}>
-                              <Eye className="mr-2 h-4 w-4" />
-                              ดูรายละเอียด
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => handleDownloadInvoice(invoice)}>
-                              <Download className="mr-2 h-4 w-4" />
-                              ดาวน์โหลด PDF
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => handleSendInvoiceEmail(invoice)}>
-                              <FileText className="mr-2 h-4 w-4" />
-                              ส่งทางอีเมล
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => handlePrintInvoice(invoice)}>
-                              <Calculator className="mr-2 h-4 w-4" />
-                              พิมพ์ใบแจ้งหนี้
-                            </DropdownMenuItem>
-                            {invoice.status === 'Pending' && (
-                              <DropdownMenuItem onClick={() => handleMarkAsPaid(invoice.id)}>
-                                <CheckCircle className="mr-2 h-4 w-4" />
-                                ทำเครื่องหมายว่าชำระแล้ว
-                              </DropdownMenuItem>
-                            )}
-                            {(invoice.status === 'Pending' || invoice.status === 'Overdue') && (
-                              <DropdownMenuItem 
-                                onClick={() => handleCancelInvoice(invoice.id)}
-                                className="text-red-600"
-                              >
-                                <XCircle className="mr-2 h-4 w-4" />
-                                ยกเลิก
-                              </DropdownMenuItem>
-                            )}
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="payments" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>ประวัติการชำระเงิน</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>วันที่ชำระ</TableHead>
-                    <TableHead>เลขใบแจ้งหนี้</TableHead>
-                    <TableHead>องค์กร</TableHead>
-                    <TableHead>จำนวนเงิน</TableHead>
+                    <TableHead>อีเมลใบแจ้งหนี้</TableHead>
                     <TableHead>วิธีการชำระ</TableHead>
+                    <TableHead>สกุลเงิน</TableHead>
                     <TableHead>สถานะ</TableHead>
+                    <TableHead>เงื่อนไขการชำระ</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {invoices.filter(inv => inv.status === 'Paid').map((invoice) => (
-                    <TableRow key={invoice.id}>
+                  {filteredAccounts.map((account) => (
+                    <TableRow key={account.id}>
+                      <TableCell className="font-medium">
+                        {account.account_name}
+                      </TableCell>
+                      <TableCell>
+                        {account.organizations?.name || 'ไม่ระบุ'}
+                      </TableCell>
+                      <TableCell>
+                        {account.billing_email}
+                      </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-2">
-                          <Calendar className="h-4 w-4" />
-                          {invoice.paidDate}
+                          {getPaymentMethodIcon(account.payment_method)}
+                          <span>{account.payment_method || 'ไม่ระบุ'}</span>
                         </div>
                       </TableCell>
-                      <TableCell className="font-medium">{invoice.invoiceNumber}</TableCell>
-                      <TableCell>{invoice.organizationName}</TableCell>
-                      <TableCell>฿{invoice.totalAmount.toLocaleString()}</TableCell>
                       <TableCell>
-                        {invoice.paymentMethod && getPaymentMethodBadge(invoice.paymentMethod)}
+                        <Badge variant="outline">{account.currency}</Badge>
                       </TableCell>
                       <TableCell>
-                        <Badge className="bg-green-100 text-green-800">
-                          <CheckCircle className="h-3 w-3 mr-1" />
-                          สำเร็จ
-                        </Badge>
+                        {getStatusBadge(account.status)}
+                      </TableCell>
+                      <TableCell>
+                        {account.payment_terms ? `${account.payment_terms} วัน` : 'ไม่ระบุ'}
                       </TableCell>
                     </TableRow>
                   ))}
+                  {filteredAccounts.length === 0 && (
+                    <TableRow>
+                      <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                        {searchTerm ? 'ไม่พบข้อมูลที่ค้นหา' : 'ยังไม่มีบัญชีการเงินในระบบ'}
+                      </TableCell>
+                    </TableRow>
+                  )}
                 </TableBody>
               </Table>
             </CardContent>
@@ -644,303 +276,116 @@ export default function BillingManagement() {
         <TabsContent value="settings" className="space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle>ตั้งค่าการชำระเงิน</CardTitle>
+              <CardTitle>ตั้งค่าการเก็บเงิน</CardTitle>
               <p className="text-sm text-muted-foreground">
-                จัดการวิธีการชำระเงินและข้อมูลการเรียกเก็บเงินขององค์กร
+                จัดการการตั้งค่าการเก็บเงินและอัตราภาษี
+              </p>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Label>อัตราภาษีมูลค่าเพิ่ม</Label>
+                  <div className="flex items-center gap-2 mt-1">
+                    <Input value="7" readOnly />
+                    <span className="text-sm text-muted-foreground">%</span>
+                  </div>
+                </div>
+                <div>
+                  <Label>สกุลเงินหลัก</Label>
+                  <Select defaultValue="THB">
+                    <SelectTrigger className="mt-1">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="THB">บาทไทย (THB)</SelectItem>
+                      <SelectItem value="USD">ดอลลาร์สหรัฐ (USD)</SelectItem>
+                      <SelectItem value="EUR">ยูโร (EUR)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label>เงื่อนไขการชำระเงิน (วัน)</Label>
+                  <Input className="mt-1" defaultValue="30" type="number" />
+                </div>
+                <div>
+                  <Label>รอบการเรียกเก็บเงิน</Label>
+                  <Select defaultValue="monthly">
+                    <SelectTrigger className="mt-1">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="monthly">รายเดือน</SelectItem>
+                      <SelectItem value="quarterly">รายไตรมาส</SelectItem>
+                      <SelectItem value="yearly">รายปี</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div className="flex justify-end mt-6">
+                <Button>บันทึกการตั้งค่า</Button>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="reports" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>รายงานการเงิน</CardTitle>
+              <p className="text-sm text-muted-foreground">
+                ดูรายงานการเงินและการชำระเงินต่างๆ
               </p>
             </CardHeader>
             <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>องค์กร</TableHead>
-                    <TableHead>วิธีการชำระ</TableHead>
-                    <TableHead>อีเมลใบแจ้งหนี้</TableHead>
-                    <TableHead>ที่อยู่เรียกเก็บเงิน</TableHead>
-                    <TableHead>เลขประจำตัวผู้เสียภาษี</TableHead>
-                    <TableHead>ชำระอัตโนมัติ</TableHead>
-                    <TableHead>จัดการ</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {paymentSettings.map((setting) => (
-                    <TableRow key={setting.id}>
-                      <TableCell>
-                        <div className="font-medium">{setting.organizationName}</div>
-                        <div className="text-sm text-muted-foreground">{setting.organizationId}</div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="space-y-1">
-                          {getPaymentMethodBadge(setting.paymentMethod)}
-                          {setting.creditCardLast4 && (
-                            <div className="text-xs text-muted-foreground">**** {setting.creditCardLast4}</div>
-                          )}
-                          {setting.bankAccount && (
-                            <div className="text-xs text-muted-foreground">{setting.bankAccount}</div>
-                          )}
-                        </div>
-                      </TableCell>
-                      <TableCell>{setting.billingEmail}</TableCell>
-                      <TableCell className="max-w-xs truncate">{setting.billingAddress}</TableCell>
-                      <TableCell>{setting.taxId}</TableCell>
-                      <TableCell>
-                        {setting.autoPayment ? (
-                          <Badge className="bg-green-100 text-green-800">
-                            <CheckCircle className="h-3 w-3 mr-1" />
-                            เปิดใช้งาน
-                          </Badge>
-                        ) : (
-                          <Badge variant="outline">
-                            <XCircle className="h-3 w-3 mr-1" />
-                            ปิดใช้งาน
-                          </Badge>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" className="h-8 w-8 p-0">
-                              <MoreHorizontal className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={() => openEditPaymentMethodDialog(setting)}>
-                              <CreditCard className="mr-2 h-4 w-4" />
-                              แก้ไขการชำระเงิน
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => openEditBillingInfoDialog(setting)}>
-                              <FileText className="mr-2 h-4 w-4" />
-                              แก้ไขข้อมูลเรียกเก็บ
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => handleToggleAutoPayment(setting.id)}>
-                              {setting.autoPayment ? (
-                                <>
-                                  <XCircle className="mr-2 h-4 w-4" />
-                                  ปิดการชำระอัตโนมัติ
-                                </>
-                              ) : (
-                                <>
-                                  <CheckCircle className="mr-2 h-4 w-4" />
-                                  เปิดการชำระอัตโนมัติ
-                                </>
-                              )}
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => window.location.href = `/billing/payment-history/${setting.organizationId}`}>
-                              <Eye className="mr-2 h-4 w-4" />
-                              ดูประวัติการชำระ
-                            </DropdownMenuItem>
-                            <DropdownMenuItem>
-                              <Download className="mr-2 h-4 w-4" />
-                              ส่งออกรายงาน
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <Card className="p-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <TrendingUp className="h-5 w-5 text-blue-600" />
+                    <h3 className="font-medium">รายงานรายได้</h3>
+                  </div>
+                  <p className="text-sm text-muted-foreground mb-3">
+                    รายงานรายได้รายเดือนและรายปี
+                  </p>
+                  <Button variant="outline" size="sm" className="w-full">
+                    <Download className="h-4 w-4 mr-2" />
+                    ดาวน์โหลด
+                  </Button>
+                </Card>
+                
+                <Card className="p-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Building className="h-5 w-5 text-green-600" />
+                    <h3 className="font-medium">รายงานลูกค้า</h3>
+                  </div>
+                  <p className="text-sm text-muted-foreground mb-3">
+                    รายงานการชำระเงินของลูกค้า
+                  </p>
+                  <Button variant="outline" size="sm" className="w-full">
+                    <Download className="h-4 w-4 mr-2" />
+                    ดาวน์โหลด
+                  </Button>
+                </Card>
+                
+                <Card className="p-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Banknote className="h-5 w-5 text-purple-600" />
+                    <h3 className="font-medium">รายงานภาษี</h3>
+                  </div>
+                  <p className="text-sm text-muted-foreground mb-3">
+                    รายงานภาษีมูลค่าเพิ่ม
+                  </p>
+                  <Button variant="outline" size="sm" className="w-full">
+                    <Download className="h-4 w-4 mr-2" />
+                    ดาวน์โหลด
+                  </Button>
+                </Card>
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
       </Tabs>
-
-      {/* Invoice Detail Dialog */}
-      <Dialog open={selectedInvoice !== null} onOpenChange={() => setSelectedInvoice(null)}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>รายละเอียดใบแจ้งหนี้</DialogTitle>
-            <DialogDescription>
-              ดูรายละเอียดและจัดการใบแจ้งหนี้
-            </DialogDescription>
-          </DialogHeader>
-          {selectedInvoice && (
-            <div className="space-y-6">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label className="text-sm font-medium">เลขใบแจ้งหนี้</Label>
-                  <p className="text-lg font-mono">{selectedInvoice.invoiceNumber}</p>
-                </div>
-                <div>
-                  <Label className="text-sm font-medium">สถานะ</Label>
-                  <div className="mt-1">{getStatusBadge(selectedInvoice.status)}</div>
-                </div>
-                <div>
-                  <Label className="text-sm font-medium">องค์กร</Label>
-                  <p>{selectedInvoice.organizationName}</p>
-                </div>
-                <div>
-                  <Label className="text-sm font-medium">แพ็กเกจ</Label>
-                  <p>{selectedInvoice.packageName}</p>
-                </div>
-                <div>
-                  <Label className="text-sm font-medium">วันที่ออก</Label>
-                  <p>{selectedInvoice.issueDate}</p>
-                </div>
-                <div>
-                  <Label className="text-sm font-medium">กำหนดชำระ</Label>
-                  <p>{selectedInvoice.dueDate}</p>
-                </div>
-              </div>
-
-              <div>
-                <Label className="text-sm font-medium">รายการ</Label>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>รายการ</TableHead>
-                      <TableHead>จำนวน</TableHead>
-                      <TableHead>ราคาต่อหน่วย</TableHead>
-                      <TableHead>รวม</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {selectedInvoice.items.map((item) => (
-                      <TableRow key={item.id}>
-                        <TableCell>{item.description}</TableCell>
-                        <TableCell>{item.quantity}</TableCell>
-                        <TableCell>฿{item.unitPrice.toLocaleString()}</TableCell>
-                        <TableCell>฿{item.totalPrice.toLocaleString()}</TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
-
-              <div className="border-t pt-4">
-                <div className="space-y-2 text-right">
-                  <div className="flex justify-between">
-                    <span>ยอดรวม:</span>
-                    <span>฿{selectedInvoice.amount.toLocaleString()}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>ภาษีมูลค่าเพิ่ม (7%):</span>
-                    <span>฿{selectedInvoice.tax.toFixed(2)}</span>
-                  </div>
-                  <div className="flex justify-between text-lg font-bold border-t pt-2">
-                    <span>ยอดรวมทั้งสิ้น:</span>
-                    <span>฿{selectedInvoice.totalAmount.toLocaleString()}</span>
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex justify-end gap-2">
-                <Button variant="outline">
-                  <Download className="h-4 w-4 mr-2" />
-                  ดาวน์โหลด PDF
-                </Button>
-                <Button onClick={() => setSelectedInvoice(null)}>
-                  ปิด
-                </Button>
-              </div>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
-
-      {/* Edit Payment Method Dialog */}
-      <Dialog open={isEditPaymentMethodOpen} onOpenChange={setIsEditPaymentMethodOpen}>
-        <DialogContent className="sm:max-w-[425px]">
-          <DialogHeader>
-            <DialogTitle>แก้ไขวิธีการชำระเงิน</DialogTitle>
-            <DialogDescription>
-              เปลี่ยนวิธีการชำระเงินสำหรับ {selectedPaymentSetting?.organizationName}
-            </DialogDescription>
-          </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="space-y-2">
-              <Label htmlFor="payment-method">วิธีการชำระเงิน</Label>
-              <Select value={editingPaymentMethod} onValueChange={setEditingPaymentMethod}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="CreditCard">บัตรเครดิต</SelectItem>
-                  <SelectItem value="BankTransfer">โอนผ่านธนาคาร</SelectItem>
-                  <SelectItem value="PayPal">PayPal</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            {editingPaymentMethod === 'CreditCard' && (
-              <div className="space-y-2">
-                <Label htmlFor="card-number">หมายเลขบัตร</Label>
-                <Input
-                  id="card-number"
-                  placeholder="**** **** **** 1234"
-                  className="font-mono"
-                />
-              </div>
-            )}
-            {editingPaymentMethod === 'BankTransfer' && (
-              <div className="space-y-2">
-                <Label htmlFor="bank-account">หมายเลขบัญชี</Label>
-                <Input
-                  id="bank-account"
-                  placeholder="SCB-1234567890"
-                />
-              </div>
-            )}
-          </div>
-          <div className="flex justify-end gap-2">
-            <Button variant="outline" onClick={() => setIsEditPaymentMethodOpen(false)}>
-              ยกเลิก
-            </Button>
-            <Button onClick={handleSavePaymentMethod}>
-              บันทึก
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* Edit Billing Info Dialog */}
-      <Dialog open={isEditBillingInfoOpen} onOpenChange={setIsEditBillingInfoOpen}>
-        <DialogContent className="sm:max-w-[500px]">
-          <DialogHeader>
-            <DialogTitle>แก้ไขข้อมูลการเรียกเก็บเงิน</DialogTitle>
-            <DialogDescription>
-              แก้ไขข้อมูลการเรียกเก็บเงินสำหรับ {selectedPaymentSetting?.organizationName}
-            </DialogDescription>
-          </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="space-y-2">
-              <Label htmlFor="billing-email">อีเมลใบแจ้งหนี้</Label>
-              <Input
-                id="billing-email"
-                type="email"
-                value={editingBillingData.billingEmail || ''}
-                onChange={(e) => setEditingBillingData({ ...editingBillingData, billingEmail: e.target.value })}
-                placeholder="billing@company.com"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="billing-address">ที่อยู่เรียกเก็บเงิน</Label>
-              <Input
-                id="billing-address"
-                value={editingBillingData.billingAddress || ''}
-                onChange={(e) => setEditingBillingData({ ...editingBillingData, billingAddress: e.target.value })}
-                placeholder="123 ถนนสุขุมวิท กรุงเทพฯ 10110"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="tax-id">เลขประจำตัวผู้เสียภาษี</Label>
-              <Input
-                id="tax-id"
-                value={editingBillingData.taxId || ''}
-                onChange={(e) => setEditingBillingData({ ...editingBillingData, taxId: e.target.value })}
-                placeholder="0105558001234"
-              />
-            </div>
-          </div>
-          <div className="flex justify-end gap-2">
-            <Button variant="outline" onClick={() => setIsEditBillingInfoOpen(false)}>
-              ยกเลิก
-            </Button>
-            <Button onClick={handleSaveBillingInfo}>
-              บันทึก
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
     </div>
   );
-}
+};
+
+export default BillingManagement;

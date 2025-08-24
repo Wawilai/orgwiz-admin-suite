@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -36,6 +36,10 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
+import { LoadingButton } from "@/components/ui/loading-button";
+import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "@/hooks/use-toast";
 import {
   Globe,
   Plus,
@@ -53,80 +57,227 @@ import {
   AlertTriangle,
 } from "lucide-react";
 
-// Mock data for domains
-const mockDomains = [
-  {
-    id: 1,
-    name: "abc-corp.com",
-    organization: "บริษัท เอบีซี จำกัด (มหาชน)",
-    organizationUnit: "IT Department",
-    status: "active",
-    spfEnabled: true,
-    dkimEnabled: true,
-    routingEnabled: true,
-    mailboxCount: 45,
-    createdAt: "2024-01-15",
-    verifiedAt: "2024-01-15",
-    expiresAt: "2025-01-15"
-  },
-  {
-    id: 2,
-    name: "xyz-ltd.com",
-    organization: "บริษัท เอ็กซ์วายแซด จำกัด",
-    organizationUnit: "HR Department", 
-    status: "active",
-    spfEnabled: true,
-    dkimEnabled: false,
-    routingEnabled: true,
-    mailboxCount: 23,
-    createdAt: "2024-02-01",
-    verifiedAt: "2024-02-01",
-    expiresAt: "2025-02-01"
-  },
-  {
-    id: 3,
-    name: "def-enterprise.com",
-    organization: "บริษัท ดีอีเอฟ เอ็นเตอร์ไพรซ์ จำกัด",
-    organizationUnit: "Finance Department",
-    status: "pending",
-    spfEnabled: false,
-    dkimEnabled: false,
-    routingEnabled: false,
-    mailboxCount: 0,
-    createdAt: "2024-01-20",
-    verifiedAt: null,
-    expiresAt: "2025-01-20"
-  },
-];
+interface Domain {
+  id: string;
+  name: string;
+  organization_id: string;
+  status: 'active' | 'pending' | 'suspended';
+  spf_enabled: boolean;
+  dkim_enabled: boolean;
+  routing_enabled: boolean;
+  dmarc_enabled: boolean;
+  max_mailboxes: number;
+  max_aliases: number;
+  verified_at: string | null;
+  expires_at: string | null;
+  created_at: string;
+  updated_at: string;
+  spf_record?: string;
+  dkim_selector?: string;
+  dmarc_policy?: string;
+  mx_records?: any[];
+  organizations?: { name: string };
+}
+
+// Real database functions
+const fetchDomains = async () => {
+  const { data, error } = await supabase
+    .from('domains')
+    .select(`
+      *,
+      organizations!domains_organization_id_fkey (name)
+    `)
+    .order('created_at', { ascending: false });
+  
+  if (error) {
+    console.error('Error fetching domains:', error);
+    toast({
+      title: "เกิดข้อผิดพลาด",
+      description: "ไม่สามารถโหลดข้อมูลโดเมนได้",
+      variant: "destructive",
+    });
+    return [];
+  }
+  
+  return data || [];
+};
+
+const createDomain = async (domainData: any) => {
+  const { data, error } = await supabase
+    .from('domains')
+    .insert([domainData])
+    .select()
+    .single();
+  
+  if (error) {
+    console.error('Error creating domain:', error);
+    toast({
+      title: "เกิดข้อผิดพลาด",
+      description: "ไม่สามารถเพิ่มโดเมนได้",
+      variant: "destructive",
+    });
+    return null;
+  }
+  
+  return data;
+};
+
+const updateDomain = async (id: string, domainData: any) => {
+  const { error } = await supabase
+    .from('domains')
+    .update(domainData)
+    .eq('id', id);
+  
+  if (error) {
+    console.error('Error updating domain:', error);
+    toast({
+      title: "เกิดข้อผิดพลาด", 
+      description: "ไม่สามารถอัปเดตโดเมนได้",
+      variant: "destructive",
+    });
+    return false;
+  }
+  
+  return true;
+};
+
+const deleteDomain = async (id: string) => {
+  const { error } = await supabase
+    .from('domains')
+    .delete()
+    .eq('id', id);
+  
+  if (error) {
+    console.error('Error deleting domain:', error);
+    toast({
+      title: "เกิดข้อผิดพลาด",
+      description: "ไม่สามารถลบโดเมนได้",
+      variant: "destructive",
+    });
+    return false;
+  }
+  
+  return true;
+};
 
 const DomainManagement = () => {
-  const [domains, setDomains] = useState(mockDomains);
+  const { user } = useAuth();
+  const [domains, setDomains] = useState<Domain[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedFilter, setSelectedFilter] = useState("all");
-  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
-  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-  const [isPolicyDialogOpen, setIsPolicyDialogOpen] = useState(false);
-  const [selectedDomain, setSelectedDomain] = useState<any>(null);
-  const [formData, setFormData] = useState({
+  const [isAddDomainOpen, setIsAddDomainOpen] = useState(false);
+  const [editingDomain, setEditingDomain] = useState<Domain | null>(null);
+  const [formData, setFormData] = useState<{
+    name: string;
+    max_mailboxes: number;
+    max_aliases: number;
+    status: 'active' | 'pending' | 'suspended';
+  }>({
     name: "",
-    organization: "",
-    organizationUnit: "",
-    spfEnabled: false,
-    dkimEnabled: false,
-    routingEnabled: false,
+    max_mailboxes: 1000,
+    max_aliases: 500,
+    status: "active"
   });
-  const [policyData, setPolicyData] = useState({
-    spfStrict: false,
-    spfRecords: "",
-    dkimEnabled: false,
-    dkimSelector: "",
-    dkimKeySize: "2048",
-    dmarcPolicy: "none",
-    dmarcRua: "",
-    maxMailboxes: "",
-    maxAliases: "",
-    externalForwarding: false,
+
+  // Load domains on component mount
+  useEffect(() => {
+    loadDomains();
+  }, []);
+
+  const loadDomains = async () => {
+    setLoading(true);
+    const data = await fetchDomains();
+    // Transform data to ensure proper typing
+    const transformedData = data.map((domain: any) => ({
+      ...domain,
+      status: domain.status as 'active' | 'pending' | 'suspended'
+    }));
+    setDomains(transformedData);
+    setLoading(false);
+  };
+
+  const filteredDomains = domains.filter(domain => {
+    const matchesSearch = domain.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         (domain.organizations?.name || '').toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesFilter = selectedFilter === "all" || domain.status === selectedFilter;
+    return matchesSearch && matchesFilter;
   });
+
+  const handleAddDomain = async () => {
+    if (!user) return;
+    
+    setSubmitting(true);
+    const domainData = {
+      ...formData,
+      organization_id: '8a6c4c9d-69f2-4582-b7d4-b72238637b2b', // Current organization
+      spf_enabled: false,
+      dkim_enabled: false,
+      routing_enabled: false,
+      dmarc_enabled: false,
+      mx_records: []
+    };
+    
+    const newDomain = await createDomain(domainData);
+    if (newDomain) {
+      await loadDomains();
+      setIsAddDomainOpen(false);
+      resetForm();
+      toast({
+        title: "เพิ่มโดเมนสำเร็จ",
+        description: "เพิ่มโดเมนใหม่เรียบร้อยแล้ว",
+      });
+    }
+    setSubmitting(false);
+  };
+
+  const handleEditDomain = async () => {
+    if (!editingDomain) return;
+    
+    setSubmitting(true);
+    const success = await updateDomain(editingDomain.id, formData);
+    if (success) {
+      await loadDomains();
+      setEditingDomain(null);
+      resetForm();
+      toast({
+        title: "แก้ไขสำเร็จ",
+        description: "แก้ไขข้อมูลโดเมนเรียบร้อยแล้ว",
+      });
+    }
+    setSubmitting(false);
+  };
+
+  const handleDeleteDomain = async (id: string) => {
+    const success = await deleteDomain(id);
+    if (success) {
+      await loadDomains();
+      toast({
+        title: "ลบสำเร็จ",
+        description: "ลบโดเมนเรียบร้อยแล้ว",
+      });
+    }
+  };
+
+  const resetForm = () => {
+    setFormData({
+      name: "",
+      max_mailboxes: 1000,
+      max_aliases: 500,
+      status: "active"
+    });
+  };
+
+  const openEditDialog = (domain: Domain) => {
+    setEditingDomain(domain);
+    setFormData({
+      name: domain.name,
+      max_mailboxes: domain.max_mailboxes,
+      max_aliases: domain.max_aliases,
+      status: domain.status
+    });
+  };
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -144,11 +295,11 @@ const DomainManagement = () => {
             รอการยืนยัน
           </Badge>
         );
-      case "expired":
+      case "suspended":
         return (
           <Badge variant="destructive">
             <XCircle className="w-3 h-3 mr-1" />
-            หมดอายุ
+            ระงับ
           </Badge>
         );
       default:
@@ -164,97 +315,9 @@ const DomainManagement = () => {
     );
   };
 
-  const filteredDomains = domains.filter(domain => {
-    const matchesSearch = domain.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         domain.organization.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesFilter = selectedFilter === "all" || domain.status === selectedFilter;
-    return matchesSearch && matchesFilter;
-  });
-
-  const handleAdd = () => {
-    if (formData.name && formData.organization) {
-      const newDomain = {
-        id: domains.length + 1,
-        ...formData,
-        status: "pending",
-        mailboxCount: 0,
-        createdAt: new Date().toISOString().split('T')[0],
-        verifiedAt: null,
-        expiresAt: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
-      };
-      setDomains([...domains, newDomain]);
-      setFormData({
-        name: "",
-        organization: "",
-        organizationUnit: "",
-        spfEnabled: false,
-        dkimEnabled: false,
-        routingEnabled: false,
-      });
-      setIsAddDialogOpen(false);
-    }
-  };
-
-  const handleEdit = () => {
-    if (selectedDomain && formData.name && formData.organization) {
-      setDomains(domains.map(domain => 
-        domain.id === selectedDomain.id ? { ...domain, ...formData } : domain
-      ));
-      setIsEditDialogOpen(false);
-      setSelectedDomain(null);
-    }
-  };
-
-  const handleDelete = (id: number) => {
-    setDomains(domains.filter(domain => domain.id !== id));
-  };
-
-  const openEditDialog = (domain: any) => {
-    setSelectedDomain(domain);
-    setFormData({
-      name: domain.name,
-      organization: domain.organization,
-      organizationUnit: domain.organizationUnit,
-      spfEnabled: domain.spfEnabled,
-      dkimEnabled: domain.dkimEnabled,
-      routingEnabled: domain.routingEnabled,
-    });
-    setIsEditDialogOpen(true);
-  };
-
-  const openPolicyDialog = (domain: any) => {
-    setSelectedDomain(domain);
-    setPolicyData({
-      spfStrict: domain.spfEnabled,
-      spfRecords: `v=spf1 include:_spf.${domain.name} ~all`,
-      dkimEnabled: domain.dkimEnabled,
-      dkimSelector: "default",
-      dkimKeySize: "2048",
-      dmarcPolicy: domain.spfEnabled && domain.dkimEnabled ? "quarantine" : "none",
-      dmarcRua: `mailto:dmarc@${domain.name}`,
-      maxMailboxes: "1000",
-      maxAliases: "500",
-      externalForwarding: false,
-    });
-    setIsPolicyDialogOpen(true);
-  };
-
-  const handlePolicyUpdate = () => {
-    if (selectedDomain) {
-      setDomains(domains.map(domain => 
-        domain.id === selectedDomain.id 
-          ? { 
-              ...domain, 
-              spfEnabled: policyData.spfStrict,
-              dkimEnabled: policyData.dkimEnabled,
-              routingEnabled: domain.routingEnabled 
-            } 
-          : domain
-      ));
-      setIsPolicyDialogOpen(false);
-      setSelectedDomain(null);
-    }
-  };
+  if (loading) {
+    return <div className="flex justify-center p-8">กำลังโหลด...</div>;
+  }
 
   return (
     <div className="space-y-6">
@@ -275,7 +338,7 @@ const DomainManagement = () => {
             <Upload className="w-4 h-4 mr-2" />
             นำเข้า
           </Button>
-          <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+          <Dialog open={isAddDomainOpen} onOpenChange={setIsAddDomainOpen}>
             <DialogTrigger asChild>
               <Button>
                 <Plus className="w-4 h-4 mr-2" />
@@ -290,95 +353,56 @@ const DomainManagement = () => {
                 </DialogDescription>
               </DialogHeader>
               <div className="grid gap-4 py-4">
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="domain-name" className="text-right">
-                    ชื่อโดเมน *
-                  </Label>
+                <div className="space-y-2">
+                  <Label htmlFor="domain-name">ชื่อโดเมน *</Label>
                   <Input
                     id="domain-name"
                     value={formData.name}
                     onChange={(e) => setFormData({...formData, name: e.target.value})}
                     placeholder="example.com"
-                    className="col-span-3"
                   />
                 </div>
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="organization" className="text-right">
-                    องค์กร *
-                  </Label>
-                  <Select value={formData.organization} onValueChange={(value) => setFormData({...formData, organization: value})}>
-                    <SelectTrigger className="col-span-3">
-                      <SelectValue placeholder="เลือกองค์กร" />
-                    </SelectTrigger>
-                    <SelectContent className="bg-popover">
-                      <SelectItem value="บริษัท เอบีซี จำกัด (มหาชน)">บริษัท เอบีซี จำกัด (มหาชน)</SelectItem>
-                      <SelectItem value="บริษัท เอ็กซ์วายแซด จำกัด">บริษัท เอ็กซ์วายแซด จำกัด</SelectItem>
-                      <SelectItem value="บริษัท ดีอีเอฟ เอ็นเตอร์ไพรซ์ จำกัด">บริษัท ดีอีเอฟ เอ็นเตอร์ไพรซ์ จำกัด</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="ou" className="text-right">
-                    หน่วยงาน
-                  </Label>
-                  <Select value={formData.organizationUnit} onValueChange={(value) => setFormData({...formData, organizationUnit: value})}>
-                    <SelectTrigger className="col-span-3">
-                      <SelectValue placeholder="เลือกหน่วยงาน" />
-                    </SelectTrigger>
-                    <SelectContent className="bg-popover">
-                      <SelectItem value="IT Department">IT Department</SelectItem>
-                      <SelectItem value="HR Department">HR Department</SelectItem>
-                      <SelectItem value="Finance Department">Finance Department</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="col-span-4">
-                  <Label className="text-sm font-medium mb-3 block">นโยบายอีเมล</Label>
-                  <div className="space-y-3 p-3 border rounded-lg">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <Label htmlFor="spf" className="text-sm font-medium">SPF Policy</Label>
-                        <p className="text-xs text-muted-foreground">ป้องกันการปลอมแปลงผู้ส่ง</p>
-                      </div>
-                      <Switch
-                        id="spf"
-                        checked={formData.spfEnabled}
-                        onCheckedChange={(checked) => setFormData({...formData, spfEnabled: checked})}
-                      />
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <Label htmlFor="dkim" className="text-sm font-medium">DKIM Policy</Label>
-                        <p className="text-xs text-muted-foreground">ลายเซ็นดิจิทัลสำหรับอีเมล</p>
-                      </div>
-                      <Switch
-                        id="dkim"
-                        checked={formData.dkimEnabled}
-                        onCheckedChange={(checked) => setFormData({...formData, dkimEnabled: checked})}
-                      />
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <Label htmlFor="routing" className="text-sm font-medium">Mail Routing</Label>
-                        <p className="text-xs text-muted-foreground">เส้นทางการส่งอีเมล</p>
-                      </div>
-                      <Switch
-                        id="routing"
-                        checked={formData.routingEnabled}
-                        onCheckedChange={(checked) => setFormData({...formData, routingEnabled: checked})}
-                      />
-                    </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="max-mailboxes">กล่องจดหมายสูงสุด</Label>
+                    <Input
+                      id="max-mailboxes"
+                      type="number"
+                      value={formData.max_mailboxes}
+                      onChange={(e) => setFormData({...formData, max_mailboxes: parseInt(e.target.value)})}
+                    />
                   </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="max-aliases">Aliases สูงสุด</Label>
+                    <Input
+                      id="max-aliases"
+                      type="number"
+                      value={formData.max_aliases}
+                      onChange={(e) => setFormData({...formData, max_aliases: parseInt(e.target.value)})}
+                    />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="status">สถานะ</Label>
+                  <Select value={formData.status} onValueChange={(value: 'active' | 'pending' | 'suspended') => setFormData({...formData, status: value})}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="active">ใช้งาน</SelectItem>
+                      <SelectItem value="pending">รอการยืนยัน</SelectItem>
+                      <SelectItem value="suspended">ระงับ</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
               <div className="flex justify-end space-x-2">
-                <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>
+                <Button variant="outline" onClick={() => setIsAddDomainOpen(false)}>
                   ยกเลิก
                 </Button>
-                <Button onClick={handleAdd}>
+                <LoadingButton loading={submitting} onClick={handleAddDomain}>
                   บันทึก
-                </Button>
+                </LoadingButton>
               </div>
             </DialogContent>
           </Dialog>
@@ -394,7 +418,7 @@ const DomainManagement = () => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{domains.length}</div>
-            <p className="text-xs text-muted-foreground">+1 โดเมนเดือนนี้</p>
+            <p className="text-xs text-muted-foreground">ทั้งหมด</p>
           </CardContent>
         </Card>
         <Card>
@@ -416,9 +440,9 @@ const DomainManagement = () => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {domains.reduce((sum, d) => sum + d.mailboxCount, 0)}
+              {domains.reduce((sum, d) => sum + d.max_mailboxes, 0)}
             </div>
-            <p className="text-xs text-muted-foreground">ทุกโดเมน</p>
+            <p className="text-xs text-muted-foreground">ความจุรวม</p>
           </CardContent>
         </Card>
         <Card>
@@ -463,7 +487,7 @@ const DomainManagement = () => {
                 <SelectItem value="all">ทั้งหมด</SelectItem>
                 <SelectItem value="active">ใช้งาน</SelectItem>
                 <SelectItem value="pending">รอการยืนยัน</SelectItem>
-                <SelectItem value="expired">หมดอายุ</SelectItem>
+                <SelectItem value="suspended">ระงับ</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -473,11 +497,11 @@ const DomainManagement = () => {
               <TableHeader>
                 <TableRow>
                   <TableHead>โดเมน</TableHead>
-                  <TableHead>องค์กร / หน่วยงาน</TableHead>
+                  <TableHead>องค์กร</TableHead>
                   <TableHead className="text-center">นโยบาย</TableHead>
                   <TableHead className="text-center">กล่องจดหมาย</TableHead>
                   <TableHead>สถานะ</TableHead>
-                  <TableHead>วันหมดอายุ</TableHead>
+                  <TableHead>วันที่สร้าง</TableHead>
                   <TableHead className="text-right">การดำเนินการ</TableHead>
                 </TableRow>
               </TableHeader>
@@ -492,37 +516,34 @@ const DomainManagement = () => {
                         <div>
                           <div className="font-medium">{domain.name}</div>
                           <div className="text-sm text-muted-foreground">
-                            เพิ่มเมื่อ {domain.createdAt}
+                            {domain.verified_at ? 'ยืนยันแล้ว' : 'ยังไม่ยืนยัน'}
                           </div>
                         </div>
                       </div>
                     </TableCell>
                     <TableCell>
-                      <div>
-                        <div className="font-medium">{domain.organization}</div>
-                        <div className="text-sm text-muted-foreground">{domain.organizationUnit}</div>
-                      </div>
+                      <div className="font-medium">{domain.organizations?.name || 'ไม่ระบุ'}</div>
                     </TableCell>
                     <TableCell>
                       <div className="flex justify-center space-x-2">
                         <div className="flex flex-col items-center">
-                          {getPolicyStatus(domain.spfEnabled)}
+                          {getPolicyStatus(domain.spf_enabled)}
                           <span className="text-xs text-muted-foreground">SPF</span>
                         </div>
                         <div className="flex flex-col items-center">
-                          {getPolicyStatus(domain.dkimEnabled)}
+                          {getPolicyStatus(domain.dkim_enabled)}
                           <span className="text-xs text-muted-foreground">DKIM</span>
                         </div>
                         <div className="flex flex-col items-center">
-                          {getPolicyStatus(domain.routingEnabled)}
+                          {getPolicyStatus(domain.routing_enabled)}
                           <span className="text-xs text-muted-foreground">Route</span>
                         </div>
                       </div>
                     </TableCell>
                     <TableCell>
                       <div className="text-center">
-                        <div className="font-medium">{domain.mailboxCount}</div>
-                        <div className="text-xs text-muted-foreground">กล่อง</div>
+                        <div className="font-medium">{domain.max_mailboxes}</div>
+                        <div className="text-xs text-muted-foreground">สูงสุด</div>
                       </div>
                     </TableCell>
                     <TableCell>
@@ -530,7 +551,7 @@ const DomainManagement = () => {
                     </TableCell>
                     <TableCell>
                       <div className="text-sm">
-                        {domain.expiresAt}
+                        {new Date(domain.created_at).toLocaleDateString('th-TH')}
                       </div>
                     </TableCell>
                     <TableCell className="text-right">
@@ -547,13 +568,9 @@ const DomainManagement = () => {
                             <Edit className="mr-2 h-4 w-4" />
                             แก้ไข
                           </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => openPolicyDialog(domain)}>
-                            <Shield className="mr-2 h-4 w-4" />
-                            ตั้งค่านโยบาย
-                          </DropdownMenuItem>
                           <DropdownMenuItem 
                             className="text-destructive"
-                            onClick={() => handleDelete(domain.id)}
+                            onClick={() => handleDeleteDomain(domain.id)}
                           >
                             <Trash2 className="mr-2 h-4 w-4" />
                             ลบ
@@ -569,256 +586,65 @@ const DomainManagement = () => {
         </CardContent>
       </Card>
 
-      {/* Policy Settings Dialog */}
-      <Dialog open={isPolicyDialogOpen} onOpenChange={setIsPolicyDialogOpen}>
-        <DialogContent className="max-w-4xl bg-card">
-          <DialogHeader>
-            <DialogTitle>ตั้งค่านโยบายโดเมน: {selectedDomain?.name}</DialogTitle>
-            <DialogDescription>
-              กำหนดนโยบายความปลอดภัยและการใช้งานสำหรับโดเมน {selectedDomain?.name}
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-6 max-h-[70vh] overflow-y-auto">
-            <div className="space-y-4">
-              <h3 className="text-lg font-semibold">นโยบาย SPF (Sender Policy Framework)</h3>
-              <div className="space-y-3">
-                <div className="flex items-center space-x-2">
-                  <Switch 
-                    id="spf-strict" 
-                    checked={policyData.spfStrict}
-                    onCheckedChange={(checked) => setPolicyData({...policyData, spfStrict: checked})}
-                  />
-                  <Label htmlFor="spf-strict">ใช้งาน SPF แบบเข้มงวด</Label>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="spf-records">SPF Records</Label>
-                  <Input 
-                    id="spf-records" 
-                    value={policyData.spfRecords}
-                    onChange={(e) => setPolicyData({...policyData, spfRecords: e.target.value})}
-                    placeholder="v=spf1 include:_spf.example.com ~all"
-                    className="font-mono text-sm"
-                  />
-                </div>
-              </div>
-            </div>
-
-            <div className="space-y-4">
-              <h3 className="text-lg font-semibold">นโยบาย DKIM (DomainKeys Identified Mail)</h3>
-              <div className="space-y-3">
-                <div className="flex items-center space-x-2">
-                  <Switch 
-                    id="dkim-enable"
-                    checked={policyData.dkimEnabled}
-                    onCheckedChange={(checked) => setPolicyData({...policyData, dkimEnabled: checked})}
-                  />
-                  <Label htmlFor="dkim-enable">เปิดใช้งาน DKIM</Label>
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="dkim-selector">Selector</Label>
-                    <Input 
-                      id="dkim-selector"
-                      value={policyData.dkimSelector}
-                      onChange={(e) => setPolicyData({...policyData, dkimSelector: e.target.value})}
-                      placeholder="default"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="dkim-key-size">Key Size</Label>
-                    <Select 
-                      value={policyData.dkimKeySize}
-                      onValueChange={(value) => setPolicyData({...policyData, dkimKeySize: value})}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="เลือกขนาด Key" />
-                      </SelectTrigger>
-                      <SelectContent className="bg-popover">
-                        <SelectItem value="1024">1024 bits</SelectItem>
-                        <SelectItem value="2048">2048 bits</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="space-y-4">
-              <h3 className="text-lg font-semibold">นโยบาย DMARC</h3>
-              <div className="space-y-3">
-                <div className="space-y-2">
-                  <Label htmlFor="dmarc-policy">DMARC Policy</Label>
-                  <Select
-                    value={policyData.dmarcPolicy}
-                    onValueChange={(value) => setPolicyData({...policyData, dmarcPolicy: value})}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="เลือก Policy" />
-                    </SelectTrigger>
-                    <SelectContent className="bg-popover">
-                      <SelectItem value="none">None</SelectItem>
-                      <SelectItem value="quarantine">Quarantine</SelectItem>
-                      <SelectItem value="reject">Reject</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="dmarc-rua">Report URI (RUA)</Label>
-                  <Input 
-                    id="dmarc-rua"
-                    value={policyData.dmarcRua}
-                    onChange={(e) => setPolicyData({...policyData, dmarcRua: e.target.value})}
-                    placeholder="mailto:dmarc@example.com"
-                  />
-                </div>
-              </div>
-            </div>
-
-            <div className="space-y-4">
-              <h3 className="text-lg font-semibold">การจำกัดการใช้งาน</h3>
-              <div className="space-y-3">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="max-mailboxes">จำนวนกล่องจดหมายสูงสุด</Label>
-                    <Input 
-                      id="max-mailboxes" 
-                      type="number"
-                      value={policyData.maxMailboxes}
-                      onChange={(e) => setPolicyData({...policyData, maxMailboxes: e.target.value})}
-                      placeholder="1000"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="max-aliases">จำนวน Aliases สูงสุด</Label>
-                    <Input 
-                      id="max-aliases" 
-                      type="number"
-                      value={policyData.maxAliases}
-                      onChange={(e) => setPolicyData({...policyData, maxAliases: e.target.value})}
-                      placeholder="500"
-                    />
-                  </div>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <Switch 
-                    id="external-forwarding"
-                    checked={policyData.externalForwarding}
-                    onCheckedChange={(checked) => setPolicyData({...policyData, externalForwarding: checked})}
-                  />
-                  <Label htmlFor="external-forwarding">อนุญาตการส่งต่อไปยังโดเมนภายนอก</Label>
-                </div>
-              </div>
-            </div>
-          </div>
-          <div className="flex justify-end space-x-2">
-            <Button variant="outline" onClick={() => setIsPolicyDialogOpen(false)}>
-              ยกเลิก
-            </Button>
-            <Button onClick={handlePolicyUpdate}>
-              บันทึกการตั้งค่า
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
-
       {/* Edit Dialog */}
-      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+      <Dialog open={!!editingDomain} onOpenChange={(open) => !open && setEditingDomain(null)}>
         <DialogContent className="sm:max-w-[500px] bg-card">
           <DialogHeader>
             <DialogTitle>แก้ไขโดเมน</DialogTitle>
             <DialogDescription>
-              แก้ไขข้อมูลโดเมน {selectedDomain?.name}
+              แก้ไขข้อมูลโดเมน {editingDomain?.name}
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="edit-domain-name" className="text-right">
-                ชื่อโดเมน *
-              </Label>
+            <div className="space-y-2">
+              <Label htmlFor="edit-domain-name">ชื่อโดเมน *</Label>
               <Input
                 id="edit-domain-name"
                 value={formData.name}
                 onChange={(e) => setFormData({...formData, name: e.target.value})}
-                className="col-span-3"
               />
             </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="edit-organization" className="text-right">
-                องค์กร *
-              </Label>
-              <Select value={formData.organization} onValueChange={(value) => setFormData({...formData, organization: value})}>
-                <SelectTrigger className="col-span-3">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent className="bg-popover">
-                  <SelectItem value="บริษัท เอบีซี จำกัด (มหาชน)">บริษัท เอบีซี จำกัด (มหาชน)</SelectItem>
-                  <SelectItem value="บริษัท เอ็กซ์วายแซด จำกัด">บริษัท เอ็กซ์วายแซด จำกัด</SelectItem>
-                  <SelectItem value="บริษัท ดีอีเอฟ เอ็นเตอร์ไพรซ์ จำกัด">บริษัท ดีอีเอฟ เอ็นเตอร์ไพรซ์ จำกัด</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="edit-ou" className="text-right">
-                หน่วยงาน
-              </Label>
-              <Select value={formData.organizationUnit} onValueChange={(value) => setFormData({...formData, organizationUnit: value})}>
-                <SelectTrigger className="col-span-3">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent className="bg-popover">
-                  <SelectItem value="IT Department">IT Department</SelectItem>
-                  <SelectItem value="HR Department">HR Department</SelectItem>
-                  <SelectItem value="Finance Department">Finance Department</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="col-span-4">
-              <Label className="text-sm font-medium mb-3 block">นโยบายอีเมล</Label>
-              <div className="space-y-3 p-3 border rounded-lg">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <Label htmlFor="edit-spf" className="text-sm font-medium">SPF Policy</Label>
-                    <p className="text-xs text-muted-foreground">ป้องกันการปลอมแปลงผู้ส่ง</p>
-                  </div>
-                  <Switch
-                    id="edit-spf"
-                    checked={formData.spfEnabled}
-                    onCheckedChange={(checked) => setFormData({...formData, spfEnabled: checked})}
-                  />
-                </div>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <Label htmlFor="edit-dkim" className="text-sm font-medium">DKIM Policy</Label>
-                    <p className="text-xs text-muted-foreground">ลายเซ็นดิจิทัลสำหรับอีเมล</p>
-                  </div>
-                  <Switch
-                    id="edit-dkim"
-                    checked={formData.dkimEnabled}
-                    onCheckedChange={(checked) => setFormData({...formData, dkimEnabled: checked})}
-                  />
-                </div>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <Label htmlFor="edit-routing" className="text-sm font-medium">Mail Routing</Label>
-                    <p className="text-xs text-muted-foreground">เส้นทางการส่งอีเมล</p>
-                  </div>
-                  <Switch
-                    id="edit-routing"
-                    checked={formData.routingEnabled}
-                    onCheckedChange={(checked) => setFormData({...formData, routingEnabled: checked})}
-                  />
-                </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="edit-max-mailboxes">กล่องจดหมายสูงสุด</Label>
+                <Input
+                  id="edit-max-mailboxes"
+                  type="number"
+                  value={formData.max_mailboxes}
+                  onChange={(e) => setFormData({...formData, max_mailboxes: parseInt(e.target.value)})}
+                />
               </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-max-aliases">Aliases สูงสุด</Label>
+                <Input
+                  id="edit-max-aliases"
+                  type="number"
+                  value={formData.max_aliases}
+                  onChange={(e) => setFormData({...formData, max_aliases: parseInt(e.target.value)})}
+                />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-status">สถานะ</Label>
+              <Select value={formData.status} onValueChange={(value: 'active' | 'pending' | 'suspended') => setFormData({...formData, status: value})}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="active">ใช้งาน</SelectItem>
+                  <SelectItem value="pending">รอการยืนยัน</SelectItem>
+                  <SelectItem value="suspended">ระงับ</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           </div>
           <div className="flex justify-end space-x-2">
-            <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
+            <Button variant="outline" onClick={() => setEditingDomain(null)}>
               ยกเลิก
             </Button>
-            <Button onClick={handleEdit}>
+            <LoadingButton loading={submitting} onClick={handleEditDomain}>
               บันทึกการแก้ไข
-            </Button>
+            </LoadingButton>
           </div>
         </DialogContent>
       </Dialog>

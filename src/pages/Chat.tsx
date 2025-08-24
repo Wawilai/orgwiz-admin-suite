@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -12,6 +12,8 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from '@/hooks/use-toast';
+import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
 import { 
   MessageSquare, 
   Send, 
@@ -54,109 +56,10 @@ interface Chat {
   messages: Message[];
 }
 
-const mockUsers = [
-  { id: '1', name: 'สมชาย ใจดี', avatar: '', isOnline: true },
-  { id: '2', name: 'นภา สว่างใส', avatar: '', isOnline: true },
-  { id: '3', name: 'วิชัย เก่งกาจ', avatar: '', isOnline: false },
-  { id: '4', name: 'สุดา สดใส', avatar: '', isOnline: true }
-];
-
-const mockChats: Chat[] = [
-  {
-    id: '1',
-    type: 'individual',
-    name: 'สมชาย ใจดี',
-    participants: ['1', 'current-user'],
-    lastMessage: 'ครับ ผมจะส่งเอกสารให้ดูภายในวันนี้',
-    lastMessageTime: '10:30',
-    unreadCount: 2,
-    isOnline: true,
-    messages: [
-      {
-        id: '1',
-        senderId: '1',
-        senderName: 'สมชาย ใจดี',
-        content: 'สวัสดีครับ',
-        timestamp: '09:00',
-        type: 'text'
-      },
-      {
-        id: '2',
-        senderId: 'current-user',
-        senderName: 'ฉัน',
-        content: 'สวัสดีครับ มีเรื่องอะไรครับ',
-        timestamp: '09:05',
-        type: 'text'
-      },
-      {
-        id: '3',
-        senderId: '1',
-        senderName: 'สมชาย ใจดี',
-        content: 'อยากสอบถามเรื่องโครงการใหม่ครับ',
-        timestamp: '09:10',
-        type: 'text'
-      },
-      {
-        id: '4',
-        senderId: 'current-user',
-        senderName: 'ฉัน',
-        content: 'ได้เลยครับ จะส่งเอกสารให้ดูได้ไหม',
-        timestamp: '09:15',
-        type: 'text'
-      },
-      {
-        id: '5',
-        senderId: '1',
-        senderName: 'สมชาย ใจดี',
-        content: 'ครับ ผมจะส่งเอกสารให้ดูภายในวันนี้',
-        timestamp: '10:30',
-        type: 'text'
-      }
-    ]
-  },
-  {
-    id: '2',
-    type: 'group',
-    name: 'ทีม IT Development',
-    participants: ['1', '2', '3', 'current-user'],
-    lastMessage: 'การประชุมวันพรุ่งนี้เลื่อนเป็น 14:00 นะครับ',
-    lastMessageTime: '11:45',
-    unreadCount: 0,
-    messages: [
-      {
-        id: '1',
-        senderId: '2',
-        senderName: 'นภา สว่างใส',
-        content: 'การประชุมวันพรุ่งนี้เลื่อนเป็น 14:00 นะครับ',
-        timestamp: '11:45',
-        type: 'text'
-      }
-    ]
-  },
-  {
-    id: '3',
-    type: 'individual',
-    name: 'วิชัย เก่งกาจ',
-    participants: ['3', 'current-user'],
-    lastMessage: 'ขอบคุณครับ',
-    lastMessageTime: 'เมื่อวาน',
-    unreadCount: 0,
-    isOnline: false,
-    messages: [
-      {
-        id: '1',
-        senderId: '3',
-        senderName: 'วิชัย เก่งกาจ',
-        content: 'ขอบคุณครับ',
-        timestamp: 'เมื่อวาน 16:20',
-        type: 'text'
-      }
-    ]
-  }
-];
-
 export default function Chat() {
-  const [chats, setChats] = useState<Chat[]>(mockChats);
+  const { user, isAuthenticated } = useAuth();
+  const [chats, setChats] = useState<Chat[]>([]);
+  const [users, setUsers] = useState<any[]>([]);
   const [activeChat, setActiveChat] = useState<Chat | null>(chats[0]);
   const [message, setMessage] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
@@ -164,6 +67,48 @@ export default function Chat() {
   const [isGroupDialogOpen, setIsGroupDialogOpen] = useState(false);
   const [newGroupName, setNewGroupName] = useState('');
   const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      fetchUsers();
+      fetchChats();
+    }
+  }, [isAuthenticated]);
+
+  const fetchUsers = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('user_id, first_name, last_name, avatar_url')
+        .neq('user_id', user?.id);
+      
+      if (error) throw error;
+      
+      const formattedUsers = data?.map(profile => ({
+        id: profile.user_id,
+        name: `${profile.first_name} ${profile.last_name}`,
+        avatar: profile.avatar_url || '',
+        isOnline: Math.random() > 0.5 // Mock online status
+      })) || [];
+      
+      setUsers(formattedUsers);
+    } catch (error) {
+      console.error('Error fetching users:', error);
+    }
+  };
+
+  const fetchChats = async () => {
+    try {
+      // For now, we'll use mock data structure but you can extend to real database
+      // This would typically involve creating a groups table with chat functionality
+      setChats([]);
+      setLoading(false);
+    } catch (error) {
+      console.error('Error fetching chats:', error);
+      setLoading(false);
+    }
+  };
 
   const filteredChats = chats.filter(chat =>
     chat.name.toLowerCase().includes(searchTerm.toLowerCase())
@@ -174,7 +119,7 @@ export default function Chat() {
 
     const newMessage: Message = {
       id: Date.now().toString(),
-      senderId: 'current-user',
+      senderId: user?.id || 'current-user',
       senderName: 'ฉัน',
       content: message,
       timestamp: new Date().toLocaleTimeString('th-TH', { 
@@ -199,8 +144,8 @@ export default function Chat() {
   };
 
   const handleCreateIndividualChat = (userId: string) => {
-    const user = mockUsers.find(u => u.id === userId);
-    if (!user) return;
+    const selectedUser = users.find(u => u.id === userId);
+    if (!selectedUser) return;
 
     const existingChat = chats.find(chat => 
       chat.type === 'individual' && 
@@ -216,10 +161,10 @@ export default function Chat() {
     const newChat: Chat = {
       id: Date.now().toString(),
       type: 'individual',
-      name: user.name,
-      participants: [userId, 'current-user'],
+      name: selectedUser.name,
+      participants: [userId, user?.id || ''],
       unreadCount: 0,
-      isOnline: user.isOnline,
+      isOnline: selectedUser.isOnline,
       messages: []
     };
 
@@ -228,7 +173,7 @@ export default function Chat() {
     setIsNewChatDialogOpen(false);
     toast({
       title: "สร้างแชทสำเร็จ",
-      description: `เริ่มต้นแชทกับ ${user.name} แล้ว`,
+      description: `เริ่มต้นแชทกับ ${selectedUser.name} แล้ว`,
     });
   };
 
@@ -239,7 +184,7 @@ export default function Chat() {
       id: Date.now().toString(),
       type: 'group',
       name: newGroupName,
-      participants: [...selectedUsers, 'current-user'],
+      participants: [...selectedUsers, user?.id || ''],
       unreadCount: 0,
       messages: []
     };
@@ -600,31 +545,31 @@ export default function Chat() {
             <DialogTitle>แชทใหม่</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
-            <div className="space-y-2">
-              {mockUsers.map((user) => (
-                <div
-                  key={user.id}
-                  className="flex items-center gap-3 p-2 hover:bg-muted/50 rounded-lg cursor-pointer"
-                  onClick={() => handleCreateIndividualChat(user.id)}
-                >
-                  <div className="relative">
-                    <Avatar>
-                      <AvatarImage src={user.avatar} />
-                      <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
-                    </Avatar>
-                    {user.isOnline && (
-                      <div className="absolute -bottom-0 -right-0 w-3 h-3 bg-green-500 border-2 border-background rounded-full" />
-                    )}
-                  </div>
-                  <div>
-                    <div className="font-medium">{user.name}</div>
-                    <div className="text-sm text-muted-foreground">
-                      {user.isOnline ? 'ออนไลน์' : 'ออฟไลน์'}
+              <div className="space-y-2 p-4">
+                {users.map((chatUser) => (
+                  <div
+                    key={chatUser.id}
+                    className="flex items-center gap-3 p-2 hover:bg-muted/50 rounded-lg cursor-pointer"
+                    onClick={() => handleCreateIndividualChat(chatUser.id)}
+                  >
+                    <div className="relative">
+                      <Avatar>
+                        <AvatarImage src={chatUser.avatar} />
+                        <AvatarFallback>{chatUser.name.charAt(0)}</AvatarFallback>
+                      </Avatar>
+                      {chatUser.isOnline && (
+                        <div className="absolute -bottom-0 -right-0 w-3 h-3 bg-green-500 border-2 border-background rounded-full" />
+                      )}
+                    </div>
+                    <div>
+                      <div className="font-medium">{chatUser.name}</div>
+                      <div className="text-sm text-muted-foreground">
+                        {chatUser.isOnline ? 'ออนไลน์' : 'ออฟไลน์'}
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
           </div>
         </DialogContent>
       </Dialog>
@@ -648,24 +593,24 @@ export default function Chat() {
             <div className="space-y-2">
               <Label>เลือกสมาชิก</Label>
               <div className="space-y-2 max-h-40 overflow-y-auto">
-                {mockUsers.map((user) => (
+                {users.map((chatUser) => (
                   <div
-                    key={user.id}
+                    key={chatUser.id}
                     className={`flex items-center gap-3 p-2 rounded-lg cursor-pointer ${
-                      selectedUsers.includes(user.id)
+                      selectedUsers.includes(chatUser.id)
                         ? 'bg-primary/10 border border-primary/20'
                         : 'hover:bg-muted/50'
                     }`}
-                    onClick={() => toggleUserSelection(user.id)}
+                    onClick={() => toggleUserSelection(chatUser.id)}
                   >
                     <Avatar>
-                      <AvatarImage src={user.avatar} />
-                      <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
+                      <AvatarImage src={chatUser.avatar} />
+                      <AvatarFallback>{chatUser.name.charAt(0)}</AvatarFallback>
                     </Avatar>
                     <div className="flex-1">
-                      <div className="font-medium">{user.name}</div>
+                      <div className="font-medium">{chatUser.name}</div>
                     </div>
-                    {selectedUsers.includes(user.id) && (
+                    {selectedUsers.includes(chatUser.id) && (
                       <div className="w-4 h-4 bg-primary rounded-full flex items-center justify-center">
                         <div className="w-2 h-2 bg-white rounded-full" />
                       </div>

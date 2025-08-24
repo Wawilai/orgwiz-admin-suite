@@ -8,8 +8,12 @@ interface AuthContextType {
   loading: boolean;
   signIn: (email: string, password: string) => Promise<{ error: any }>;
   signUp: (email: string, password: string) => Promise<{ error: any }>;
+  resetPassword: (email: string) => Promise<{ error: any }>;
   signOut: () => Promise<void>;
   isAuthenticated: boolean;
+  userProfile: any;
+  userRoles: string[];
+  refreshProfile: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -30,6 +34,8 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
+  const [userProfile, setUserProfile] = useState<any>(null);
+  const [userRoles, setUserRoles] = useState<string[]>([]);
 
   useEffect(() => {
     let mounted = true;
@@ -45,11 +51,21 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         setUser(session?.user ?? null);
         setLoading(false);
 
+        // Fetch user profile and roles when signed in
+        if (session?.user) {
+          fetchUserProfile(session.user.id);
+        } else {
+          setUserProfile(null);
+          setUserRoles([]);
+        }
+
         // Handle different auth events
         if (event === 'SIGNED_IN') {
           console.log('User signed in successfully');
         } else if (event === 'SIGNED_OUT') {
           console.log('User signed out');
+          setUserProfile(null);
+          setUserRoles([]);
         } else if (event === 'TOKEN_REFRESHED') {
           console.log('Token refreshed');
         }
@@ -108,6 +124,55 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     };
   }, []);
 
+  const fetchUserProfile = async (userId: string) => {
+    try {
+      // Try to fetch profile with proper error handling
+      const profileResult = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('user_id', userId)
+        .maybeSingle(); // Use maybeSingle to avoid errors when no profile exists
+
+      if (profileResult.data) {
+        setUserProfile(profileResult.data);
+      } else {
+        // Profile doesn't exist yet, create a default one
+        setUserProfile(null);
+      }
+
+      // Try to fetch user roles with error handling
+      try {
+        const rolesResult = await supabase
+          .from('user_roles')
+          .select(`
+            roles (name, role_type)
+          `)
+          .eq('user_id', userId)
+          .eq('is_active', true);
+
+        if (rolesResult.data) {
+          const roles = rolesResult.data.map(ur => ur.roles?.name).filter(Boolean);
+          setUserRoles(roles);
+        } else {
+          setUserRoles([]);
+        }
+      } catch (roleError) {
+        console.warn('Unable to fetch user roles:', roleError);
+        setUserRoles([]);
+      }
+    } catch (error) {
+      console.warn('Unable to fetch user profile:', error);
+      setUserProfile(null);
+      setUserRoles([]);
+    }
+  };
+
+  const refreshProfile = async () => {
+    if (user?.id) {
+      await fetchUserProfile(user.id);
+    }
+  };
+
   const signIn = async (email: string, password: string) => {
     const { error } = await supabase.auth.signInWithPassword({
       email,
@@ -129,8 +194,32 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     return { error };
   };
 
+  const resetPassword = async (email: string) => {
+    const redirectUrl = `${window.location.origin}/auth`;
+    
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: redirectUrl
+    });
+    return { error };
+  };
+
   const signOut = async () => {
-    await supabase.auth.signOut();
+    try {
+      // Clear local state first
+      setUser(null);
+      setSession(null);
+      setUserProfile(null);
+      setUserRoles([]);
+      
+      // Then sign out from Supabase
+      const { error } = await supabase.auth.signOut();
+      if (error) {
+        console.error("Supabase signOut error:", error);
+      }
+    } catch (error) {
+      console.error("Error during signOut:", error);
+      throw error;
+    }
   };
 
   const value = {
@@ -139,8 +228,12 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     loading,
     signIn,
     signUp,
+    resetPassword,
     signOut,
-    isAuthenticated: !!user
+    isAuthenticated: !!user,
+    userProfile,
+    userRoles,
+    refreshProfile
   };
 
   return (

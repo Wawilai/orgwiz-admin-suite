@@ -1,9 +1,9 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { LoadingButton } from "@/components/ui/loading-button";
 import {
   Table,
   TableBody,
@@ -37,11 +37,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { LoadingButton } from "@/components/ui/loading-button";
-import { FormFieldWrapper } from "@/components/ui/form-field-wrapper";
-import { useDeleteConfirmation, useStatusChangeConfirmation } from "@/components/ui/confirmation-dialog";
-import { useFormValidation, createDuplicateValidator } from "@/hooks/use-form-validation";
-import { toastSuccess, toastError, toastWithUndo } from "@/components/ui/enhanced-toast";
 import {
   Database,
   Plus,
@@ -55,347 +50,359 @@ import {
   Globe,
   Settings,
 } from "lucide-react";
+import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from '@/hooks/use-toast';
 
-// Master Data Types
 interface MasterDataItem {
-  id: number;
+  id: string;
   code: string;
   name: string;
+  name_en?: string;
   description?: string;
-  isActive: boolean;
-  order: number;
-  category?: string;
-  createdAt: string;
-  updatedAt: string;
+  is_active: boolean;
+  sort_order: number;
+  type_id: string;
+  organization_id?: string;
+  created_at: string;
+  updated_at: string;
 }
 
-// Mock data for different master data types
-const mockServerLocations: MasterDataItem[] = [
-  { id: 1, code: "DC_A", name: "Data Center A", description: "ศูนย์ข้อมูลหลัก", isActive: true, order: 1, createdAt: "2024-01-01", updatedAt: "2024-01-01" },
-  { id: 2, code: "DC_B", name: "Data Center B", description: "ศูนย์ข้อมูลสำรอง", isActive: true, order: 2, createdAt: "2024-01-01", updatedAt: "2024-01-01" },
-  { id: 3, code: "DC_C", name: "Data Center C", description: "ศูนย์ข้อมูลระยะไกล", isActive: true, order: 3, createdAt: "2024-01-01", updatedAt: "2024-01-01" },
-  { id: 4, code: "CLOUD_1", name: "Cloud Region 1", description: "คลาวด์ภูมิภาคที่ 1", isActive: true, order: 4, createdAt: "2024-01-01", updatedAt: "2024-01-01" },
-  { id: 5, code: "CLOUD_2", name: "Cloud Region 2", description: "คลาวด์ภูมิภาคที่ 2", isActive: false, order: 5, createdAt: "2024-01-01", updatedAt: "2024-01-01" },
-];
+interface MasterDataType {
+  id: string;
+  type_name: string;
+  name_en?: string;
+  description?: string;
+  is_system_type: boolean;
+  created_at: string;
+}
 
-const mockServerTypes: MasterDataItem[] = [
-  { id: 1, code: "WEB", name: "เว็บเซิร์ฟเวอร์", description: "เซิร์ฟเวอร์สำหรับเว็บแอปพลิเคชัน", isActive: true, order: 1, createdAt: "2024-01-01", updatedAt: "2024-01-01" },
-  { id: 2, code: "DB", name: "ฐานข้อมูล", description: "เซิร์ฟเวอร์ฐานข้อมูล", isActive: true, order: 2, createdAt: "2024-01-01", updatedAt: "2024-01-01" },
-  { id: 3, code: "MAIL", name: "เมลเซิร์ฟเวอร์", description: "เซิร์ฟเวอร์จดหมายอิเล็กทรอนิกส์", isActive: true, order: 3, createdAt: "2024-01-01", updatedAt: "2024-01-01" },
-  { id: 4, code: "FILE", name: "ไฟล์เซิร์ฟเวอร์", description: "เซิร์ฟเวอร์จัดเก็บไฟล์", isActive: true, order: 4, createdAt: "2024-01-01", updatedAt: "2024-01-01" },
-  { id: 5, code: "LB", name: "โหลดบาลานเซอร์", description: "เซิร์ฟเวอร์กระจายโหลด", isActive: true, order: 5, createdAt: "2024-01-01", updatedAt: "2024-01-01" },
-];
+const fetchMasterDataTypes = async () => {
+  const { data, error } = await supabase
+    .from('master_data_types')
+    .select('*')
+    .order('type_name');
+  
+  if (error) {
+    console.error('Error fetching master data types:', error);
+    toast({
+      title: "เกิดข้อผิดพลาด",
+      description: "ไม่สามารถโหลดข้อมูลประเภทมาสเตอร์ดาต้าได้",
+      variant: "destructive",
+    });
+    return [];
+  }
+  
+  return data || [];
+};
 
-const mockBackupTypes: MasterDataItem[] = [
-  { id: 1, code: "FULL", name: "สำรองข้อมูลแบบเต็ม", description: "สำรองข้อมูลทั้งหมด", isActive: true, order: 1, createdAt: "2024-01-01", updatedAt: "2024-01-01" },
-  { id: 2, code: "INCREMENTAL", name: "สำรองข้อมูลแบบเพิ่มเติม", description: "สำรองข้อมูลส่วนที่เปลี่ยนแปลง", isActive: true, order: 2, createdAt: "2024-01-01", updatedAt: "2024-01-01" },
-  { id: 3, code: "DIFFERENTIAL", name: "สำรองข้อมูลแบบต่าง", description: "สำรองข้อมูลที่แตกต่างจากครั้งล่าสุด", isActive: true, order: 3, createdAt: "2024-01-01", updatedAt: "2024-01-01" },
-  { id: 4, code: "MIRROR", name: "สำรองข้อมูลแบบมิเรอร์", description: "สำรองข้อมูลแบบสะท้อน", isActive: true, order: 4, createdAt: "2024-01-01", updatedAt: "2024-01-01" },
-];
+const fetchMasterDataItems = async (typeId: string) => {
+  const { data, error } = await supabase
+    .from('master_data_items')
+    .select('*')
+    .eq('type_id', typeId)
+    .order('sort_order');
+  
+  if (error) {
+    console.error('Error fetching master data items:', error);
+    toast({
+      title: "เกิดข้อผิดพลาด",
+      description: "ไม่สามารถโหลดข้อมูลรายการมาสเตอร์ดาต้าได้",
+      variant: "destructive",
+    });
+    return [];
+  }
+  
+  return data || [];
+};
 
-const mockCertificateTypes: MasterDataItem[] = [
-  { id: 1, code: "SSL_TLS", name: "SSL/TLS Certificate", description: "ใบรับรองการเข้ารหัสเว็บไซต์", isActive: true, order: 1, createdAt: "2024-01-01", updatedAt: "2024-01-01" },
-  { id: 2, code: "CODE_SIGN", name: "Code Signing Certificate", description: "ใบรับรองสำหรับลงนามโค้ด", isActive: true, order: 2, createdAt: "2024-01-01", updatedAt: "2024-01-01" },
-  { id: 3, code: "CLIENT_CERT", name: "Client Certificate", description: "ใบรับรองสำหรับลูกค้า", isActive: true, order: 3, createdAt: "2024-01-01", updatedAt: "2024-01-01" },
-  { id: 4, code: "DOC_SIGN", name: "Document Signing Certificate", description: "ใบรับรองสำหรับลงนามเอกสาร", isActive: true, order: 4, createdAt: "2024-01-01", updatedAt: "2024-01-01" },
-];
+const createMasterDataItem = async (itemData: any) => {
+  const { data, error } = await supabase
+    .from('master_data_items')
+    .insert([itemData])
+    .select()
+    .single();
+  
+  if (error) {
+    console.error('Error creating master data item:', error);
+    toast({
+      title: "เกิดข้อผิดพลาด",
+      description: "ไม่สามารถเพิ่มข้อมูลมาสเตอร์ดาต้าได้",
+      variant: "destructive",
+    });
+    return null;
+  }
+  
+  return data;
+};
 
-const mockOrganizationTypes: MasterDataItem[] = [
-  { id: 1, code: "PUBLIC", name: "บริษัทมหาชน", description: "บริษัทจดทะเบียนในตลาดหลักทรัพย์", isActive: true, order: 1, createdAt: "2024-01-01", updatedAt: "2024-01-01" },
-  { id: 2, code: "LIMITED", name: "บริษัทจำกัด", description: "บริษัทจำกัดทั่วไป", isActive: true, order: 2, createdAt: "2024-01-01", updatedAt: "2024-01-01" },
-  { id: 3, code: "PARTNERSHIP", name: "ห้างหุ้นส่วน", description: "ห้างหุ้นส่วนจำกัด", isActive: true, order: 3, createdAt: "2024-01-01", updatedAt: "2024-01-01" },
-];
+const updateMasterDataItem = async (id: string, itemData: any) => {
+  const { error } = await supabase
+    .from('master_data_items')
+    .update(itemData)
+    .eq('id', id);
+  
+  if (error) {
+    console.error('Error updating master data item:', error);
+    toast({
+      title: "เกิดข้อผิดพลาด",
+      description: "ไม่สามารถแก้ไขข้อมูลมาสเตอร์ดาต้าได้",
+      variant: "destructive",
+    });
+    return false;
+  }
+  
+  return true;
+};
 
-const mockDepartments: MasterDataItem[] = [
-  { id: 1, code: "IT", name: "แผนกเทคโนโลยีสารสนเทศ", description: "จัดการระบบและเทคโนโลยี", isActive: true, order: 1, createdAt: "2024-01-01", updatedAt: "2024-01-01" },
-  { id: 2, code: "HR", name: "แผนกทรัพยากรบุคคล", description: "จัดการบุคลากรและสวัสดิการ", isActive: true, order: 2, createdAt: "2024-01-01", updatedAt: "2024-01-01" },
-  { id: 3, code: "FINANCE", name: "แผนกการเงิน", description: "จัดการเงินและบัญชี", isActive: true, order: 3, createdAt: "2024-01-01", updatedAt: "2024-01-01" },
-  { id: 4, code: "MARKETING", name: "แผนกการตลาด", description: "จัดการการตลาดและประชาสัมพันธ์", isActive: true, order: 4, createdAt: "2024-01-01", updatedAt: "2024-01-01" },
-];
-
-const mockPositions: MasterDataItem[] = [
-  { id: 1, code: "CEO", name: "ประธานเจ้าหน้าที่บริหาร", description: "ผู้บริหารสูงสุด", isActive: true, order: 1, createdAt: "2024-01-01", updatedAt: "2024-01-01" },
-  { id: 2, code: "MANAGER", name: "ผู้จัดการ", description: "ผู้จัดการระดับกลาง", isActive: true, order: 2, createdAt: "2024-01-01", updatedAt: "2024-01-01" },
-  { id: 3, code: "SUPERVISOR", name: "หัวหน้างาน", description: "หัวหน้าทีมงาน", isActive: true, order: 3, createdAt: "2024-01-01", updatedAt: "2024-01-01" },
-  { id: 4, code: "STAFF", name: "พนักงาน", description: "พนักงานทั่วไป", isActive: true, order: 4, createdAt: "2024-01-01", updatedAt: "2024-01-01" },
-];
-
-const mockUserRoles: MasterDataItem[] = [
-  { id: 1, code: "SUPER_ADMIN", name: "ผู้ดูแลระบบสูงสุด", description: "สิทธิ์เต็มทั้งระบบ", isActive: true, order: 1, createdAt: "2024-01-01", updatedAt: "2024-01-01" },
-  { id: 2, code: "ORG_ADMIN", name: "ผู้ดูแลองค์กร", description: "จัดการผู้ใช้ในองค์กร", isActive: true, order: 2, createdAt: "2024-01-01", updatedAt: "2024-01-01" },
-  { id: 3, code: "HR_MANAGER", name: "ผู้จัดการทรัพยากรบุคคล", description: "จัดการข้อมูลบุคลากร", isActive: true, order: 3, createdAt: "2024-01-01", updatedAt: "2024-01-01" },
-  { id: 4, code: "USER", name: "ผู้ใช้งานทั่วไป", description: "สิทธิ์การใช้งานพื้นฐาน", isActive: true, order: 4, createdAt: "2024-01-01", updatedAt: "2024-01-01" },
-];
-
-const mockCountries: MasterDataItem[] = [
-  { id: 1, code: "TH", name: "ประเทศไทย", description: "Thailand", isActive: true, order: 1, createdAt: "2024-01-01", updatedAt: "2024-01-01" },
-  { id: 2, code: "US", name: "สหรัฐอเมริกา", description: "United States", isActive: true, order: 2, createdAt: "2024-01-01", updatedAt: "2024-01-01" },
-  { id: 3, code: "JP", name: "ญี่ปุ่น", description: "Japan", isActive: true, order: 3, createdAt: "2024-01-01", updatedAt: "2024-01-01" },
-];
-
-// Organization data types
-const organizationDataTypes = [
-  { 
-    key: "organization-types", 
-    name: "ประเภทองค์กร", 
-    description: "จัดการประเภทขององค์กรต่างๆ",
-    icon: Building,
-    data: mockOrganizationTypes 
-  },
-  { 
-    key: "departments", 
-    name: "แผนก/หน่วยงาน", 
-    description: "จัดการแผนกและหน่วยงานต่างๆ",
-    icon: Users,
-    data: mockDepartments 
-  },
-  { 
-    key: "positions", 
-    name: "ตำแหน่งงาน", 
-    description: "จัดการตำแหน่งงานต่างๆ",
-    icon: Shield,
-    data: mockPositions 
-  },
-  { 
-    key: "user-roles", 
-    name: "บทบาทผู้ใช้", 
-    description: "จัดการบทบาทและสิทธิ์ผู้ใช้",
-    icon: Shield,
-    data: mockUserRoles 
-  },
-  { 
-    key: "countries", 
-    name: "ประเทศ", 
-    description: "จัดการข้อมูลประเทศต่างๆ",
-    icon: Globe,
-    data: mockCountries 
-  },
-];
-
-// Server data types
-const serverDataTypes = [
-  { 
-    key: "server-locations", 
-    name: "สถานที่เซิร์ฟเวอร์", 
-    description: "จัดการสถานที่ตั้งเซิร์ฟเวอร์ต่างๆ",
-    icon: Database,
-    data: mockServerLocations 
-  },
-  { 
-    key: "server-types", 
-    name: "ประเภทเซิร์ฟเวอร์", 
-    description: "จัดการประเภทของเซิร์ฟเวอร์",
-    icon: Database,
-    data: mockServerTypes 
-  },
-  { 
-    key: "backup-types", 
-    name: "ประเภทการสำรอง", 
-    description: "จัดการประเภทการสำรองข้อมูล",
-    icon: Database,
-    data: mockBackupTypes 
-  },
-  { 
-    key: "certificate-types", 
-    name: "ประเภทใบรับรอง", 
-    description: "จัดการประเภทใบรับรองดิจิทัล",
-    icon: Database,
-    data: mockCertificateTypes 
-  },
-];
-
-// All master data types combined
-const masterDataTypes = [...organizationDataTypes, ...serverDataTypes];
+const deleteMasterDataItem = async (id: string) => {
+  const { error } = await supabase
+    .from('master_data_items')
+    .delete()
+    .eq('id', id);
+  
+  if (error) {
+    console.error('Error deleting master data item:', error);
+    toast({
+      title: "เกิดข้อผิดพลาด",
+      description: "ไม่สามารถลบข้อมูลมาสเตอร์ดาต้าได้",
+      variant: "destructive",
+    });
+    return false;
+  }
+  
+  return true;
+};
 
 const MasterDataManagement = () => {
-  const [selectedType, setSelectedType] = useState(masterDataTypes[0].key);
+  const { user } = useAuth();
+  const [masterDataTypes, setMasterDataTypes] = useState<MasterDataType[]>([]);
+  const [masterDataItems, setMasterDataItems] = useState<MasterDataItem[]>([]);
+  const [selectedType, setSelectedType] = useState<string>('');
+  const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState<MasterDataItem | null>(null);
-  const [accordionValue, setAccordionValue] = useState("organization-group");
-
-  // Get current type and data first
-  const currentType = masterDataTypes.find(type => type.key === selectedType);
-  const [currentData, setCurrentData] = useState<MasterDataItem[]>(currentType?.data || []);
-
-  // Confirmation dialogs
-  const { showDeleteConfirmation, DeleteConfirmationDialog } = useDeleteConfirmation();
-  const { showStatusConfirmation, StatusConfirmationDialog } = useStatusChangeConfirmation();
-
-  // Form validation for adding items - now currentData is available
-  const addItemValidation = useFormValidation({
+  const [formData, setFormData] = useState({
     code: "",
     name: "",
+    name_en: "",
     description: "",
-    isActive: true,
-    order: 0,
-  }, {
-    code: { 
-      required: true, 
-      minLength: 2, 
-      maxLength: 20,
-      pattern: /^[A-Z0-9_]+$/,
-      custom: createDuplicateValidator(
-        currentData, 
-        null, 
-        (item) => item.code, 
-        "รหัส"
-      )
-    },
-    name: { 
-      required: true, 
-      minLength: 2, 
-      maxLength: 100,
-      custom: createDuplicateValidator(
-        currentData, 
-        null, 
-        (item) => item.name, 
-        "ชื่อ"
-      )
-    },
-    description: { maxLength: 255 },
+    is_active: true,
+    sort_order: 1
   });
 
-  // Form validation for editing items
-  const editItemValidation = useFormValidation({
-    code: "",
-    name: "",
-    description: "",
-    isActive: true,
-    order: 0,
-  }, {
-    code: { 
-      required: true, 
-      minLength: 2, 
-      maxLength: 20,
-      pattern: /^[A-Z0-9_]+$/,
-      custom: createDuplicateValidator(
-        currentData, 
-        selectedItem?.id, 
-        (item) => item.code, 
-        "รหัส"
-      )
-    },
-    name: { 
-      required: true, 
-      minLength: 2, 
-      maxLength: 100,
-      custom: createDuplicateValidator(
-        currentData, 
-        selectedItem?.id, 
-        (item) => item.name, 
-        "ชื่อ"
-      )
-    },
-    description: { maxLength: 255 },
-  });
+  useEffect(() => {
+    loadMasterDataTypes();
+  }, []);
 
-  const filteredData = currentData.filter(item =>
+  useEffect(() => {
+    if (selectedType) {
+      loadMasterDataItems();
+    }
+  }, [selectedType]);
+
+  const loadMasterDataTypes = async () => {
+    setLoading(true);
+    const types = await fetchMasterDataTypes();
+    setMasterDataTypes(types);
+    if (types.length > 0) {
+      setSelectedType(types[0].id);
+    }
+    setLoading(false);
+  };
+
+  const loadMasterDataItems = async () => {
+    if (!selectedType) return;
+    
+    const items = await fetchMasterDataItems(selectedType);
+    setMasterDataItems(items);
+  };
+
+  const filteredItems = masterDataItems.filter(item =>
     item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     item.code.toLowerCase().includes(searchTerm.toLowerCase()) ||
     (item.description && item.description.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
+  const currentType = masterDataTypes.find(type => type.id === selectedType);
+
   const handleAdd = async () => {
-    await addItemValidation.handleSubmit(async (values) => {
-      const newItem: MasterDataItem = {
-        id: Math.max(...currentData.map(i => i.id), 0) + 1,
-        ...values,
-        createdAt: new Date().toISOString().split('T')[0],
-        updatedAt: new Date().toISOString().split('T')[0],
-      };
-      
-      setCurrentData([...currentData, newItem]);
+    if (!user || !selectedType) return;
+    
+    setSubmitting(true);
+    const itemData = {
+      ...formData,
+      type_id: selectedType,
+      organization_id: user.user_metadata?.organization_id || null
+    };
+    
+    const newItem = await createMasterDataItem(itemData);
+    if (newItem) {
+      await loadMasterDataItems();
       setIsAddDialogOpen(false);
-      addItemValidation.reset();
-      
-      toastSuccess("เพิ่มข้อมูลสำเร็จ", `เพิ่ม "${values.name}" เรียบร้อยแล้ว`);
-    });
+      resetForm();
+      toast({
+        title: "เพิ่มข้อมูลสำเร็จ",
+        description: `เพิ่ม "${formData.name}" เรียบร้อยแล้ว`,
+      });
+    }
+    setSubmitting(false);
   };
 
   const handleEdit = async () => {
-    await editItemValidation.handleSubmit(async (values) => {
-      setCurrentData(currentData.map(item => 
-        item.id === selectedItem!.id 
-          ? { ...item, ...values, updatedAt: new Date().toISOString().split('T')[0] }
-          : item
-      ));
-      
-      setIsEditDialogOpen(false);
+    if (!selectedItem) return;
+    
+    setSubmitting(true);
+    const success = await updateMasterDataItem(selectedItem.id, formData);
+    if (success) {
+      await loadMasterDataItems();
       setSelectedItem(null);
-      editItemValidation.reset();
-      
-      toastSuccess("แก้ไขข้อมูลสำเร็จ", `แก้ไข "${values.name}" เรียบร้อยแล้ว`);
-    });
+      setIsEditDialogOpen(false);
+      resetForm();
+      toast({
+        title: "แก้ไขสำเร็จ",
+        description: `แก้ไข "${formData.name}" เรียบร้อยแล้ว`,
+      });
+    }
+    setSubmitting(false);
   };
 
-  const handleDelete = async (item: MasterDataItem) => {
-    const originalData = [...currentData];
-    setCurrentData(currentData.filter(i => i.id !== item.id));
-    
-    toastWithUndo(
-      "ลบข้อมูลสำเร็จ",
-      `ลบ "${item.name}" แล้ว`,
-      () => {
-        setCurrentData(originalData);
-        toastSuccess("เลิกทำการลบ", "กู้คืนข้อมูลเรียบร้อยแล้ว");
-      }
-    );
+  const handleDelete = async (id: string, name: string) => {
+    const success = await deleteMasterDataItem(id);
+    if (success) {
+      await loadMasterDataItems();
+      toast({
+        title: "ลบสำเร็จ",
+        description: `ลบ "${name}" เรียบร้อยแล้ว`,
+      });
+    }
   };
 
   const handleToggleStatus = async (item: MasterDataItem) => {
-    const newStatus = !item.isActive;
-    const statusText = newStatus ? 'เปิดใช้งาน' : 'ปิดใช้งาน';
-    
-    setCurrentData(currentData.map(i => 
-      i.id === item.id ? { ...i, isActive: newStatus } : i
-    ));
+    const success = await updateMasterDataItem(item.id, { is_active: !item.is_active });
+    if (success) {
+      await loadMasterDataItems();
+      toast({
+        title: "เปลี่ยนสถานะสำเร็จ",
+        description: `เปลี่ยนสถานะ "${item.name}" เรียบร้อยแล้ว`,
+      });
+    }
+  };
 
-    toastSuccess(
-      `${statusText}สำเร็จ`,
-      `เปลี่ยนสถานะ "${item.name}" เป็น ${statusText} แล้ว`
-    );
+  const resetForm = () => {
+    setFormData({
+      code: "",
+      name: "",
+      name_en: "",
+      description: "",
+      is_active: true,
+      sort_order: 1
+    });
   };
 
   const openEditDialog = (item: MasterDataItem) => {
     setSelectedItem(item);
-    editItemValidation.setValues({
+    setFormData({
       code: item.code,
       name: item.name,
+      name_en: item.name_en || "",
       description: item.description || "",
-      isActive: item.isActive,
-      order: item.order,
+      is_active: item.is_active,
+      sort_order: item.sort_order
     });
     setIsEditDialogOpen(true);
   };
 
-  const handleTypeChange = (newType: string) => {
-    setSelectedType(newType);
-    const typeData = masterDataTypes.find(type => type.key === newType);
-    setCurrentData(typeData?.data || []);
-    setSearchTerm("");
-    
-    // Reset form validations when changing type
-    addItemValidation.reset();
-    editItemValidation.reset();
-    
-    // Set accordion value based on the selected type
-    if (organizationDataTypes.find(type => type.key === newType)) {
-      setAccordionValue("organization-group");
-    } else if (serverDataTypes.find(type => type.key === newType)) {
-      setAccordionValue("server-group");
-    }
-  };
+  if (loading) {
+    return <div className="flex justify-center p-8">กำลังโหลดข้อมูล...</div>;
+  }
 
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div>
-        <h1 className="text-3xl font-bold text-foreground">จัดการข้อมูลหลัก</h1>
-        <p className="text-muted-foreground mt-1">
-          จัดการข้อมูลหลักที่ใช้ในระบบทั้งหมด
-        </p>
+      <div className="flex justify-between items-center">
+        <div>
+          <h1 className="text-3xl font-bold text-foreground">จัดการข้อมูลหลัก</h1>
+          <p className="text-muted-foreground mt-1">
+            จัดการข้อมูลหลักที่ใช้ในระบบทั้งหมด
+          </p>
+        </div>
+        <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+          <DialogTrigger asChild>
+            <Button>
+              <Plus className="w-4 h-4 mr-2" />
+              เพิ่มข้อมูล
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="max-w-2xl">
+            <DialogHeader>
+              <DialogTitle>เพิ่มข้อมูลใหม่</DialogTitle>
+              <DialogDescription>
+                เพิ่มข้อมูลใหม่สำหรับ {currentType?.type_name}
+              </DialogDescription>
+            </DialogHeader>
+            <div className="grid gap-4 py-4">
+              <div className="space-y-2">
+                <Label htmlFor="code">รหัส *</Label>
+                <Input
+                  id="code"
+                  value={formData.code}
+                  onChange={(e) => setFormData({ ...formData, code: e.target.value.toUpperCase() })}
+                  placeholder="รหัส (เช่น ORG_001)"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="name">ชื่อ *</Label>
+                <Input
+                  id="name"
+                  value={formData.name}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  placeholder="ชื่อ"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="name_en">ชื่อ (ภาษาอังกฤษ)</Label>
+                <Input
+                  id="name_en"
+                  value={formData.name_en}
+                  onChange={(e) => setFormData({ ...formData, name_en: e.target.value })}
+                  placeholder="English Name (Optional)"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="description">คำอธิบาย</Label>
+                <Textarea
+                  id="description"
+                  value={formData.description}
+                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                  placeholder="คำอธิบาย (ไม่บังคับ)"
+                  rows={3}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="sort_order">ลำดับ</Label>
+                <Input
+                  id="sort_order"
+                  type="number"
+                  value={formData.sort_order}
+                  onChange={(e) => setFormData({ ...formData, sort_order: parseInt(e.target.value) || 1 })}
+                  placeholder="ลำดับ"
+                />
+              </div>
+            </div>
+            <div className="flex justify-end space-x-2">
+              <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>
+                ยกเลิก
+              </Button>
+              <LoadingButton loading={submitting} onClick={handleAdd}>
+                บันทึก
+              </LoadingButton>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
 
       {/* Stats Cards */}
@@ -416,9 +423,7 @@ const MasterDataManagement = () => {
             <Settings className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
-              {masterDataTypes.reduce((sum, type) => sum + type.data.length, 0)}
-            </div>
+            <div className="text-2xl font-bold">{masterDataItems.length}</div>
             <p className="text-xs text-muted-foreground">รายการทั้งหมด</p>
           </CardContent>
         </Card>
@@ -429,26 +434,26 @@ const MasterDataManagement = () => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {currentData.filter(item => item.isActive).length}
+              {masterDataItems.filter(item => item.is_active).length}
             </div>
-            <p className="text-xs text-muted-foreground">ใน {currentType?.name}</p>
+            <p className="text-xs text-muted-foreground">ใช้งานอยู่</p>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">ข้อมูลระบบ</CardTitle>
+            <CardTitle className="text-sm font-medium">ไม่ใช้งาน</CardTitle>
             <Database className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {mockServerLocations.length + mockServerTypes.length + mockBackupTypes.length + mockCertificateTypes.length}
+              {masterDataItems.filter(item => !item.is_active).length}
             </div>
-            <p className="text-xs text-muted-foreground">รายการสำหรับระบบ</p>
+            <p className="text-xs text-muted-foreground">ไม่ใช้งาน</p>
           </CardContent>
         </Card>
       </div>
 
-      {/* Accordion for different master data types */}
+      {/* Main Content */}
       <Card>
         <CardHeader>
           <div className="flex justify-between items-center">
@@ -456,149 +461,39 @@ const MasterDataManagement = () => {
               <CardTitle>ข้อมูลหลัก</CardTitle>
               <CardDescription>เลือกประเภทข้อมูลหลักที่ต้องการจัดการ</CardDescription>
             </div>
-            <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-              <DialogTrigger asChild>
-                <Button>
-                  <Plus className="w-4 h-4 mr-2" />
-                  เพิ่มข้อมูล
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="bg-card">
-                <DialogHeader>
-                  <DialogTitle>เพิ่มข้อมูลใหม่</DialogTitle>
-                  <DialogDescription>
-                    เพิ่มข้อมูลใหม่สำหรับ {currentType?.name}
-                  </DialogDescription>
-                </DialogHeader>
-                <div className="grid gap-4 py-4">
-                  <FormFieldWrapper label="รหัส" required error={addItemValidation.errors.code}>
-                    <Input
-                      value={addItemValidation.values.code}
-                      onChange={(e) => addItemValidation.setValue('code', e.target.value.toUpperCase())}
-                      placeholder="รหัส (เช่น ORG_001)"
-                    />
-                  </FormFieldWrapper>
-                  <FormFieldWrapper label="ชื่อ" required error={addItemValidation.errors.name}>
-                    <Input
-                      placeholder="ชื่อ"
-                      value={addItemValidation.values.name}
-                      onChange={(e) => addItemValidation.setValue('name', e.target.value)}
-                    />
-                  </FormFieldWrapper>
-                  <FormFieldWrapper label="คำอธิบาย" error={addItemValidation.errors.description}>
-                    <Textarea
-                      placeholder="คำอธิบาย (ไม่บังคับ)"
-                      value={addItemValidation.values.description}
-                      onChange={(e) => addItemValidation.setValue('description', e.target.value)}
-                      rows={3}
-                    />
-                  </FormFieldWrapper>
-                  <FormFieldWrapper label="ลำดับ" error={addItemValidation.errors.order}>
-                    <Input
-                      type="number"
-                      placeholder="ลำดับ"
-                      value={addItemValidation.values.order}
-                      onChange={(e) => addItemValidation.setValue('order', parseInt(e.target.value) || 0)}
-                    />
-                  </FormFieldWrapper>
-                </div>
-                <div className="flex justify-end space-x-2">
-                  <Button variant="outline" onClick={() => {
-                    setIsAddDialogOpen(false);
-                    addItemValidation.reset();
-                  }}>
-                    ยกเลิก
-                  </Button>
-                  <LoadingButton loading={addItemValidation.isSubmitting} onClick={handleAdd}>
-                    บันทึก
-                  </LoadingButton>
-                </div>
-              </DialogContent>
-            </Dialog>
+            <div className="flex items-center space-x-4">
+              <Select value={selectedType} onValueChange={setSelectedType}>
+                <SelectTrigger className="w-[250px]">
+                  <SelectValue placeholder="เลือกประเภทข้อมูล" />
+                </SelectTrigger>
+                <SelectContent>
+                  {masterDataTypes.map((type) => (
+                    <SelectItem key={type.id} value={type.id}>
+                      {type.type_name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <div className="relative">
+                <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="ค้นหา..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-8 w-64"
+                />
+              </div>
+            </div>
           </div>
         </CardHeader>
         <CardContent>
-          <Accordion type="single" value={accordionValue} onValueChange={setAccordionValue} collapsible className="space-y-2">
-            {/* Organization Data Group */}
-            <AccordionItem value="organization-group" className="border rounded-lg">
-              <AccordionTrigger className="px-4 py-3 hover:no-underline">
-                <div className="flex items-center space-x-2">
-                  <Building className="h-5 w-5 text-primary" />
-                  <span className="font-semibold">ข้อมูลองค์กร</span>
-                </div>
-              </AccordionTrigger>
-              <AccordionContent className="px-4 pb-4">
-                <div className="space-y-2">
-                  {organizationDataTypes.map((type) => (
-                    <Button
-                      key={type.key}
-                      variant={selectedType === type.key ? "default" : "ghost"}
-                      className="w-full justify-start h-auto py-3"
-                      onClick={() => handleTypeChange(type.key)}
-                    >
-                      <div className="flex items-center space-x-3 w-full">
-                        <type.icon className="h-4 w-4" />
-                        <div className="text-left">
-                          <div className="font-medium">{type.name}</div>
-                          <div className="text-xs text-muted-foreground line-clamp-1">{type.description}</div>
-                        </div>
-                      </div>
-                    </Button>
-                  ))}
-                </div>
-              </AccordionContent>
-            </AccordionItem>
-
-            {/* Server Data Group */}
-            <AccordionItem value="server-group" className="border rounded-lg">
-              <AccordionTrigger className="px-4 py-3 hover:no-underline">
-                <div className="flex items-center space-x-2">
-                  <Database className="h-5 w-5 text-primary" />
-                  <span className="font-semibold">ข้อมูลเซิร์ฟเวอร์</span>
-                </div>
-              </AccordionTrigger>
-              <AccordionContent className="px-4 pb-4">
-                <div className="space-y-2">
-                  {serverDataTypes.map((type) => (
-                    <Button
-                      key={type.key}
-                      variant={selectedType === type.key ? "default" : "ghost"}
-                      className="w-full justify-start h-auto py-3"
-                      onClick={() => handleTypeChange(type.key)}
-                    >
-                      <div className="flex items-center space-x-3 w-full">
-                        <type.icon className="h-4 w-4" />
-                        <div className="text-left">
-                          <div className="font-medium">{type.name}</div>
-                          <div className="text-xs text-muted-foreground line-clamp-1">{type.description}</div>
-                        </div>
-                      </div>
-                    </Button>
-                  ))}
-                </div>
-              </AccordionContent>
-            </AccordionItem>
-          </Accordion>
-
-          {/* Data Display Section */}
           {currentType && (
-            <div className="mt-6 space-y-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-2">
-                  <currentType.icon className="h-5 w-5 text-primary" />
-                  <div>
-                    <h3 className="font-semibold">{currentType.name}</h3>
-                    <p className="text-sm text-muted-foreground">{currentType.description}</p>
-                  </div>
-                </div>
-                <div className="relative w-64">
-                  <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    placeholder="ค้นหา..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-8"
-                  />
+            <div className="space-y-4">
+              <div className="flex items-center space-x-2">
+                <Database className="h-5 w-5 text-primary" />
+                <div>
+                  <h3 className="font-semibold">{currentType.type_name}</h3>
+                  <p className="text-sm text-muted-foreground">{currentType.description}</p>
                 </div>
               </div>
 
@@ -608,6 +503,7 @@ const MasterDataManagement = () => {
                     <TableRow>
                       <TableHead>รหัส</TableHead>
                       <TableHead>ชื่อ</TableHead>
+                      <TableHead>ชื่อ (EN)</TableHead>
                       <TableHead>คำอธิบาย</TableHead>
                       <TableHead className="text-center">ลำดับ</TableHead>
                       <TableHead className="text-center">สถานะ</TableHead>
@@ -616,24 +512,31 @@ const MasterDataManagement = () => {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {filteredData.map((item) => (
+                    {filteredItems.map((item) => (
                       <TableRow key={item.id}>
                         <TableCell className="font-medium">{item.code}</TableCell>
                         <TableCell>{item.name}</TableCell>
+                        <TableCell>
+                          <span className="text-muted-foreground text-sm">
+                            {item.name_en || "-"}
+                          </span>
+                        </TableCell>
                         <TableCell>
                           <div className="max-w-xs">
                             <p className="text-sm line-clamp-2">{item.description || "-"}</p>
                           </div>
                         </TableCell>
-                        <TableCell className="text-center">{item.order}</TableCell>
+                        <TableCell className="text-center">{item.sort_order}</TableCell>
                         <TableCell className="text-center">
-                          {item.isActive ? (
+                          {item.is_active ? (
                             <Badge className="bg-success text-success-foreground">ใช้งาน</Badge>
                           ) : (
                             <Badge variant="secondary">ไม่ใช้งาน</Badge>
                           )}
                         </TableCell>
-                        <TableCell>{item.updatedAt}</TableCell>
+                        <TableCell>
+                          {new Date(item.updated_at).toLocaleDateString('th-TH')}
+                        </TableCell>
                         <TableCell className="text-right">
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
@@ -648,18 +551,13 @@ const MasterDataManagement = () => {
                                 <Edit className="h-4 w-4 mr-2" />
                                 แก้ไข
                               </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => 
-                                showStatusConfirmation(
-                                  `คุณต้องการ${item.isActive ? 'ปิด' : 'เปิด'}ใช้งาน "${item.name}" หรือไม่?`,
-                                  () => handleToggleStatus(item)
-                                )
-                              }>
+                              <DropdownMenuItem onClick={() => handleToggleStatus(item)}>
                                 <Settings className="h-4 w-4 mr-2" />
-                                {item.isActive ? "ปิดใช้งาน" : "เปิดใช้งาน"}
+                                {item.is_active ? "ปิดใช้งาน" : "เปิดใช้งาน"}
                               </DropdownMenuItem>
                               <DropdownMenuSeparator />
                               <DropdownMenuItem 
-                                onClick={() => showDeleteConfirmation(item.name, () => handleDelete(item))}
+                                onClick={() => handleDelete(item.id, item.name)}
                                 className="text-destructive"
                               >
                                 <Trash2 className="h-4 w-4 mr-2" />
@@ -670,6 +568,13 @@ const MasterDataManagement = () => {
                         </TableCell>
                       </TableRow>
                     ))}
+                    {filteredItems.length === 0 && (
+                      <TableRow>
+                        <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
+                          {searchTerm ? 'ไม่พบข้อมูลที่ค้นหา' : 'ยังไม่มีข้อมูลในประเภทนี้'}
+                        </TableCell>
+                      </TableRow>
+                    )}
                   </TableBody>
                 </Table>
               </div>
@@ -680,76 +585,89 @@ const MasterDataManagement = () => {
 
       {/* Edit Dialog */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent className="bg-card">
+        <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle>แก้ไขข้อมูล</DialogTitle>
             <DialogDescription>
-              แก้ไขข้อมูลสำหรับ {currentType?.name}
+              แก้ไขข้อมูลสำหรับ {currentType?.type_name}
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
-            <FormFieldWrapper label="รหัส" required error={editItemValidation.errors.code}>
+            <div className="space-y-2">
+              <Label htmlFor="edit-code">รหัส *</Label>
               <Input
+                id="edit-code"
+                value={formData.code}
+                onChange={(e) => setFormData({ ...formData, code: e.target.value.toUpperCase() })}
                 placeholder="รหัส"
-                value={editItemValidation.values.code}
-                onChange={(e) => editItemValidation.setValue('code', e.target.value.toUpperCase())}
               />
-            </FormFieldWrapper>
-            <FormFieldWrapper label="ชื่อ" required error={editItemValidation.errors.name}>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-name">ชื่อ *</Label>
               <Input
+                id="edit-name"
+                value={formData.name}
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                 placeholder="ชื่อ"
-                value={editItemValidation.values.name}
-                onChange={(e) => editItemValidation.setValue('name', e.target.value)}
               />
-            </FormFieldWrapper>
-            <FormFieldWrapper label="คำอธิบาย" error={editItemValidation.errors.description}>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-name_en">ชื่อ (ภาษาอังกฤษ)</Label>
+              <Input
+                id="edit-name_en"
+                value={formData.name_en}
+                onChange={(e) => setFormData({ ...formData, name_en: e.target.value })}
+                placeholder="English Name (Optional)"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-description">คำอธิบาย</Label>
               <Textarea
+                id="edit-description"
+                value={formData.description}
+                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                 placeholder="คำอธิบาย (ไม่บังคับ)"
-                value={editItemValidation.values.description}
-                onChange={(e) => editItemValidation.setValue('description', e.target.value)}
                 rows={3}
               />
-            </FormFieldWrapper>
-            <FormFieldWrapper label="ลำดับ" error={editItemValidation.errors.order}>
-              <Input
-                type="number"
-                placeholder="ลำดับ"
-                value={editItemValidation.values.order}
-                onChange={(e) => editItemValidation.setValue('order', parseInt(e.target.value) || 0)}
-              />
-            </FormFieldWrapper>
-            <FormFieldWrapper label="สถานะ">
-              <Select 
-                value={editItemValidation.values.isActive ? "active" : "inactive"} 
-                onValueChange={(value) => editItemValidation.setValue('isActive', value === "active")}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent className="bg-popover">
-                  <SelectItem value="active">ใช้งาน</SelectItem>
-                  <SelectItem value="inactive">ไม่ใช้งาน</SelectItem>
-                </SelectContent>
-              </Select>
-            </FormFieldWrapper>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="edit-sort_order">ลำดับ</Label>
+                <Input
+                  id="edit-sort_order"
+                  type="number"
+                  value={formData.sort_order}
+                  onChange={(e) => setFormData({ ...formData, sort_order: parseInt(e.target.value) || 1 })}
+                  placeholder="ลำดับ"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-status">สถานะ</Label>
+                <Select 
+                  value={formData.is_active ? "active" : "inactive"} 
+                  onValueChange={(value) => setFormData({ ...formData, is_active: value === "active" })}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="active">ใช้งาน</SelectItem>
+                    <SelectItem value="inactive">ไม่ใช้งาน</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
           </div>
           <div className="flex justify-end space-x-2">
-            <Button variant="outline" onClick={() => {
-              setIsEditDialogOpen(false);
-              setSelectedItem(null);
-              editItemValidation.reset();
-            }}>
+            <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
               ยกเลิก
             </Button>
-            <LoadingButton loading={editItemValidation.isSubmitting} onClick={handleEdit}>
+            <LoadingButton loading={submitting} onClick={handleEdit}>
               บันทึก
             </LoadingButton>
           </div>
         </DialogContent>
       </Dialog>
-      {/* Confirmation Dialogs */}
-      <DeleteConfirmationDialog />
-      <StatusConfirmationDialog />
     </div>
   );
 };
