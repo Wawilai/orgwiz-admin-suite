@@ -20,6 +20,7 @@ const UserRoleAssignment = lazy(() => import("./pages/UserRoleAssignment"));
 const GroupManagement = lazy(() => import("./pages/GroupManagement"));
 const OrganizationManagement = lazy(() => import("./pages/OrganizationManagement"));
 const OrganizationUnits = lazy(() => import("./pages/OrganizationUnits"));
+const TenantManagement = lazy(() => import("./pages/TenantManagement"));
 const RoleManagement = lazy(() => import("./pages/RoleManagement"));
 const DomainManagement = lazy(() => import("./pages/DomainManagement"));
 const LicenseManagement = lazy(() => import("./pages/LicenseManagement"));
@@ -133,6 +134,16 @@ function App() {
                       <ProtectedRoute requiredModule="organizations">
                         <Suspense fallback={<LoadingFallback />}>
                           <OrganizationUnits />
+                        </Suspense>
+                      </ProtectedRoute>
+                    </Layout>
+                  } />
+                  
+                  <Route path="/tenants" element={
+                    <Layout>
+                      <ProtectedRoute requiredModule="system">
+                        <Suspense fallback={<LoadingFallback />}>
+                          <TenantManagement />
                         </Suspense>
                       </ProtectedRoute>
                     </Layout>
