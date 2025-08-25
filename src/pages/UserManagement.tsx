@@ -22,6 +22,17 @@ const UserManagement = () => {
     getActiveItems,
     loading: masterDataLoading 
   } = useMasterData();
+
+  // Debug logging for master data
+  useEffect(() => {
+    console.log('Master Data Debug:', {
+      masterDataLoading,
+      positions: positions?.length || 0,
+      userRoles: userRoles?.length || 0,
+      languages: languages?.length || 0,
+      activePositions: getActiveItems('positions')?.length || 0
+    });
+  }, [masterDataLoading, positions, userRoles, languages, getActiveItems]);
   const [users, setUsers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [isAddUserOpen, setIsAddUserOpen] = useState(false);
@@ -79,6 +90,7 @@ const UserManagement = () => {
         .order('name');
       
       if (error) throw error;
+      console.log('Fetched organizations:', data?.length || 0, data);
       setOrganizations(data || []);
     } catch (error) {
       console.error('Error fetching organizations:', error);
@@ -94,6 +106,7 @@ const UserManagement = () => {
         .order('name');
       
       if (error) throw error;
+      console.log('Fetched organization units:', data?.length || 0, data);
       setOrganizationUnits(data || []);
     } catch (error) {
       console.error('Error fetching organization units:', error);
@@ -117,6 +130,7 @@ const UserManagement = () => {
         .order('first_name');
       
       if (error) throw error;
+      console.log('Fetched managers:', data?.length || 0, data);
       setManagers(data || []);
     } catch (error) {
       console.error('Error fetching managers:', error);
@@ -134,6 +148,7 @@ const UserManagement = () => {
         .order('name');
       
       if (error) throw error;
+      console.log('Fetched roles:', data?.length || 0, data);
       setRoles(data || []);
     } catch (error) {
       console.error('Error fetching roles:', error);
