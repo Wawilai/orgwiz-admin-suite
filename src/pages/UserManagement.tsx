@@ -197,74 +197,46 @@ const UserManagement = () => {
     
     setSubmitting(true);
     try {
-      // สร้างรหัสผ่านชั่วคราว
-      const tempPassword = Math.random().toString(36).slice(-10) + 'A1!';
-      
-      // สร้าง user ใน auth system ก่อน
-      const { data: authData, error: authError } = await supabase.auth.admin.createUser({
-        email: formData.email,
-        password: tempPassword,
-        email_confirm: true,
-        user_metadata: {
-          first_name: formData.first_name,
-          last_name: formData.last_name
-        }
-      });
-      
-      if (authError) {
-        console.error('Auth error:', authError);
-        toast.error("ไม่สามารถสร้างบัญชีผู้ใช้ได้: " + authError.message);
-        return;
-      }
-      
-      if (!authData.user) {
-        toast.error("ไม่สามารถสร้างบัญชีผู้ใช้ได้");
-        return;
-      }
-      
-      // สร้าง profile ด้วย user_id ที่ได้จาก auth
       const profileData = {...formData};
       delete profileData.selected_role_id; // Remove role from profile data
       
-      const { data: profileResult, error: profileError } = await supabase
-        .from('profiles')
-        .insert([{
-          ...profileData,
-          user_id: authData.user.id,
-        }])
-        .select()
-        .single();
-      
-      if (profileError) {
-        console.error('Profile error:', profileError);
-        // ลบ user ที่สร้างไว้หาก profile ไม่สำเร็จ
-        await supabase.auth.admin.deleteUser(authData.user.id);
-        toast.error("ไม่สามารถสร้างโปรไฟล์ผู้ใช้ได้: " + profileError.message);
+      // เรียกใช้ Edge Function เพื่อสร้างผู้ใช้งาน
+      const { data: result, error: functionError } = await supabase.functions.invoke('create-user', {
+        body: {
+          userData: {
+            email: formData.email
+          },
+          profileData: profileData,
+          roleId: formData.selected_role_id || null
+        }
+      });
+
+      if (functionError) {
+        console.error('Function error:', functionError);
+        toast.error("เกิดข้อผิดพลาดในการเรียกใช้ฟังก์ชัน: " + functionError.message);
         return;
       }
-      
-      // Assign role if selected
-      if (formData.selected_role_id && profileResult) {
-        const { error: roleError } = await supabase
-          .from('user_roles')
-          .insert([{
-            user_id: authData.user.id,
-            role_id: formData.selected_role_id,
-            assigned_by: authData.user.id,
-            is_active: true
-          }]);
-        
-        if (roleError) {
-          console.error('Role assignment error:', roleError);
-          // ไม่ต้อง error ถ้า role assignment ล้มเหลว แค่แจ้งเตือน
-          toast.warning("สร้างผู้ใช้สำเร็จแต่ไม่สามารถกำหนด role ได้");
-        }
+
+      if (result.error) {
+        console.error('Create user error:', result.error);
+        toast.error(result.error);
+        return;
+      }
+
+      if (!result.success) {
+        toast.error("ไม่สามารถสร้างผู้ใช้งานได้");
+        return;
       }
       
       await fetchUsers();
       setIsAddUserOpen(false);
       resetFormData();
-      toast.success(`เพิ่มผู้ใช้งานเรียบร้อยแล้ว รหัสผ่านชั่วคราว: ${tempPassword}`);
+      
+      if (result.tempPassword) {
+        toast.success(`เพิ่มผู้ใช้งานเรียบร้อยแล้ว รหัสผ่านชั่วคราว: ${result.tempPassword}`);
+      } else {
+        toast.success("เพิ่มผู้ใช้งานเรียบร้อยแล้ว");
+      }
     } catch (error) {
       console.error('Error adding user:', error);
       toast.error("เกิดข้อผิดพลาดในการเพิ่มผู้ใช้งาน: " + (error as Error).message);
