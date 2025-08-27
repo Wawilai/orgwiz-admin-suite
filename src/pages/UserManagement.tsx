@@ -196,11 +196,18 @@ const UserManagement = () => {
     }
     
     setSubmitting(true);
+    console.log('Starting user creation process...');
+    
     try {
       const profileData = {...formData};
       delete profileData.selected_role_id; // Remove role from profile data
       
+      console.log('Profile data to send:', profileData);
+      console.log('User email:', formData.email);
+      console.log('Selected role ID:', formData.selected_role_id);
+      
       // เรียกใช้ Edge Function เพื่อสร้างผู้ใช้งาน
+      console.log('Invoking create-user function...');
       const { data: result, error: functionError } = await supabase.functions.invoke('create-user', {
         body: {
           userData: {
@@ -211,23 +218,28 @@ const UserManagement = () => {
         }
       });
 
+      console.log('Function result:', result);
+      console.log('Function error:', functionError);
+
       if (functionError) {
         console.error('Function error:', functionError);
         toast.error("เกิดข้อผิดพลาดในการเรียกใช้ฟังก์ชัน: " + functionError.message);
         return;
       }
 
-      if (result.error) {
+      if (result?.error) {
         console.error('Create user error:', result.error);
         toast.error(result.error);
         return;
       }
 
-      if (!result.success) {
+      if (!result?.success) {
+        console.error('Function returned no success:', result);
         toast.error("ไม่สามารถสร้างผู้ใช้งานได้");
         return;
       }
       
+      console.log('User created successfully, refreshing user list...');
       await fetchUsers();
       setIsAddUserOpen(false);
       resetFormData();
