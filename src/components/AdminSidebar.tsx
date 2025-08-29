@@ -67,26 +67,14 @@ const menuItems = [
     ]
   },
   {
-    title: "บริการหลัก",
-    icon: Mail,
-    items: [
-      { title: "บริการอีเมล", url: "/mail-service", icon: Mail, permission: "domains" },
-      { title: "Mail Relay", url: "/mail-relay", icon: Zap, permission: "domains" },
-      { title: "สมุดที่อยู่", url: "/address-book", icon: Users },
-      { title: "ปฏิทิน", url: "/calendar", icon: Calendar },
-      { title: "แชท", url: "/chat", icon: MessageSquare },
-      { title: "ประชุมออนไลน์", url: "/meetings", icon: Video },
-      { title: "พื้นที่จัดเก็บ", url: "/storage", icon: HardDrive, permission: "storage" }
-    ]
-  },
-  {
     title: "ธุรกิจและบัญชี",
     icon: CreditCard,
     permission: "billing",
     items: [
       { title: "จัดการแพ็กเกจ", url: "/packages", icon: Package, permission: "billing" },
-      { title: "การเรียกเก็บเงิน", url: "/billing", icon: CreditCard, permission: "billing" },
-      { title: "จัดการไลเซ้นส์", url: "/licenses", icon: FileKey, permission: "system" }
+      //{ title: "การเรียกเก็บเงิน", url: "/billing", icon: CreditCard, permission: "billing" },
+      { title: "จัดการไลเซ้นส์", url: "/licenses", icon: FileKey, permission: "system" },
+       { title: "พื้นที่จัดเก็บ", url: "/storage", icon: HardDrive, permission: "storage" }
     ]
   },
   {
