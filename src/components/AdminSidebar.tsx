@@ -58,9 +58,9 @@ const menuItems = [
       { title: "จัดการผู้ใช้งาน", url: "/users", icon: Users, permission: "users" },
       { title: "มอบหมายบทบาท", url: "/user-roles", icon: ShieldCheck, permission: "roles" },
       { title: "จัดการกลุ่ม", url: "/groups", icon: Users, permission: "users" },
+      { title: "จัดการ Tenant", url: "/tenants", icon: Shield, permission: "system" },
       { title: "จัดการองค์กร", url: "/organizations", icon: Building2, permission: "organizations" },
       { title: "หน่วยงาน", url: "/organization-units", icon: Building2, permission: "organizations" },
-      { title: "จัดการ Tenant", url: "/tenants", icon: Shield, permission: "system" },
       { title: "จัดการโดเมน", url: "/domains", icon: Globe, permission: "domains" },
       { title: "จัดการสิทธิ์", url: "/roles", icon: UserCheck, permission: "roles" },
       { title: "จัดการ Quota", url: "/quotas", icon: Database, permission: "storage" }
