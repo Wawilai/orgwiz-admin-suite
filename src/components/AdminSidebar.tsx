@@ -60,7 +60,7 @@ const menuItems = [
       { title: "จัดการหน่วยงาน", url: "/organization-units", icon: Building2, permission: "organizations" },
       { title: "จัดการโดเมน", url: "/domains", icon: Globe, permission: "domains" },
       { title: "จัดการผู้ใช้งาน", url: "/users", icon: Users, permission: "users" },
-      { title: "จัดการกลุ่มผู้ใช้งาน", url: "/groups", icon: Users, permission: "users" },
+      { title: "จัดกลุ่มผู้ใช้งาน", url: "/groups", icon: Users, permission: "users" },
       { title: "มอบหมายบทบาท", url: "/user-roles", icon: ShieldCheck, permission: "roles" },
       { title: "จัดการสิทธิ์", url: "/roles", icon: UserCheck, permission: "roles" },
       { title: "จัดการ Quota", url: "/quotas", icon: Database, permission: "storage" }
