@@ -74,7 +74,7 @@ const menuItems = [
       { title: "จัดการแพ็กเกจ", url: "/packages", icon: Package, permission: "billing" },
       //{ title: "การเรียกเก็บเงิน", url: "/billing", icon: CreditCard, permission: "billing" },
       { title: "จัดการไลเซ้นส์", url: "/licenses", icon: FileKey, permission: "system" },
-       { title: "พื้นที่จัดเก็บ", url: "/storage", icon: HardDrive, permission: "storage" }
+       { title: "จัดการพื้นที่จัดเก็บ", url: "/storage", icon: HardDrive, permission: "storage" }
     ]
   },
   {
