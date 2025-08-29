@@ -40,7 +40,6 @@ const PaymentHistory = lazy(() => import("./pages/PaymentHistory"));
 const StorageReports = lazy(() => import("./pages/StorageReports"));
 const MasterDataManagement = lazy(() => import("./pages/MasterDataManagement"));
 const AccountSettings = lazy(() => import("./pages/AccountSettings"));
-const MFASettings = lazy(() => import("./pages/MFASettings"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 // Report detail pages
@@ -394,16 +393,6 @@ function App() {
                       <ProtectedRoute>
                         <Suspense fallback={<LoadingFallback />}>
                           <AccountSettings />
-                        </Suspense>
-                      </ProtectedRoute>
-                    </Layout>
-                  } />
-                  
-                  <Route path="/mfa-settings" element={
-                    <Layout>
-                      <ProtectedRoute>
-                        <Suspense fallback={<LoadingFallback />}>
-                          <MFASettings />
                         </Suspense>
                       </ProtectedRoute>
                     </Layout>

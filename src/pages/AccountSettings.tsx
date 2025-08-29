@@ -14,6 +14,7 @@ import { useToast } from "@/components/ui/use-toast";
 import { User, Shield, Bell, Settings, Camera, Mail, Phone, Globe, Calendar, Key, Smartphone } from "lucide-react";
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
+import { MFAComponent } from '@/components/MFAComponent';
 
 interface UserProfile {
   id: string;
@@ -54,7 +55,7 @@ const AccountSettings = () => {
   const [currentTab, setCurrentTab] = useState('profile');
 
   // Security settings
-  const [twoFactorEnabled, setTwoFactorEnabled] = useState(false);
+  const [mfaEnabled, setMfaEnabled] = useState(false);
   const [loginNotifications, setLoginNotifications] = useState(true);
   const [sessionTimeout, setSessionTimeout] = useState(30);
 
@@ -475,18 +476,8 @@ const AccountSettings = () => {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
-              <div className="flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <Label>การยืนยันตัวตนสองขั้นตอน (2FA)</Label>
-                  <p className="text-sm text-muted-foreground">
-                    เพิ่มความปลอดภัยด้วยการยืนยันตัวตนสองขั้นตอน
-                  </p>
-                </div>
-                <Switch
-                  checked={twoFactorEnabled}
-                  onCheckedChange={setTwoFactorEnabled}
-                />
-              </div>
+              {/* MFA Component Integration */}
+              <MFAComponent onMFAChange={setMfaEnabled} />
 
               <div className="flex items-center justify-between">
                 <div className="space-y-0.5">
