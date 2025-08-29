@@ -92,7 +92,7 @@ const menuItems = [
     items: [
       { title: "จัดการข้อมูลหลัก", url: "/master-data", icon: Database, permission: "system" },
       { title: "จัดการเซิร์ฟเวอร์", url: "/system-settings", icon: Settings, permission: "system" },
-      { title: "ความปลอดภัย MFA", url: "/mfa-settings", icon: ShieldCheck },
+    //{ title: "ความปลอดภัย MFA", url: "/mfa-settings", icon: ShieldCheck },
       { title: "ตั้งค่าบัญชี", url: "/account-settings", icon: User }
     ]
   }
