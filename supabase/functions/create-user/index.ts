@@ -62,11 +62,16 @@ serve(async (req) => {
       );
     }
 
+    // Clean profile data - convert empty strings to null for date fields
+    const cleanedProfileData = { ...profileData };
+    if (cleanedProfileData.start_date === '') cleanedProfileData.start_date = null;
+    if (cleanedProfileData.end_date === '') cleanedProfileData.end_date = null;
+
     // Create profile with user_id from auth
     const { data: profileResult, error: profileError } = await supabase
       .from('profiles')
       .insert([{
-        ...profileData,
+        ...cleanedProfileData,
         user_id: authData.user.id,
       }])
       .select()

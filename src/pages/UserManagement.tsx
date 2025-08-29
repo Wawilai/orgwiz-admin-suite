@@ -202,6 +202,10 @@ const UserManagement = () => {
       const profileData = {...formData};
       delete profileData.selected_role_id; // Remove role from profile data
       
+      // Convert empty date strings to null to avoid PostgreSQL date parsing errors
+      if (profileData.start_date === '') profileData.start_date = null;
+      if (profileData.end_date === '') profileData.end_date = null;
+      
       console.log('Profile data to send:', profileData);
       console.log('User email:', formData.email);
       console.log('Selected role ID:', formData.selected_role_id);
