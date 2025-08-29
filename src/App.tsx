@@ -297,7 +297,7 @@ function App() {
                       </ProtectedRoute>
                     </Layout>
                   } />
-                  
+                  /*  
                   <Route path="/mail-service" element={
                     <Layout>
                       <ProtectedRoute requiredModule="domains">
@@ -347,7 +347,7 @@ function App() {
                       </ProtectedRoute>
                     </Layout>
                   } />
-                  
+                
                   <Route path="/calendar" element={
                     <Layout>
                       <ProtectedRoute>
@@ -357,7 +357,7 @@ function App() {
                       </ProtectedRoute>
                     </Layout>
                   } />
-                  
+                  */
                   <Route path="/storage" element={
                     <Layout>
                       <ProtectedRoute requiredModule="storage">
